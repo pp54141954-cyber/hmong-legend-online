@@ -19,8 +19,8 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
     rec('สมัครใหม่บนเซิร์ฟเวอร์ปกติ → เริ่มที่หมู่บ้านแผนที่ใหม่', ch.zone === 'village2', ch.zone); await s0.close(); }
   // ภาพแผนที่แยกไฟล์ (V2-R14)
   { const s1 = createServer({ dbFile: dbFile + '.maps', quiet: true }), p1 = await s1.listen(0), B = 'http://127.0.0.1:' + p1;
-    const ok = await fetch(B + '/maps/village2.webp'), bad = await fetch(B + '/maps/..%2fserver.webp'), miss = await fetch(B + '/maps/nozone.webp');
-    rec('เซิร์ฟเวอร์ส่งภาพแผนที่ /maps/*.webp และปฏิเสธชื่อแปลก/ไม่มีไฟล์', ok.status === 200 && ok.headers.get('content-type') === 'image/webp' && (await ok.arrayBuffer()).byteLength > 100000 && bad.status === 404 && miss.status === 404, ok.status + '/' + bad.status + '/' + miss.status);
+    const sp = await fetch(B + '/sprites/boar_walk.webp'), ok = await fetch(B + '/maps/village2.webp'), bad = await fetch(B + '/maps/..%2fserver.webp'), miss = await fetch(B + '/maps/nozone.webp');
+    rec('เซิร์ฟเวอร์ส่งภาพแผนที่ /maps/*.webp และภาพมอนสเตอร์ /sprites/*.webp และปฏิเสธชื่อแปลก/ไม่มีไฟล์', sp.status === 200 && ok.status === 200 && ok.headers.get('content-type') === 'image/webp' && (await ok.arrayBuffer()).byteLength > 100000 && bad.status === 404 && miss.status === 404, ok.status + '/' + bad.status + '/' + miss.status);
     await s1.close(); }
   // ทดสอบที่เหลือเริ่มที่หมู่บ้านเดิม (มีบ้าน/มอนสเตอร์ที่ฉากทดสอบใช้)
   let srv = createServer({ dbFile, quiet: true, saveEverySec: 2, startZone: 'village' });
@@ -246,8 +246,10 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
 
   // 8) บันทึกแล้วรีสตาร์ตเซิร์ฟเวอร์
   await A.page.keyboard.down('ArrowDown'); await sleep(500); await A.page.keyboard.up('ArrowDown'); await sleep(400);
-  const saved = await st(A.page), savedBag = JSON.stringify(SA().c.bag), savedEq = JSON.stringify(SA().c.eq), savedSk = JSON.stringify(SA().c.sk);
+  const saved = await st(A.page), pA = SA();
   await A.ctx.close(); await B.ctx.close();
+  // อ่านค่าที่จะถูกบันทึก หลังผู้เล่นออก (ไม่มีของดรอป/ท่าค้างมาเปลี่ยนค่าระหว่างอ่านกับปิดเซิร์ฟเวอร์)
+  const savedBag = JSON.stringify(pA.c.bag), savedEq = JSON.stringify(pA.c.eq), savedSk = JSON.stringify(pA.c.sk);
   await srv.close();
   srv = createServer({ dbFile, quiet: true, startZone: 'village' }); port = await srv.listen(0); url = 'http://127.0.0.1:' + port + '/';
   const A2 = await open('Pixel 7');
@@ -257,6 +259,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   const posOk = re.zone === saved.zone && Math.hypot(re.x - saved.x, re.y - saved.y) < 4;
   rec('รีสตาร์ตเซิร์ฟเวอร์แล้วตำแหน่งกลับมาถูก', posOk, 'ก่อน=(' + saved.zone + ',' + Math.round(saved.x) + ',' + Math.round(saved.y) + ') หลัง=(' + re.zone + ',' + Math.round(re.x) + ',' + Math.round(re.y) + ')');
   const SA2 = [...srv.online.values()].find(p => p.c.name === 'Tester_A');
+  await until(async () => (await A2.page.evaluate(() => JSON.stringify(HLNET.bag))) === savedBag, 3000); // กระเป๋ามาใน snapshot แรกหลังเข้าเกม
   rec('รีสตาร์ตแล้วกระเป๋าและอุปกรณ์กลับมาครบ', JSON.stringify(SA2.c.bag) === savedBag && JSON.stringify(SA2.c.eq) === savedEq && (await A2.page.evaluate(() => JSON.stringify(HLNET.bag))) === savedBag, savedEq + ' ' + savedBag);
   rec('รีสตาร์ตแล้วระดับสกิลกลับมาครบ', JSON.stringify(SA2.c.sk) === savedSk && (await A2.page.evaluate(() => JSON.stringify(HLNET.sk))) === savedSk, savedSk.slice(0, 120));
   rec('รีสตาร์ตแล้ว Lv/EXP/Job กลับมาถูก', re.lv === saved.lv && re.exp === saved.exp && re.job === saved.job && re.jexp === saved.jexp, JSON.stringify({ lv: re.lv, exp: re.exp, job: re.job, jexp: re.jexp }));

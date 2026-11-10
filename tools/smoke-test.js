@@ -13,8 +13,8 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   // เสิร์ฟผ่าน HTTP ให้เหมือนการเปิดจากลิงก์จริง
   // เสิร์ฟไฟล์เกม + ภาพแผนที่แยกไฟล์ (maps/*.webp) จากโฟลเดอร์เดียวกัน
   const srv = http.createServer((q, r) => {
-    const m = /^\/maps\/([a-z0-9_]+\.webp)$/.exec(q.url);
-    if (m) { const f = path.join(path.dirname(file), 'maps', m[1]); if (!fs.existsSync(f)) { r.statusCode = 404; return r.end(); } r.setHeader('content-type', 'image/webp'); return fs.createReadStream(f).pipe(r); }
+    const m = /^\/(maps|sprites)\/([a-z0-9_]+\.webp)$/.exec(q.url);
+    if (m) { const f = path.join(path.dirname(file), m[1], m[2]); if (!fs.existsSync(f)) { r.statusCode = 404; return r.end(); } r.setHeader('content-type', 'image/webp'); return fs.createReadStream(f).pipe(r); }
     r.setHeader('content-type', 'text/html; charset=utf-8'); fs.createReadStream(file).pipe(r);
   }).listen(0);
   const url = 'http://127.0.0.1:' + srv.address().port + '/';
