@@ -17,6 +17,11 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
     const r = await fetch('http://127.0.0.1:' + p0 + '/api/register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Home_Test', pass: 'secret123' }) });
     const tok = (await r.json()).token, acc = s0.db.session(tok).account_id, ch = s0.db.character(acc);
     rec('สมัครใหม่บนเซิร์ฟเวอร์ปกติ → เริ่มที่หมู่บ้านแผนที่ใหม่', ch.zone === 'village2', ch.zone); await s0.close(); }
+  // ภาพแผนที่แยกไฟล์ (V2-R14)
+  { const s1 = createServer({ dbFile: dbFile + '.maps', quiet: true }), p1 = await s1.listen(0), B = 'http://127.0.0.1:' + p1;
+    const ok = await fetch(B + '/maps/village2.webp'), bad = await fetch(B + '/maps/..%2fserver.webp'), miss = await fetch(B + '/maps/nozone.webp');
+    rec('เซิร์ฟเวอร์ส่งภาพแผนที่ /maps/*.webp และปฏิเสธชื่อแปลก/ไม่มีไฟล์', ok.status === 200 && ok.headers.get('content-type') === 'image/webp' && (await ok.arrayBuffer()).byteLength > 100000 && bad.status === 404 && miss.status === 404, ok.status + '/' + bad.status + '/' + miss.status);
+    await s1.close(); }
   // ทดสอบที่เหลือเริ่มที่หมู่บ้านเดิม (มีบ้าน/มอนสเตอร์ที่ฉากทดสอบใช้)
   let srv = createServer({ dbFile, quiet: true, saveEverySec: 2, startZone: 'village' });
   let port = await srv.listen(0);
@@ -214,6 +219,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   await A.page.click('#gear'); await A.page.click('#wp'); await A.page.click('#gear');
   const gone = await until(async () => (await st(A.page)).zone === 'field' && !(await st(B.page)).others.some(o => o.name === 'Tester_A'));
   rec('A ย้ายไปทุ่งมอนสเตอร์ B ไม่เห็น A แล้ว', gone);
+  await until(() => [...srv.online.values()].find(p => p.c.name === 'Tester_A').c.zone === 'field', 3000); // A อาจเริ่มจากหมู่บ้านใหม่ (เกิดหลังตาย) ซึ่ง B มองไม่เห็นอยู่แล้ว
   const srvZone = [...srv.online.values()].find(p => p.c.name === 'Tester_A').c.zone;
   rec('เซิร์ฟเวอร์รับการย้ายโซนผ่านจุดที่อนุญาต', srvZone === 'field', 'zone=' + srvZone);
   await A.page.click('#gear'); await A.page.click('#wp'); await A.page.click('#gear');

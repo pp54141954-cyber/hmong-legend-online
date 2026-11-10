@@ -59,6 +59,14 @@ function createServer(opts = {}) {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
         return fs.createReadStream(conf.gameFile).pipe(res);
       }
+      // ภาพแผนที่แยกไฟล์ (V2-R14): /maps/<ชื่อ>.webp เท่านั้น
+      const mm = /^\/maps\/([a-z0-9_]+)\.webp$/.exec(url.pathname);
+      if (req.method === 'GET' && mm) {
+        const f = path.join(path.dirname(conf.gameFile), 'maps', mm[1] + '.webp');
+        if (!fs.existsSync(f)) return json(res, 404, { error: 'not found' });
+        res.writeHead(200, { 'content-type': 'image/webp', 'cache-control': 'public, max-age=86400' });
+        return fs.createReadStream(f).pipe(res);
+      }
       if (req.method === 'GET' && url.pathname === '/api/hello') return json(res, 200, { game: 'hmong-legend', online: online.size });
       if (req.method === 'POST' && (url.pathname === '/api/register' || url.pathname === '/api/login')) {
         const b = await readBody(req);

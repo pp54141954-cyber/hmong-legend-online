@@ -11,7 +11,12 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
 
 (async () => {
   // เสิร์ฟผ่าน HTTP ให้เหมือนการเปิดจากลิงก์จริง
-  const srv = http.createServer((q, r) => { r.setHeader('content-type', 'text/html; charset=utf-8'); fs.createReadStream(file).pipe(r); }).listen(0);
+  // เสิร์ฟไฟล์เกม + ภาพแผนที่แยกไฟล์ (maps/*.webp) จากโฟลเดอร์เดียวกัน
+  const srv = http.createServer((q, r) => {
+    const m = /^\/maps\/([a-z0-9_]+\.webp)$/.exec(q.url);
+    if (m) { const f = path.join(path.dirname(file), 'maps', m[1]); if (!fs.existsSync(f)) { r.statusCode = 404; return r.end(); } r.setHeader('content-type', 'image/webp'); return fs.createReadStream(f).pipe(r); }
+    r.setHeader('content-type', 'text/html; charset=utf-8'); fs.createReadStream(file).pipe(r);
+  }).listen(0);
   const url = 'http://127.0.0.1:' + srv.address().port + '/';
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ ...devices['Pixel 7'] });

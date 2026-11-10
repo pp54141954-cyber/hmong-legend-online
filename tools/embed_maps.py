@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ฝังผังช่อง (assets/maps/<zone>.mask.txt) และภาพพื้นแผนที่ลงใน game/index.html
+"""ฝังผังช่อง (assets/maps/<zone>.mask.txt) ลงใน game/index.html และเขียนภาพพื้นแผนที่เป็น game/maps/<zone>.webp
 ภาพ: MAP_SRC ด้านล่าง (ตอนนี้ใช้ภาพแบบที่มีป้าย/เส้น — เปลี่ยนเป็นภาพสะอาดเมื่อเจ้าของส่งมา)
 รัน: python3 tools/embed_maps.py && node tools/extract-shared.js
 """
@@ -13,11 +13,13 @@ masks, art = {}, {}
 for zid, src in MAP_SRC.items():
     masks[zid] = open(os.path.join(ROOT, 'assets/maps', zid + '.mask.txt')).read().split()
     assert len(masks[zid]) == 32 and all(len(r) == 48 for r in masks[zid]), zid
-    b = io.BytesIO(); Image.open(os.path.join(ROOT, src)).convert('RGB').save(b, 'WEBP', quality=80, method=6)
-    art[zid] = 'data:image/webp;base64,' + base64.b64encode(b.getvalue()).decode()
+    # ภาพแผนที่แยกเป็นไฟล์ game/maps/<zone>.webp (โหลดเมื่อเข้าโซน) — ไม่ฝังในไฟล์เกมแล้ว (V2-R14)
+    os.makedirs(os.path.join(ROOT, 'game/maps'), exist_ok=True)
+    Image.open(os.path.join(ROOT, src)).convert('RGB').save(os.path.join(ROOT, 'game/maps', zid + '.webp'), 'WEBP', quality=80, method=6)
+    art[zid] = 'maps/' + zid + '.webp'
 for name, val in (('MAP_MASKS', masks), ('MAP_ART', art)):
     s, n = re.subn(r'const %s=\{.*?\};/\*%s\*/' % (name, name), lambda m: 'const %s=%s;/*%s*/' % (name, json.dumps(val, separators=(',', ':')), name), s, count=1, flags=re.S)
     if n != 1:
         raise SystemExit('ไม่พบจุดฝัง ' + name)
 open(game, 'w', encoding='utf-8').write(s)
-print('ฝังแผนที่', list(masks), 'ภาพ', sum(len(v) for v in art.values()) // 1024, 'KB', 'ไฟล์เกม', len(s.encode()) // 1024, 'KB')
+print('ฝังผังช่อง', list(masks), 'ภาพแยกไฟล์', sum(os.path.getsize(os.path.join(ROOT, 'game', v)) for v in art.values()) // 1024, 'KB', 'ไฟล์เกม', len(s.encode()) // 1024, 'KB')
