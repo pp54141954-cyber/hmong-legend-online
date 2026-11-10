@@ -133,6 +133,33 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   }
   skillRes.forEach(s => rec('สกิล ' + s.i + ' ' + s.name, s.ok, 'ผล=' + s.r + ' ดาเมจ=' + s.dmg + ' คูลดาวน์เหลือ=' + s.cd));
 
+  // หมู่บ้านแผนที่ใหม่ (V2-R11): ภาพพื้น + ผังช่องจากภาพ Walk Path Model
+  await page.evaluate(() => { HL.PS.dead = false; HL.PS.cast = null; HL.PS.hp = HL.PS.maxHp; });
+  await page.click('#gear'); await page.click('#v2'); await page.click('#gear');
+  await page.waitForTimeout(400);
+  const v2 = await page.evaluate(() => {
+    const im = HL.mapImg('village2'), Z = HL.Z, T = HL.T, s = HL.ZONES.village2.start;
+    // BFS จากจุดเริ่มไปทุกช่องที่เดินถึง
+    const sx = Math.floor(s[0] / T), sy = Math.floor(s[1] / T), seen = new Set([sx + ',' + sy]), q = [[sx, sy]];
+    while (q.length) { const [x, y] = q.shift(); for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = (x + a) + ',' + (y + b); if (!seen.has(k) && !HL.tileBlocked(x + a, y + b)) { seen.add(k); q.push([x + a, y + b]); } } }
+    const exits = HL.ZONES.village2.exits.map(e => seen.has(e.x + ',' + e.y));
+    return { zone: Z.id, img: im && im.complete ? im.naturalWidth + 'x' + im.naturalHeight : 'no', reach: seen.size, exits, roof: HL.tileBlocked(24, 3), crystal: HL.tileBlocked(23, 14) };
+  });
+  rec('เข้าหมู่บ้านแผนที่ใหม่ ภาพพื้นโหลดได้', v2.zone === 'village2' && v2.img === '1536x1024', v2.img);
+  rec('เดินจากจุดเริ่มถึงทางออกทั้ง 2 ทางได้ (ไล่ทุกช่อง)', v2.exits.every(Boolean) && v2.reach > 300, 'ถึงได้ ' + v2.reach + ' ช่อง, ทางออก ' + JSON.stringify(v2.exits));
+  rec('หลังคาบ้านผู้ใหญ่บ้านและเสาคริสตัลเดินทะลุไม่ได้', v2.roof && v2.crystal);
+  // เดินขึ้นจากลานกลางชนเสาคริสตัล (ไม่ทะลุ) ด้วยคีย์บอร์ดจริง
+  await page.evaluate(() => { HL.player.x = 24 * HL.T; HL.player.y = 17.5 * HL.T; });
+  await page.keyboard.down('ArrowUp'); await page.waitForTimeout(900); await page.keyboard.up('ArrowUp');
+  const py = await page.evaluate(() => HL.player.y / HL.T);
+  rec('เดินขึ้นชนเสาคริสตัลแล้วหยุด', py > 15.9, 'y=' + py.toFixed(2) + ' ช่อง');
+  await page.screenshot({ path: 'tools/last-village2.png' });
+  // เดินออกทางล่าง → ทุ่งมอนสเตอร์
+  await page.evaluate(() => { HL.player.x = 35.5 * HL.T; HL.player.y = 29.6 * HL.T; });
+  await page.keyboard.down('ArrowDown'); await page.waitForTimeout(900); await page.keyboard.up('ArrowDown');
+  rec('เดินออกบันไดล่างแล้วย้ายไปทุ่งมอนสเตอร์', (await pos()).zone === 'field');
+  await page.evaluate(() => { const s = HL.ZONES.village.start; HL.enterZone('village', s[0], s[1]); });
+
   // ย้ายโซนผ่านปุ่มทดสอบ
   await page.click('#gear'); await page.click('#wp');
   await page.waitForTimeout(500);

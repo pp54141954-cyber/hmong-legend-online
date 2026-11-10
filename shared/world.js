@@ -4,6 +4,8 @@ const T=32,COLS=48,ROWS=32,W=COLS*T,H=ROWS*T;
 const hh=(x,y,s)=>{let n=(x*374761393+y*668265263+(s||0)*982451653)|0;n=Math.imul(n^(n>>>13),1274126177);return(((n^(n>>>16))>>>0)/4294967295)};
 const inb=(x,y)=>x>=0&&y>=0&&x<COLS&&y<ROWS;
 const GR=0,PA=1,WA=2,BR=3,ST=4,CR=5,BD=6,CV=7,CF=8,EX=9;
+/* ผังช่องของแผนที่แบบภาพทั้งแผ่น ('.' เดินได้ '#' กีดขวาง '~' น้ำ 'E' ทางออก) — tools/build_map_mask.py + tools/embed_maps.py */
+const MAP_MASKS={"village2":["#################################EEE############","#################################...############","#################################...############","#################################...############","#################################.....##########","###################################...##########","#################...####.###..#####...##########","#############.................#####...##########","##############...####.......#######...##########","############.###.######..##########...##########","###~#######..###...####..####..#####..##########","###########....##.........##...###....##########","###~########...####..........###......##########","###~#########...###....##....###......##########","#############...###...####...###......##########","####~########.........####........##..##########","####~######.......................##.....#######","######~####...####.............##........#######","######~####.#######............######....#######","#########...########........##########...#######","#######.....###########...############...#######","#####.......###########..#############..########","##......########..#####..############...########","##....########......###..##..#########...#######","#############...###............########....#####","#########~###########.....####..##.####...######","#######################...#####....##...########","###########~############..#######.....##########","################~########..#######...###########","#########################...######...###########","##########################...#####...###########","###########################..#####EEE###########"]};/*MAP_MASKS*/
 const ZONES={
  village:{name:'หมู่บ้านเริ่มต้น',safe:(tx,ty)=>tx<=20&&ty>=8&&ty<=24,treeEdge:.55,treeIn:.13,sakura:0,
   layout(A){
@@ -29,6 +31,10 @@ const ZONES={
   decor(o){o.strokeStyle='#8fd3ff';o.lineWidth=3;o.beginPath();o.ellipse(37.5*T,3*T,40,18,0,0,7);o.stroke();o.fillStyle='rgba(120,200,255,.25)';o.fill()},
   /* มอนสเตอร์อ่อนนอกเขตปลอดภัยของหมู่บ้าน (keepTrees: ไม่ตัดต้นไม้เดิม) */keepTrees:1,
   spawns:[{type:'กระต่ายมีเขา',tx:27,ty:12,count:3},{type:'หมูป่า',tx:40,ty:22,count:3},{type:'ไก่ฟ้า',tx:30,ty:6,count:2}],start:[11.5*T,15.6*T]},
+ village2:{name:'หมู่บ้าน (แผนที่ใหม่)',painted:'village2',safe:()=>true,treeEdge:0,treeIn:0,sakura:0,
+  layout(A){A.mask(MAP_MASKS.village2)},border(){},stairs:[],
+  exits:[{x:33,y:0,w:3,h:1,to:'field',tx:2,ty:15,label:'ทุ่งมอนสเตอร์'},{x:34,y:31,w:3,h:1,to:'field',tx:2,ty:15,label:'ทุ่งมอนสเตอร์'}],
+  objects(){},spawns:[],start:[24.5*T,19.5*T]},
  field:{name:'ทุ่งมอนสเตอร์',safe:()=>false,treeEdge:.6,treeIn:.16,sakura:.12,
   layout(A){
    A.h(0,0,COLS,32,0);A.h(0,0,18,10,2);A.h(0,10,18,11,1);A.h(18,0,30,8,2);A.h(18,8,30,11,1);
@@ -64,10 +70,11 @@ function buildGrid(id){
   rect:(x,y,w,h2,v)=>{for(let j=y;j<y+h2;j++)for(let i=x;i<x+w;i++)set(i,j,v)},
   line:(pts,w,v)=>{for(let k=0;k<pts.length-1;k++){const[a,b]=pts[k],[c,d]=pts[k+1];for(let x=Math.min(a,c);x<=Math.max(a,c);x++)for(let y=Math.min(b,d);y<=Math.max(b,d);y++)A.rect(x,y,w,w,v)}},
   add:(type,x,y,fw,fh,extra)=>{for(let j=y;j<y+fh;j++)for(let i=x;i<x+fw;i++)blocked.add(i+','+j);objs.push(Object.assign({type,x,y,fw,fh,base:(y+fh)*T},extra||{}))},
-  deco:(type,x,base)=>objs.push({type,x,y:0,base,fw:0,fh:0})
+  deco:(type,x,base)=>objs.push({type,x,y:0,base,fw:0,fh:0}),
+  mask:rows=>{for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){const ch=(rows&&rows[y]||'')[x]||'#';set(x,y,ch==='.'?PA:ch==='E'?EX:ch==='~'?WA:BD)}}
  };
  D.layout(A);
- for(let x=0;x<COLS;x++){set(x,0,BD);set(x,ROWS-1,BD)}for(let y=0;y<ROWS;y++){set(0,y,BD);set(COLS-1,y,BD)}
+ if(!D.painted){for(let x=0;x<COLS;x++){set(x,0,BD);set(x,ROWS-1,BD)}for(let y=0;y<ROWS;y++){set(0,y,BD);set(COLS-1,y,BD)}}
  D.border(A);
  const face=(x,y)=>inb(x,y-1)&&(hgt[y-1][x]>hgt[y][x]||(inb(x,y-2)&&hgt[y-2][x]>hgt[y][x]&&hgt[y-1][x]===hgt[y][x]&&face(x,y-1)));
  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){const t=g[y][x];if(t===WA||t===BD||t===EX)continue;
@@ -79,10 +86,11 @@ function buildGrid(id){
  const spawnTiles=new Set();(D.keepTrees?[]:(D.spawns||[])).forEach(s=>{for(let j=-3;j<=3;j++)for(let i=-4;i<=4;i++)spawnTiles.add((s.tx+i)+','+(s.ty+j))});
  for(let y=1;y<ROWS-1;y++)for(let x=1;x<COLS-1;x++){if(g[y][x]!==GR||blocked.has(x+','+y)||spawnTiles.has(x+','+y))continue;
   const e=Math.min(x-1,COLS-2-x,y-1,ROWS-2-y),r=hh(x,y,1);
+  if(D.painted)continue;
   if(r<(e<2?D.treeEdge:D.treeIn)&&!near(x,y,1))A.add('tree',x,y,1,1,{v:hh(x,y,2),sak:hh(x,y,8)<D.sakura});
   else if(hh(x,y,3)<.02&&!near(x,y,1))A.add('rock',x,y,1,1)}
- for(let x=0;x<COLS;x++)for(const y of[0,ROWS-1])if(g[y][x]===BD&&hh(x,y,4)<.7)objs.push({type:'tree',x,y,base:(y+1)*T,v:hh(x,y,5),fw:0,fh:0});
- for(let y=1;y<ROWS-1;y++)for(const x of[0,COLS-1])if(g[y][x]===BD&&hh(x,y,6)<.8)objs.push({type:'tree',x,y,base:(y+1)*T,v:hh(x,y,7),fw:0,fh:0});
+ if(!D.painted)for(let x=0;x<COLS;x++)for(const y of[0,ROWS-1])if(g[y][x]===BD&&hh(x,y,4)<.7)objs.push({type:'tree',x,y,base:(y+1)*T,v:hh(x,y,5),fw:0,fh:0});
+ if(!D.painted)for(let y=1;y<ROWS-1;y++)for(const x of[0,COLS-1])if(g[y][x]===BD&&hh(x,y,6)<.8)objs.push({type:'tree',x,y,base:(y+1)*T,v:hh(x,y,7),fw:0,fh:0});
  const isFace=(x,y)=>inb(x,y)&&g[y][x]===CF&&face(x,y);
  return {id,D,g,hgt,blocked};
 }

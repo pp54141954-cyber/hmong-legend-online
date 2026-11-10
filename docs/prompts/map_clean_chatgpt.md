@@ -42,3 +42,38 @@ green for walkable ground, red boxes for obstacles (cliffs, water, trees, rocks)
 2. วาดขอบเขตเดินได้/ไม่ได้ตามภาพ Walk Path Model ให้ทั้งเกมและเซิร์ฟเวอร์ใช้ชุดเดียวกัน
 3. ตั้งจุดเกิดมอนสเตอร์ ทางเชื่อมโซน และจุดสำคัญตามจุดเหลือง
 4. ส่งภาพในเกมให้คุณอนุมัติก่อนแทนแผนที่เดิม (แผนที่เดิมสำรองไว้)
+
+---
+
+# โซน 3–6 (สร้างใหม่ ใช้รูปแบบเดียวกับหมู่บ้าน)
+
+ลำดับโซนตามแผน: หมู่บ้าน (เลเวล 1, ปลอดภัย) → ทุ่งมอนสเตอร์/นาขั้นบันได (1–10) → **ป่าไผ่และหุบเขา (10–20)** → **ลำธารและป่าดิบชื้น (20–30)** → **ถ้ำและภูเขาหิน (30–40)** → **ยอดเขาทะเลหมอก (40–50)**
+
+ทุกโซนขอ 2 ภาพ: (ก) ภาพสะอาดสำหรับใช้ในเกม (ข) ภาพ Walk Path Model แบบเดียวกับหมู่บ้าน
+แนบภาพหมู่บ้านทุกครั้งเพื่อให้สไตล์และมุมกล้องเหมือนกัน
+
+## คำสั่ง (ก) — ภาพสะอาด
+
+เปลี่ยน `[ZONE]` และ `[DETAILS]` ตามตารางด้านล่าง
+
+```
+Create a new game map in EXACTLY the same pixel art style, camera angle and scale as the attached village map.
+Zone: [ZONE].
+Contents: [DETAILS]
+Layout rules: clear dirt or stone walking paths about the same width as the village paths, connecting all areas; an entrance path touching the LEFT edge of the image and an exit path touching the RIGHT edge (or TOP edge for the final zone); 4–6 open clearings along the paths where monsters can roam; cliffs, water, dense trees and rocks are obstacles.
+No characters, no monsters, no text, no labels, no UI. Landscape 3:2, 1536x1024 or larger.
+```
+
+| โซน | `[ZONE]` | `[DETAILS]` |
+| --- | --- | --- |
+| 3 | Bamboo forest and valley (Hmong highlands, level 10–20) | dense bamboo groves, a small valley stream with stepping stones, a hunter's hut with drying racks, bamboo fences, herb patches, a stone shrine with red cloth |
+| 4 | Stream and tropical rainforest (level 20–30) | a winding river with two wooden bridges, large rainforest trees with hanging vines, ferns, mossy rocks, a small waterfall pool, a rope bridge over a ravine |
+| 5 | Cave and rocky mountain (level 30–40) | grey rocky terraces with carved stone stairs, glowing blue crystal clusters, a large dark cave entrance, mine carts and wooden supports, sparse pine trees, a stone golem statue |
+| 6 | Misty mountain peak (level 40–50, final zone, bosses) | high mountain peak above a sea of clouds, snowy stone paths, an ancient Hmong-style stone altar with silver ornaments at the summit, prayer flags, twisted old pines, a wide flat arena for boss fights near the top |
+
+## คำสั่ง (ข) — ภาพ Walk Path Model
+
+```
+On the attached clean map, draw a Walk Path Model overlay in the same style as the attached village example:
+green for walkable ground, red boxes for obstacles, dashed green lines for main paths, yellow dots with short Thai labels for key points: entrance, exit, monster areas, boss arena, shrine/altar, bridges. Add a small legend. Same image size.
+```

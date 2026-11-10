@@ -26,10 +26,12 @@ const CONF = {
 };
 const T = CONF.T;
 // จุดที่วาร์ปไปได้ (เริ่มเกม ประตูโซน ปุ่มทดสอบ จุดเกิดหลังตาย) — คัดจาก ZONES ใน game/index.html
-const ENTRY = {
-  village: [[11.5 * T, 15.6 * T], [45.5 * T, 30.1 * T]],
-  field: [[2.5 * T, 15 * T], [2.5 * T, 15.5 * T], [4.5 * T, 15 * T]],
-};
+// จุดที่วาร์ปเข้าโซนได้: จุดเริ่มของทุกโซน, ปลายทางของทุกประตู, ปุ่มทดสอบไปทุ่ง (+2 ช่อง) — คำนวณจาก ZONES ใน game/index.html
+const WORLD = require('../shared/world.js');
+const ENTRY = {};
+for (const [id, D] of Object.entries(WORLD.ZONES)) (ENTRY[id] ||= []).push([D.start[0], D.start[1]]);
+for (const D of Object.values(WORLD.ZONES)) for (const e of D.exits || []) (ENTRY[e.to] ||= []).push([(e.tx + .5) * T, (e.ty + .5) * T]);
+ENTRY.field.push([WORLD.ZONES.field.start[0] + 2 * T, WORLD.ZONES.field.start[1]]);
 const START = { zone: 'village', x: ENTRY.village[0][0], y: ENTRY.village[0][1] };
 const nearEntry = (zone, x, y) => (ENTRY[zone] || []).some(([ex, ey]) => Math.hypot(ex - x, ey - y) <= 3 * T);
 
