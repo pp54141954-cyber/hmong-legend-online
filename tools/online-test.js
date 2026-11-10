@@ -57,14 +57,108 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   const b4 = (await st(B.page)).others.find(o => o.name === 'Tester_A');
   rec('เซิร์ฟเวอร์ดึงตัวที่วาร์ปเกินความเร็วกลับ', pulled && b4 && Math.abs(b4.x - before4.x) < 5, 'B เห็น A ที่ x=' + (b4 && b4.x));
 
-  // 5) ได้ EXP จากการฆ่ามอนสเตอร์จริง แล้วค่าไปถึงเซิร์ฟเวอร์
-  // ย้ายมอนสเตอร์ (สถานะในเครื่อง) มาหน้าตัวละคร แทนการวาร์ปตัวละคร ซึ่งเซิร์ฟเวอร์จะดึงกลับ
-  await A.page.evaluate(() => { const m = HL.mons.find(m => m.state !== 'dead'); m.state = 'idle'; m.t = 99; m.hp = 1; m.x = m.hx = m.wx = HL.player.x + 20; m.y = m.hy = m.wy = HL.player.y; HL.player.dir = 'E'; window.__t = m; });
+  // 5) กติกาเซิร์ฟเวอร์ (V2-R3)
+  const SA = () => [...srv.online.values()].find(p => p.c.name === 'Tester_A');
+  const W = require('../shared/world.js');
+  // 5.1 ข้อมูลที่เซิร์ฟเวอร์ใช้ตรงกับเกมที่รันจริง
+  for (const zid of Object.keys(W.ZONES)) {
+    const cl = await A.page.evaluate(zid => { const z = HL.getZone(zid), o = []; for (let y = 0; y < HL.ROWS; y++) for (let x = 0; x < HL.COLS; x++) o.push(z.g[y][x] + (z.blocked.has(x + ',' + y) ? 'b' : '')); return o.join(','); }, zid);
+    const g = W.buildGrid(zid), o = []; for (let y = 0; y < W.ROWS; y++) for (let x = 0; x < W.COLS; x++) o.push(g.g[y][x] + (g.blocked.has(x + ',' + y) ? 'b' : ''));
+    rec('ผังช่องชนโซน ' + zid + ' บนเซิร์ฟเวอร์ตรงกับเกม', cl === o.join(','), W.COLS * W.ROWS + ' ช่อง');
+  }
+  const cfgSame = await A.page.evaluate(() => JSON.stringify({ s: HL.CFG.skills, m: HL.CFG.monsters, b: HL.CFG.basic, p: HL.CFG.player })) === JSON.stringify({ s: W.CFG.skills, m: W.CFG.monsters, b: W.CFG.basic, p: W.CFG.player });
+  rec('ค่า CFG (สกิล มอนสเตอร์ ผู้เล่น) บนเซิร์ฟเวอร์ตรงกับเกม', cfgSame);
+  // 5.2 สองเครื่องเห็นมอนสเตอร์ชุดเดียวกัน
+  await sleep(400);
+  const ma = await A.page.evaluate(() => HL.mons.map(m => [m.id, m.tx, m.ty])), mb = await B.page.evaluate(() => HL.mons.map(m => [m.id, m.tx, m.ty]));
+  const sameMons = ma.length > 0 && ma.length === mb.length && ma.every(([id, x, y]) => { const o = mb.find(q => q[0] === id); return o && Math.hypot(o[1] - x, o[2] - y) < 30; });
+  rec('A และ B เห็นมอนสเตอร์ชุดเดียวกัน', sameMons, ma.length + ' ตัว ' + JSON.stringify(ma.slice(0, 2)));
+  // 5.3 ฆ่ามอนสเตอร์ด้วยปุ่ม ⚔ → เซิร์ฟเวอร์ให้ EXP (ฉาก: วางไก่ฟ้าของเซิร์ฟเวอร์ไว้หน้าตัวละคร)
+  const zv = srv.sim.zones.village, chick = zv.mons.find(m => m.type === 'ไก่ฟ้า' && m.state !== 'dead');
+  const pa = SA(); Object.assign(chick, { x: pa.c.x + 20, y: pa.c.y, hx: pa.c.x + 20, hy: pa.c.y, wx: pa.c.x + 20, wy: pa.c.y, t: 99, hp: 1, state: 'idle' });
+  await A.page.evaluate(() => { HL.player.dir = 'E'; });
+  const exp0 = pa.c.exp;
+  await sleep(250);
   await A.page.locator('#atk').dispatchEvent('pointerdown'); await sleep(100); await A.page.locator('#atk').dispatchEvent('pointerup');
-  const gotExp = await until(async () => (await st(A.page)).exp > 0);
+  const gotExp = await until(async () => SA().c.exp > exp0 && (await st(A.page)).exp === SA().c.exp);
+  rec('ปุ่ม ⚔ ฆ่ามอนสเตอร์ของเซิร์ฟเวอร์ ได้ EXP จากเซิร์ฟเวอร์', gotExp && chick.state === 'dead', 'server exp ' + exp0 + '→' + SA().c.exp + ', Job EXP ' + SA().c.jexp);
+  rec('B เห็นมอนสเตอร์ตัวนั้นตาย', await until(async () => !(await B.page.evaluate(id => HL.mons.some(m => m.id === id && m.state !== 'dead'), chick.id))));
+  rec('เครื่อง A ได้เลขดาเมจจากเซิร์ฟเวอร์', (await st(A.page)).stats.dmgEv > 0);
+  // 5.4 แก้ EXP ในเครื่อง → เซิร์ฟเวอร์ไม่เชื่อ
+  const expS = SA().c.exp;
+  await A.page.evaluate(() => { HL.PS.exp = 99999; HL.PS.lv = 50; });
+  await sleep(500);
+  const c54 = await st(A.page);
+  rec('แก้ EXP/Lv ในเครื่องแล้วเซิร์ฟเวอร์ไม่เปลี่ยน และเครื่องถูกแก้กลับ', SA().c.exp === expS && SA().c.lv === 1 && c54.exp === expS && c54.lv === 1, 'server exp=' + SA().c.exp + ' client exp=' + c54.exp);
+  // 5.5 เดินทะลุบ้าน (เปิด "เดินได้ทุกที่" ในเครื่อง) → เซิร์ฟเวอร์ไม่ยอม
+  const s55 = await st(A.page);
+  await A.page.evaluate(() => { HL.player.x = 368; });
   await sleep(300);
-  const srvA = [...srv.online.values()].find(p => p.c.name === 'Tester_A');
-  { const cl = await st(A.page); const tm = await A.page.evaluate(() => ({ st: window.__t.state, hp: window.__t.hp, dx: window.__t.x - HL.player.x, dy: window.__t.y - HL.player.y, safe: HL.inSafe(HL.player.x, HL.player.y), fixes: HLNET.stats.fixes })); rec('EXP จากการฆ่าไปถึงเซิร์ฟเวอร์', gotExp && srvA && srvA.c.exp === cl.exp, 'server exp=' + (srvA && srvA.c.exp) + ' client exp=' + cl.exp + ' mon=' + JSON.stringify(tm)); }
+  await A.page.click('#gear'); await A.page.click('#free'); await A.page.click('#gear');
+  const fx0 = (await st(A.page)).stats.fixes;
+  await A.page.keyboard.down('ArrowUp'); await sleep(1500); await A.page.keyboard.up('ArrowUp');
+  await sleep(400);
+  const W55 = SA().c, houseRow = 12 * 32; // บ้านหลังที่ 3 อยู่ช่อง y=10–11 ตรงหัว
+  rec('เดินทะลุกำแพง/บ้านไม่ได้ (เซิร์ฟเวอร์ดึงกลับ)', (await st(A.page)).stats.fixes > fx0 && W55.y >= houseRow, 'fix ' + fx0 + '→' + (await st(A.page)).stats.fixes + ', server y=' + Math.round(W55.y));
+  await A.page.click('#gear'); await A.page.click('#free'); await A.page.click('#gear');
+  // 5.6 สกิลที่ยังล็อก / กดรัวเกินคูลดาวน์ → เซิร์ฟเวอร์ปฏิเสธ
+  const d0 = (await st(A.page)).stats.denied;
+  await A.page.evaluate(() => HLNET.act(11, 'E'));
+  await until(async () => (await st(A.page)).stats.denied > d0);
+  rec('ส่งคำขอสกิลที่ยังล็อก (Job 1) เซิร์ฟเวอร์ปฏิเสธ', (await st(A.page)).stats.denied > d0);
+  const d1 = (await st(A.page)).stats.denied;
+  await A.page.evaluate(() => { for (let i = 0; i < 6; i++) HLNET.act('b', 'E'); });
+  await sleep(500);
+  rec('กดโจมตีรัว 6 ครั้งเลี่ยงคูลดาวน์ไม่ได้', (await st(A.page)).stats.denied - d1 >= 4, 'ถูกปฏิเสธ ' + ((await st(A.page)).stats.denied - d1) + '/6');
+  // 5.7 ปุ่มทดสอบ Job 30 ถูกปิดบนเซิร์ฟเวอร์จริง
+  await A.page.click('#gear'); await A.page.click('#tm'); await A.page.click('#gear'); await sleep(400);
+  rec('ปุ่ม "ตั้ง Job 30" ใช้ไม่ได้บนเซิร์ฟเวอร์ปกติ', SA().c.job === 1 && (await st(A.page)).job === 1);
+  // 5.8 สกิลทั้ง 11 ท่าคิดดาเมจที่เซิร์ฟเวอร์ (ฉาก: ตั้ง Job 30 บนเซิร์ฟเวอร์ + วางเป้าตามระยะท่า)
+  SA().c.job = 30;
+  // ยืนนอกเขตปลอดภัย (ในเขตปลอดภัยมอนสเตอร์จะถอยกลับและฟื้น HP ทันทีตามกติกาเดิม)
+  const PX = 752, PY = 464;
+  Object.assign(SA().c, { x: PX, y: PY }); await A.page.evaluate(([x, y]) => { HL.player.x = x; HL.player.y = y; }, [PX, PY]);
+  await sleep(300);
+  const skr = [];
+  for (let i = 1; i <= W.CFG.skills.length; i++) {
+    const sk = W.CFG.skills[i - 1], p = SA(), gap = sk.shape === 'pillar' ? sk.dist : 30;
+    // รอให้ตำแหน่งบนเซิร์ฟเวอร์ตรงกับในเครื่องก่อนวางเป้า (ข้อความ mv ของท่าก่อนอาจยังมาไม่ถึง)
+    await A.page.evaluate(([x, y]) => { HL.player.x = x; HL.player.y = y; }, [PX, PY]);
+    await until(async () => Math.hypot(p.c.x - PX, p.c.y - PY) < 1, 2000);
+    await sleep(200);
+    const m = zv.mons.find(m => m.state !== 'dead' && m !== chick) || zv.mons[0];
+    Object.assign(m, { state: 'idle', x: p.c.x + gap, y: p.c.y + 14, hx: p.c.x + gap, hy: p.c.y + 14, wx: p.c.x + gap, wy: p.c.y + 14, t: 99, hp: m.c.hp, target: null });
+    p.cd = {}; p.castUntil = 0;
+    await A.page.evaluate(() => { for (const k in HL.PS.cd) HL.PS.cd[k] = 0; HL.PS.cast = null; HL.player.dir = 'E'; });
+    await sleep(150);
+    const hp0 = m.hp, buff0 = p.buffT, guard0 = p.guardT, x0 = p.c.x, den0 = (await st(A.page)).stats.denied;
+    const at = { px: Math.round(p.c.x), py: Math.round(p.c.y), dir: p.c.dir, mx: Math.round(m.x), my: Math.round(m.y), mst: m.state, ty: m.type };
+    await A.page.keyboard.press(String(i <= 9 ? i : 0)).catch(() => {});
+    if (i > 9) await A.page.evaluate(i => HL.useSkill(i), i);
+    let mn = hp0; for (let k = 0; k < 9; k++) { await sleep(100); mn = Math.min(mn, m.state === 'dead' ? 0 : m.hp); }
+    const dmg = hp0 - mn; SA().hp = SA().maxHp;
+    const eff = sk.shape === 'buff' ? p.buffT > 0 : sk.shape === 'guard' ? p.guardT > 0 : sk.shape === 'move' ? Math.abs(p.c.x - x0) > 20 : dmg > 0;
+    skr.push(i + ':' + (eff ? 'ok' : 'NO') + (dmg ? '(' + dmg + ')' : ''));
+    rec('สกิล ' + i + ' ' + sk.name + ' ทำงานที่เซิร์ฟเวอร์', eff, sk.shape + ' ดาเมจ=' + dmg + (eff ? '' : ' ตอนกด=' + JSON.stringify(at) + ' หลัง=' + JSON.stringify({ px: Math.round(p.c.x), py: Math.round(p.c.y), dir: p.c.dir, mx: Math.round(m.x), my: Math.round(m.y), mst: m.state, denied: (await st(A.page)).stats.denied - den0, cdc: Object.keys(p.cd) })));
+    // กลับจุดเดิมให้ท่าถัดไป (ทั้งสองฝั่งพร้อมกัน)
+    p.c.x = PX; p.c.y = PY; await A.page.evaluate(([x, y]) => { HL.player.x = x; HL.player.y = y; }, [PX, PY]);
+    await sleep(200);
+  }
+  // 5.9 มอนสเตอร์ไล่ตีผู้เล่น → HP ลด → ตาย → เกิดใหม่ที่หมู่บ้าน (ในทุ่งมอนสเตอร์)
+  await A.page.click('#gear'); await A.page.click('#wp'); await A.page.click('#gear');
+  await until(async () => SA().c.zone === 'field');
+  await sleep(300);
+  const pf = SA(), zf = srv.sim.zones.field, wolf = zf.mons.find(m => m.type === 'หมาป่า' && m.state !== 'dead');
+  Object.assign(wolf, { x: pf.c.x + 30, y: pf.c.y, hx: pf.c.x + 30, hy: pf.c.y, state: 'idle', target: null });
+  const hpBefore = pf.hp;
+  const hurt = await until(async () => (await A.page.evaluate(() => HL.PS.hp)) < hpBefore && SA().hp < hpBefore, 5000);
+  rec('มอนสเตอร์ของเซิร์ฟเวอร์ไล่ตี HP ลดทั้งสองฝั่ง', hurt, 'HP ' + hpBefore + '→' + Math.ceil(SA().hp));
+  SA().hp = 1;
+  const died = await until(async () => (await A.page.evaluate(() => HL.PS.dead)) && SA().dead, 5000);
+  rec('HP หมดแล้วตาย (เซิร์ฟเวอร์ตัดสิน)', died);
+  const resp = await until(async () => { const s = await st(A.page); return !SA().dead && s.zone === 'village' && SA().c.zone === 'village'; }, 6000);
+  rec('เกิดใหม่ที่หมู่บ้านหลัง ' + W.CFG.player.respawnSec + ' วินาที', resp, 'HP ' + Math.ceil(SA().hp) + '/' + SA().maxHp);
+  await until(async () => (await st(B.page)).others.some(o => o.name === 'Tester_A'));
 
   // 6) ย้ายโซน: B ไม่เห็น A แล้ว
   await A.page.click('#gear'); await A.page.click('#wp'); await A.page.click('#gear');

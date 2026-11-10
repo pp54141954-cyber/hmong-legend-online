@@ -1,18 +1,21 @@
 // Hmong Legend — เซิร์ฟเวอร์ออนไลน์ Phase 5 รอบแรก
 // หน้าที่รอบนี้: บัญชี + โทเคน, เห็นผู้เล่นคนอื่นในโซนเดียวกัน, ตรวจความเร็ว/ขอบแมพ/การย้ายโซน,
 // บันทึกตัวละคร, กลับเข้าเกมหลังเน็ตหลุด
-// ยังไม่ทำในรอบนี้: การต่อสู้และรางวัลบนเซิร์ฟเวอร์ (ดู docs/server-authority.md)
+// V2-R3: มอนสเตอร์ การต่อสู้ ดาเมจ รางวัล HP การตาย ตัดสินบนเซิร์ฟเวอร์ (server/sim.js)
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const { WebSocketServer } = require('ws');
 const DB = require('./db');
+const { createSim } = require('./sim');
 
 const CONF = {
   port: +(process.env.PORT || 8080),
   dbFile: process.env.DB_FILE || path.join(__dirname, 'data', 'hmong.db'),
   gameFile: process.env.GAME_FILE || path.join(__dirname, '..', 'game', 'index.html'),
   tickHz: 10,               // ส่ง snapshot 10 ครั้ง/วินาที
+  simHz: 20,                // จำลองโลก 20 ครั้ง/วินาที
+  allowDebug: process.env.ALLOW_DEBUG === '1', // ปุ่มทดสอบ (ตั้ง Job 30) ใช้ได้เฉพาะเซิร์ฟเวอร์ทดสอบ
   saveEverySec: 30,         // บันทึกลงฐานข้อมูลทุก 30 วินาที และตอนออก
   sessionTtlMs: 24 * 3600e3,
   T: 32, W: 48 * 32, H: 32 * 32,
@@ -35,6 +38,7 @@ function createServer(opts = {}) {
   fs.mkdirSync(path.dirname(conf.dbFile), { recursive: true });
   const db = DB.open(conf.dbFile);
   const online = new Map(); // account_id -> player
+  const sim = createSim();
   const log = (...a) => { if (!conf.quiet) console.log(new Date().toISOString(), ...a); };
 
   const readBody = req => new Promise((res, rej) => {
@@ -82,48 +86,67 @@ function createServer(opts = {}) {
         const s = db.session(m.token);
         if (!s) { send(ws, { t: 'err', code: 'auth', msg: 'กรุณาเข้าสู่ระบบใหม่' }); return ws.close(); }
         const old = online.get(s.account_id);
-        if (old) { flush(old); send(old.ws, { t: 'err', code: 'replaced', msg: 'บัญชีนี้เข้าเกมจากที่อื่น' }); old.ws.close(); }
-        const c = old ? old.c : db.character(s.account_id);
-        p = { ws, c, id: s.account_id, moving: false, allow: conf.burst, lastT: now, dirty: false };
-        online.set(p.id, p);
+        if (old) { flush(old); send(old.ws, { t: 'err', code: 'replaced', msg: 'บัญชีนี้เข้าเกมจากที่อื่น' }); old.ws.close(); p = old; p.ws = ws; p.allow = conf.burst; p.lastT = now; }
+        else { p = { ws, c: db.character(s.account_id), id: s.account_id, moving: false, allow: conf.burst, lastT: now, dirty: false }; sim.addPlayer(p); online.set(p.id, p); }
+        const c = p.c;
         log('join', c.name, c.zone, Math.round(c.x), Math.round(c.y));
-        return send(ws, { t: 'welcome', id: p.id, name: c.name, state: { zone: c.zone, x: c.x, y: c.y, dir: c.dir, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp } });
+        return send(ws, { t: 'welcome', id: p.id, name: c.name, auth: true, state: { zone: c.zone, x: c.x, y: c.y, dir: c.dir, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, hp: p.hp, maxHp: p.maxHp } });
       }
       if (m.t === 'mv') {
+        if (p.dead) return;
         const c = p.c, x = +m.x, y = +m.y, zone = String(m.zone), dir = 'NSEW'.includes(m.dir) && m.dir.length === 1 ? m.dir : c.dir;
         p.allow = Math.min(conf.burst, p.allow + (now - p.lastT) / 1000 * conf.speed * 1.3); p.lastT = now;
         const inMap = Number.isFinite(x) && Number.isFinite(y) && x >= 0 && y >= 0 && x <= conf.W && y <= conf.H;
         const d = Math.hypot(x - c.x, y - c.y);
-        let ok = inMap && ENTRY[zone] && (zone === c.zone ? d <= p.allow || nearEntry(zone, x, y) : nearEntry(zone, x, y));
+        let ok = inMap && ENTRY[zone] && (zone === c.zone ? (d <= p.allow && sim.pathClear(zone, c.x, c.y, x, y)) || nearEntry(zone, x, y) : nearEntry(zone, x, y));
         if (!ok) { p.rejects = (p.rejects || 0) + 1; log('reject mv', c.name, zone, Math.round(x), Math.round(y), 'd=' + Math.round(d)); return send(ws, { t: 'fix', zone: c.zone, x: c.x, y: c.y }); }
         if (zone === c.zone && !nearEntry(zone, x, y)) p.allow -= d;
         c.zone = zone; c.x = x; c.y = y; c.dir = dir; p.moving = !!m.moving; p.dirty = true;
         return;
       }
-      if (m.t === 'prog') {
-        // ชั่วคราว: รับค่าจากเครื่องผู้เล่นโดยตรวจเพียงขอบเขต — จะย้ายการคิดรางวัลมาที่เซิร์ฟเวอร์ในขั้นถัดไป
-        const c = p.c, I = v => Math.max(0, Math.floor(+v || 0));
-        c.lv = Math.min(conf.maxLv, Math.max(1, I(m.lv))); c.exp = I(m.exp); c.job = Math.min(conf.maxJob, Math.max(1, I(m.job))); c.jexp = I(m.jexp);
-        p.dirty = true; return;
+      if (m.t === 'act') {
+        // คำขอโจมตี (k='b') หรือสกิล (k=1..11) — เซิร์ฟเวอร์ตรวจคูลดาวน์ Job การตาย แล้วคิดผลเอง
+        if ('NSEW'.includes(m.dir) && String(m.dir).length === 1) p.c.dir = m.dir;
+        const key = m.k === 'b' ? 'b' : Math.floor(+m.k);
+        const r = sim.act(p, key, now / 1000);
+        if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: m.k, r }); }
+        return;
+      }
+      if (m.t === 'dbg') {
+        if (!conf.allowDebug) return send(ws, { t: 'deny', k: 'dbg', r: 'debug-off' });
+        p.c.job = Math.max(p.c.job, 30); p.c.jexp = 0; p.dirty = true; return;
       }
     });
     ws.on('close', () => {
-      if (p && online.get(p.id) === p) { flush(p); online.delete(p.id); log('leave', p.c.name); }
+      if (p && online.get(p.id) === p && p.ws === ws) { flush(p); online.delete(p.id); sim.removePlayer(p); log('leave', p.c.name); }
     });
   });
 
+  let lastSim = Date.now();
+  const simT = setInterval(() => { const n = Date.now(); sim.step(Math.min(.1, (n - lastSim) / 1000), n / 1000); lastSim = n; }, 1000 / conf.simHz);
+  const R = v => Math.round(v);
   const tick = setInterval(() => {
     const byZone = {};
-    for (const p of online.values()) (byZone[p.c.zone] ||= []).push({ id: p.id, name: p.c.name, x: Math.round(p.c.x), y: Math.round(p.c.y), dir: p.c.dir, moving: p.moving, lv: p.c.lv });
-    for (const p of online.values()) send(p.ws, { t: 'snap', players: (byZone[p.c.zone] || []).filter(o => o.id !== p.id) });
+    for (const p of online.values()) (byZone[p.c.zone] ||= []).push({ id: p.id, name: p.c.name, x: R(p.c.x), y: R(p.c.y), dir: p.c.dir, moving: p.moving, lv: p.c.lv, dead: p.dead });
+    const zs = {};
+    for (const [id, z] of Object.entries(sim.zones)) {
+      zs[id] = { mons: z.mons.map(m => ({ id: m.id, ty: m.type, x: R(m.x), y: R(m.y), hp: Math.max(0, R(m.hp)), st: m.state, d: m.dir, mk: m.markT > 0 ? 1 : 0 })), ev: z.events };
+      z.events = [];
+    }
+    for (const p of online.values()) {
+      const z = zs[p.c.zone], c = p.c;
+      send(p.ws, { t: 'snap', players: (byZone[c.zone] || []).filter(o => o.id !== p.id), mons: z.mons, ev: z.ev,
+        me: { zone: c.zone, x: R(c.x), y: R(c.y), hp: Math.ceil(p.hp), maxHp: p.maxHp, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, dead: p.dead, buffT: p.buffT, guardT: p.guardT, ev: p.personal } });
+      p.personal = [];
+    }
   }, 1000 / conf.tickHz);
   const saver = setInterval(() => { for (const p of online.values()) if (p.dirty) flush(p); }, conf.saveEverySec * 1000);
 
   return {
-    server, online, db,
+    server, online, db, sim,
     listen: port => new Promise(r => server.listen(port ?? conf.port, () => r(server.address().port))),
     close: () => new Promise(r => {
-      clearInterval(tick); clearInterval(saver);
+      clearInterval(tick); clearInterval(saver); clearInterval(simT);
       for (const p of online.values()) flush(p);
       for (const c of wss.clients) c.terminate();
       wss.close(); server.close(() => { db.close(); r(); });
