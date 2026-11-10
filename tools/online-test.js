@@ -240,6 +240,29 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
     srv.sim.setTimeOffset(C.cycleSec * 2.25 - Date.now() / 1000 + C.worldEvery * 5 + C.worldWindow); // กลับกลางวัน นอกช่วง
     await sleep(300); }
 
+  // V2-R21: ปาร์ตี้ผ่านหน้าจอจริง + แบ่ง EXP
+  await A.page.click('#ptb'); await A.page.fill('#ptname', 'tester_b'); await A.page.click('#ptinv');
+  const gotInv = await until(async () => (await B.page.getAttribute('#ptb', 'class') || '').includes('inv'));
+  rec('A ชวน B ทางแผง 👥 → B เห็นจุดแจ้งเตือนคำเชิญ', gotInv);
+  await B.page.click('#ptb'); await B.page.click('#ptacc');
+  const formed = await until(async () => (await A.page.$$('#ptp .mem')).length === 2 && (await B.page.$$('#ptp .mem')).length === 2);
+  rec('B กดเข้าร่วม → ทั้งสองเครื่องเห็นสมาชิก 2 คนพร้อมแถบ HP', formed);
+  const SB = () => [...srv.online.values()].find(p => p.c.name === 'Tester_B');
+  { const a = SA(), b = SB(), z = srv.sim.zones[a.c.zone], m = z.mons.find(m => !m.c.boss && m.state !== 'dead');
+    // ฉาก: วาง B ไว้ใกล้ A (ฝั่งเซิร์ฟเวอร์) และวางมอนสเตอร์ HP 1 หน้า A
+    Object.assign(b.c, { zone: a.c.zone, x: a.c.x + 40, y: a.c.y });
+    Object.assign(m, { x: a.c.x + 20, y: a.c.y, hx: a.c.x + 20, hy: a.c.y, wx: a.c.x + 20, wy: a.c.y, t: 99, hp: 1, state: 'idle' });
+    const ea = a.c.exp, eb = b.c.exp, la = a.c.lv, lb = b.c.lv; srv.sim.setRand(() => .5);
+    await A.page.evaluate(() => { HL.player.dir = 'E'; }); await sleep(200);
+    await A.page.locator('#atk').dispatchEvent('pointerdown'); await sleep(100); await A.page.locator('#atk').dispatchEvent('pointerup');
+    await until(() => m.state === 'dead', 2000); srv.sim.setRand(Math.random);
+    const each = Math.round(m.c.exp * srv.sim.WT.exp * 1.1 / 2);
+    rec('ปาร์ตี้: A ฆ่ามอนสเตอร์ → A และ B ได้ EXP คนละ ' + each + ' (แบ่ง + โบนัส 10%)', m.state === 'dead' && a.c.lv === la && b.c.lv === lb && a.c.exp - ea === each && b.c.exp - eb === each, (a.c.exp - ea) + ' / ' + (b.c.exp - eb) + ' · ' + m.type); }
+  await A.page.screenshot({ path: 'tools/last-party.png' }).catch(() => {});
+  await B.page.click('#ptleave');
+  rec('B ออกจากปาร์ตี้ → ปาร์ตี้ยุบ (เหลือคนเดียว)', await until(() => !SA().party && !SB().party && srv.sim.parties.size === 0));
+  await A.page.click('#ptp h3 button'); await B.page.click('#ptp h3 button');
+
   // 7) หลุดแล้วต่อใหม่เอง
   await A.page.evaluate(() => HLNET.ws.close());
   const back = await until(async () => { const s = await st(A.page); return s.state === 'online' && s.stats.reconnects === 1; }, 6000);

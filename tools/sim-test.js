@@ -106,7 +106,8 @@ const killFirst = (sim, p, type) => {
     const h0 = p.hp; run(sim, .1, 0); return h0 - p.hp;
   };
   const a = hitBy(false), b = hitBy(true);
-  rec('เกราะ DEF 5 ลดดาเมจหมาป่าจาก 11 เป็น 6', a === 11 && b === 6, 'ไม่ใส่=' + a + ' ใส่=' + b);
+  const WA = W.CFG.monsters['หมาป่า'].atk; // V2-R21: ค่าจากสูตรสมดุล
+  rec('เกราะ DEF 5 ลดดาเมจหมาป่าลง 5 (' + WA + ' → ' + (WA - 5) + ')', a === WA && b === WA - 5, 'ไม่ใส่=' + a + ' ใส่=' + b);
 }
 
 // ---------- V2-R8 แต้มอัปสกิลจากตาราง CSV ----------
@@ -193,16 +194,72 @@ const killFirst = (sim, p, type) => {
     const z = sim.zones.village, m = z.mons.find(m => m.type === 'กระต่ายมีเขา'); m.c = W.CFG.monsters['หมาป่า'];
     Object.assign(m, { x: PX + 20, y: PY, hx: PX + 20, hy: PY, state: 'chase', target: p, atkT: 0 }); const h0 = p.hp; sim.step(.05, t); return h0 - p.hp; };
   const dD = hit(T_DAY), dN = hit(T_NIGHT), dB = hit(T_BLOOD);
-  rec('ดาเมจหมาป่า กลางวัน/กลางคืน/คืนเลือด = 11 / 13 / 17', dD === 11 && dN === 13 && dB === 17, dD + ' / ' + dN + ' / ' + dB);
+  const wa = W.CFG.monsters['หมาป่า'].atk, eD = Math.round(wa), eN = Math.round(wa * C.night.atk), eB = Math.round(wa * C.blood.atk);
+  rec('ดาเมจหมาป่า กลางวัน/กลางคืน/คืนเลือด = ' + [eD, eN, eB].join(' / '), dD === eD && dN === eN && dB === eB, dD + ' / ' + dN + ' / ' + dB);
   const ex = t => { const sim = createSim({ rand: () => .5 }), p = mkP(sim, { job: 30 }); sim.step(.01, t);
     const z = sim.zones.village, m = z.mons.find(m => m.type === 'ไก่ฟ้า'); Object.assign(m, { x: PX + 20, y: PY, hx: PX + 20, hy: PY, wx: PX + 20, wy: PY, t: 99, hp: 1, state: 'idle' });
     sim.act(p, 'b', t); for (let k = 0; k < 10; k++) sim.step(.05, t + k * .05); return p.c.exp; };
-  rec('EXP ไก่ฟ้า กลางวัน/กลางคืน/คืนเลือด = 6 / 8 / 12', ex(T_DAY) === 6 && ex(T_NIGHT) === 8 && ex(T_BLOOD) === 12, ex(T_DAY) + ' / ' + ex(T_NIGHT) + ' / ' + ex(T_BLOOD));
+  const ce = W.CFG.monsters['ไก่ฟ้า'].exp, xD = Math.round(ce), xN = Math.round(ce * C.night.exp), xB = Math.round(ce * C.blood.exp);
+  rec('EXP ไก่ฟ้า กลางวัน/กลางคืน/คืนเลือด = ' + [xD, xN, xB].join(' / '), ex(T_DAY) === xD && ex(T_NIGHT) === xN && ex(T_BLOOD) === xB, ex(T_DAY) + ' / ' + ex(T_NIGHT) + ' / ' + ex(T_BLOOD));
   // ปราบบอส → รางวัลบอส + ประกาศ
   { const sim = createSim({ rand: () => .5 }), p = mkP(sim, { zone: 'peak', job: 30 }); sim.step(.01, T_DAY);
     const z = sim.zones.peak, b = z.mons.find(m => m.type === 'ราชาปีศาจภูเขา'); Object.assign(p.c, { x: b.x - 20, y: b.y, dir: 'E' }); b.hp = 1; b.t = 99; p.hp = p.maxHp = 1e6; // ฉาก: ผู้เล่นทนพอให้ท่าออก
     sim.act(p, 'b', T_DAY); for (let k = 0; k < 10; k++) sim.step(.05, T_DAY + k * .05);
     rec('ปราบบอสได้ EXP บอส (8000) และมีประกาศ', b.state === 'dead' && p.c.lv > 1 && p.personal.some(e => e.k === 'announce' && e.msg.includes('ราชาปีศาจภูเขา')), 'Lv ' + p.c.lv); }
+}
+
+// ---------- V2-R21 สมดุลค่าพลัง ----------
+{
+  const B = W.CFG.balance, M = W.CFG.monsters, P = W.CFG.player;
+  const normal = Object.entries(M).filter(([, m]) => !m.boss);
+  // ผู้เล่นเลเวลเท่ามอนสเตอร์ ตีท่าพื้นฐาน (ATK×1) กี่ครั้งตาย / มอนสเตอร์ตีผู้เล่นกี่ครั้งตาย
+  const rows = normal.map(([t, m]) => ({ t, lv: m.lv, hits: Math.ceil(m.hp / B.pAtk(m.lv)), survive: Math.ceil(B.pHp(m.lv) / m.atk), kills: +(W.CFG.expCurve(m.lv) / m.exp).toFixed(1) }));
+  rec('มอนสเตอร์ทั่วไปทุกตัวมีเลเวล', normal.every(([, m]) => m.lv > 0));
+  rec('เลเวลเท่ากัน: ตีท่าพื้นฐาน 5 ครั้งตาย (ทุกชนิด)', rows.every(r => r.hits === 5), rows.map(r => r.t + ':' + r.hits).join(' '));
+  rec('เลเวลเท่ากัน: มอนสเตอร์ตีผู้เล่น 11–13 ครั้งจึงตาย', rows.every(r => r.survive >= 11 && r.survive <= 13), rows.map(r => r.survive).join(','));
+  rec('ล่า 13–31 ตัวต่อ 1 เลเวล (เพิ่มตามเลเวล)', rows.every(r => r.kills >= 13 && r.kills <= 31), rows.map(r => r.lv + ':' + r.kills).join(' '));
+  const byLv = [...rows].sort((a, b) => a.lv - b.lv);
+  rec('HP / ATK / EXP เพิ่มตามเลเวลไม่สลับลำดับ', byLv.every((r, i) => !i || (M[r.t].hp >= M[byLv[i - 1].t].hp && M[r.t].atk >= M[byLv[i - 1].t].atk && M[r.t].exp >= M[byLv[i - 1].t].exp)));
+  // มอนสเตอร์ในแต่ละโซนอยู่ในช่วงเลเวลของโซน
+  const band = { field2: [1, 12], bamboo: [7, 22], rainforest: [15, 32], mine: [27, 42], peak: [37, 47] };
+  const badZ = Object.entries(band).filter(([z, [lo, hi]]) => !W.ZONES[z].spawns.every(s => M[s.type].lv >= lo && M[s.type].lv <= hi));
+  rec('มอนสเตอร์ในแต่ละโซนอยู่ในช่วงเลเวลของโซน', badZ.length === 0, Object.entries(band).map(([z]) => z + ':' + W.ZONES[z].spawns.map(s => M[s.type].lv).join('/')).join(' '));
+  rec('บอสเลเวลสูงกว่ามอนสเตอร์ในโซนเดียวกัน', Object.entries(W.CFG.bosses).every(([z, bs]) => bs.every(b => W.ZONES[z].spawns.every(s => M[b.type].lv >= M[s.type].lv))));
+}
+// ---------- V2-R21 ปาร์ตี้ ----------
+{
+  const mk = (sim, id, name, extra) => { const p = { id, c: Object.assign({ name, zone: 'village', x: PX, y: PY, dir: 'E', lv: 1, exp: 0, job: 1, jexp: 0 }, extra) }; sim.addPlayer(p); return p; };
+  const sim = createSim({ rand: () => .5 });
+  const a = mk(sim, 1, 'Aa'), b = mk(sim, 2, 'Bb'), c = mk(sim, 3, 'Cc'), far = mk(sim, 4, 'Far', { x: PX + 2000 });
+  rec('ชวนชื่อที่ไม่มี → ปฏิเสธ', sim.party(a, 'invite', 'nobody', 0) === 'no-player');
+  rec('ชวน → เกิดปาร์ตี้ และ B ได้คำเชิญ', sim.party(a, 'invite', 'bb', 0) === 'ok' && b.personal.some(e => e.k === 'pinvite' && e.from === 'Aa'));
+  rec('B ตอบรับ → ปาร์ตี้ 2 คน', sim.party(b, 'accept', null, 1) === 'ok' && sim.partyView(a).m.length === 2);
+  rec('สมาชิกที่ไม่ใช่หัวหน้าชวนคนอื่นไม่ได้', sim.party(b, 'invite', 'Cc', 1) === 'not-leader');
+  rec('คำเชิญหมดอายุ 30 วิ', (sim.party(a, 'invite', 'Cc', 2), sim.party(c, 'accept', null, 40)) === 'no-invite');
+  sim.party(a, 'invite', 'Far', 41); sim.party(far, 'accept', null, 42);
+  // ฆ่าไก่ฟ้า: A และ B อยู่ใกล้ แบ่ง EXP + โบนัส 10%, Far อยู่ไกลเกินระยะไม่ได้
+  const z = sim.zones.village, m = z.mons.find(m => m.type === 'ไก่ฟ้า');
+  Object.assign(m, { x: PX + 20, y: PY, hx: PX + 20, hy: PY, wx: PX + 20, wy: PY, t: 99, hp: 1, state: 'idle' });
+  a.c.exp = b.c.exp = far.c.exp = 0; const T0 = W.CFG.time.cycleSec * 2.25;
+  sim.step(.01, T0); sim.act(a, 'b', T0); for (let k = 0; k < 10; k++) sim.step(.05, T0 + k * .05);
+  const E = W.CFG.monsters['ไก่ฟ้า'].exp, each = Math.round(E * 1.1 / 2);
+  rec('ปาร์ตี้: สมาชิกในระยะได้ EXP คนละ ' + each + ' (รวมโบนัส), คนไกลไม่ได้', m.state === 'dead' && a.c.exp === each && b.c.exp === each && far.c.exp === 0, [a.c.exp, b.c.exp, far.c.exp].join('/'));
+  rec('ออกจากปาร์ตี้ → เหลือ 2 คน; ออกอีกคน → ยุบ', (sim.party(far, 'leave', null, 50), sim.partyView(a).m.length === 2) && (sim.party(b, 'leave', null, 51), !a.party && sim.parties.size === 0));
+  rec('ผู้เล่นออกจากเกม → ออกจากปาร์ตี้อัตโนมัติ', (sim.party(a, 'invite', 'Bb', 60), sim.party(b, 'accept', null, 61), sim.removePlayer(b), !a.party));
+}
+// ---------- V2-R21 แบ่งรางวัลบอสตามดาเมจ ----------
+{
+  const sim = createSim({ rand: () => .5 }), T0 = W.CFG.time.cycleSec * 2.25;
+  const mk = (id, name) => { const p = { id, c: { name, zone: 'peak', x: 0, y: 0, dir: 'E', lv: 50, exp: 0, job: 30, jexp: 0 } }; sim.addPlayer(p); p.hp = p.maxHp = 1e9; return p; };
+  const a = mk(1, 'A'), b = mk(2, 'B'), c = mk(3, 'C'); sim.step(.01, T0);
+  const boss = sim.zones.peak.mons.find(m => m.type === 'ราชาปีศาจภูเขา');
+  boss.dmgBy = new Map([[a, boss.c.hp * .6], [b, boss.c.hp * .4 - 1], [c, boss.c.hp * .001]]); boss.hp = 1; boss.t = 99;
+  Object.assign(b.c, { x: boss.x - 20, y: boss.y }); for (const p of [a, b, c]) p.c.exp = 0, p.c.lv = 50;
+  sim.act(b, 'b', T0); for (let k = 0; k < 10; k++) sim.step(.05, T0 + k * .05);
+  const E = W.CFG.monsters['ราชาปีศาจภูเขา'].exp, got = p => p.personal.filter(e => e.k === 'reward').reduce((s, e) => s + e.exp, 0);
+  const ea = Math.round(E * (.3 + .7 * .6)), eb = got(b);
+  rec('บอส: A ทำดาเมจ 60% ได้ ' + ea + ' EXP (30% + 70%×สัดส่วน)', Math.abs(got(a) - ea) <= E * .005, 'A=' + got(a) + ' B=' + eb + ' C=' + got(c));
+  rec('บอส: B (ตีปิด, 40%) ได้น้อยกว่า A; C ทำไม่ถึง 1% ไม่ได้', eb > 0 && eb < got(a) && got(c) === 0);
 }
 
 const fail = results.filter(r => !r.pass).length;

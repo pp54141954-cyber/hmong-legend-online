@@ -144,6 +144,11 @@ function createServer(opts = {}) {
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'skill', name: m.name, r }); }
         return;
       }
+      if (m.t === 'party') {
+        const r = sim.party(p, String(m.op), m.name, now / 1000);
+        if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'party', op: m.op, r }); }
+        return;
+      }
       if (m.t === 'dbg') {
         if (!conf.allowDebug) return send(ws, { t: 'deny', k: 'dbg', r: 'debug-off' });
         p.c.job = Math.max(p.c.job, 30); p.c.jexp = 0; p.dirty = true; p.skDirty = true; return;
@@ -195,9 +200,10 @@ function createServer(opts = {}) {
       out.me = { zone: c.zone, x: R(c.x), y: R(c.y), hp: Math.ceil(p.hp), maxHp: p.maxHp, atk: p.atk, def: p.def, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, dead: p.dead,
         buffT: +p.buffT.toFixed(1), guardT: +p.guardT.toFixed(1), ...(p.personal.length ? { ev: p.personal } : {}),
         ...(p.bagDirty ? { bag: c.bag, eq: c.eq } : {}),
-        ...(p.skDirty ? { sk: c.sk, pts: sim.freePoints(p), bon: p.bon } : {}) };
+        ...(p.skDirty ? { sk: c.sk, pts: sim.freePoints(p), bon: p.bon } : {}),
+        ...(p.partyDirty || (p.party && tickN % 10 === 0) ? { party: sim.partyView(p) } : {}) };
       send(p.ws, out);
-      p.personal = []; p.bagDirty = false; p.skDirty = false; p.full = false;
+      p.personal = []; p.bagDirty = false; p.skDirty = false; p.partyDirty = false; p.full = false;
     }
   keep(ST.tickMs, performance.now() - t0); }, 1000 / conf.tickHz);
   const saver = setInterval(() => { for (const p of online.values()) if (p.dirty) flush(p); }, conf.saveEverySec * 1000);

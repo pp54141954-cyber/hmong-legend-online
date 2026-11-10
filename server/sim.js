@@ -147,7 +147,7 @@ function createSim({ rand = Math.random } = {}) {
     p.bagDirty = true; p.dirty = true;
     return 'ok';
   }
-  function removePlayer(p) { players.delete(p); for (const z of Object.values(zones)) for (const m of z.mons) if (m.target === p) m.target = null; }
+  function removePlayer(p) { leaveParty(p); players.delete(p); for (const z of Object.values(zones)) for (const m of z.mons) if (m.target === p) m.target = null; }
   const zoneOf = p => zones[p.c.zone];
 
   // ตรวจเส้นทางเดิน: ทุก 8 px ต้องไม่ชนช่องกีดขวาง
@@ -176,15 +176,76 @@ function createSim({ rand = Math.random } = {}) {
     mult *= (p.buffT > 0 ? 1 + p.buffBonus : 1) * (m.markT > 0 ? 1 + m.markBonus : 1);
     const r = Combat.damage(p.atk, mult, rand(), rand() - (p.bon ? p.bon.crit : 0)); // โอกาสคริติคอล = 10% + โบนัสสกิลติดตัว
     m.hp -= r.dmg; z.events.push({ k: 'dmg', id: m.id, dmg: r.dmg, crit: r.crit, by: p.id });
+    if (m.c.boss) (m.dmgBy ||= new Map()).set(p, (m.dmgBy.get(p) || 0) + Math.min(r.dmg, r.dmg + m.hp)); // ดาเมจที่ทำจริงต่อบอส
     if (m.state === 'idle' || m.state === 'return') { m.state = 'chase'; m.target = p; }
     if (m.hp <= 0) {
       m.state = 'dead'; m.respT = m.c.respawn; m.target = null; p.kills = (p.kills || 0) + 1;
-      gain(p, Math.round(m.c.exp * WT.exp), Math.round(m.c.job * WT.exp));
+      shareRewards(p, z, m);
       if (m.c.boss) for (const q of players) q.personal.push({ k: 'announce', msg: q === p ? 'ปราบบอส ' + m.type + ' สำเร็จ!' : (p.c.name || 'ผู้เล่น') + ' ปราบบอส ' + m.type + ' แล้ว' });
       rollDrops(p, m);
       z.events.push({ k: 'kill', id: m.id, by: p.id });
-      p.personal.push({ k: 'reward', id: m.id, exp: m.c.exp, job: m.c.job });
     }
+  }
+  // ---------- ปาร์ตี้ (V2-R21) ----------
+  const PC = CFG.party, parties = new Map(); let partySeq = 1;
+  const partyOf = p => p.party && parties.get(p.party);
+  const give = (q, m, e, j) => { gain(q, e, j); q.personal.push({ k: 'reward', id: m.id, exp: e, job: j }); };
+  function shareRewards(p, z, m) {
+    const E = m.c.exp * WT.exp, J = m.c.job * WT.exp;
+    if (m.c.boss) {
+      // บอส: ทุกคนที่ทำดาเมจ >= 1% ของ HP บอสได้รางวัล = เต็ม × (30% + 70% × สัดส่วนดาเมจ)
+      const total = [...(m.dmgBy || new Map()).values()].reduce((a, b) => a + b, 0) || 1;
+      const rec = [...(m.dmgBy || new Map())].filter(([q, d]) => players.has(q) && !q.dead && q.c.zone === z.id && d >= m.c.hp * PC.bossMinDmgPct);
+      if (!rec.some(([q]) => q === p)) rec.push([p, m.dmgBy ? m.dmgBy.get(p) || 0 : 0]);
+      for (const [q, d] of rec) { const f = PC.bossMinShare + (1 - PC.bossMinShare) * d / total; give(q, m, Math.round(E * f), Math.round(J * f)); q.personal.push({ k: 'bossShare', pct: Math.round(d / total * 100) }); }
+      m.dmgBy = null; return;
+    }
+    // มอนสเตอร์ทั่วไป: แบ่งให้สมาชิกปาร์ตี้ที่อยู่โซนเดียวกันในระยะ + โบนัส 10% ต่อคนเพิ่ม
+    const pt = partyOf(p);
+    const mem = pt ? [...pt.members].filter(q => players.has(q) && !q.dead && q.c.zone === z.id && Math.hypot(q.c.x - m.x, q.c.y - m.y) <= PC.range) : [p];
+    if (!mem.includes(p)) mem.push(p);
+    const f = (1 + PC.bonusPer * (mem.length - 1)) / mem.length;
+    for (const q of mem) give(q, m, Math.round(E * f), Math.round(J * f));
+  }
+  const findByName = n => [...players].find(q => String(q.c.name).toLowerCase() === String(n).toLowerCase());
+  function partyDirty(pt) { for (const q of pt.members) q.partyDirty = true; }
+  function leaveParty(p) {
+    const pt = partyOf(p); if (!pt) return;
+    pt.members.delete(p); p.party = null; p.partyDirty = true;
+    if (pt.members.size <= 1) { for (const q of pt.members) { q.party = null; q.partyDirty = true; q.personal.push({ k: 'pinfo', msg: 'ปาร์ตี้ยุบแล้ว' }); } parties.delete(pt.id); return; }
+    if (pt.leader === p) pt.leader = pt.members.values().next().value;
+    for (const q of pt.members) q.personal.push({ k: 'pinfo', msg: p.c.name + ' ออกจากปาร์ตี้' });
+    partyDirty(pt);
+  }
+  // คำขอจากเครื่องผู้เล่น: invite (ชื่อ) / accept / decline / leave
+  function party(p, op, arg, now) {
+    if (op === 'invite') {
+      const t = findByName(arg); if (!t || t === p) return 'no-player';
+      if (t.party) return 'in-party';
+      let pt = partyOf(p);
+      if (pt && pt.leader !== p) return 'not-leader';
+      if (pt && pt.members.size >= PC.max) return 'full';
+      if (!pt) { pt = { id: partySeq++, leader: p, members: new Set([p]) }; parties.set(pt.id, pt); p.party = pt.id; p.partyDirty = true; }
+      t.invite = { pid: pt.id, from: p, until: now + 30 }; t.personal.push({ k: 'pinvite', from: p.c.name }); t.partyDirty = true;
+      return 'ok';
+    }
+    if (op === 'accept') {
+      const iv = p.invite; p.invite = null; p.partyDirty = true;
+      if (!iv || now > iv.until) return 'no-invite';
+      const pt = parties.get(iv.pid); if (!pt) return 'no-invite';
+      if (pt.members.size >= PC.max) return 'full';
+      leaveParty(p); pt.members.add(p); p.party = pt.id;
+      for (const q of pt.members) q.personal.push({ k: 'pinfo', msg: p.c.name + ' เข้าร่วมปาร์ตี้' });
+      partyDirty(pt); return 'ok';
+    }
+    if (op === 'decline') { p.invite = null; p.partyDirty = true; return 'ok'; }
+    if (op === 'leave') { if (!p.party) return 'no-party'; leaveParty(p); return 'ok'; }
+    return 'invalid';
+  }
+  function partyView(p) {
+    const pt = partyOf(p);
+    return { inv: p.invite && p.invite.until > Date.now() / 1000 - 1e9 ? p.invite.from.c.name : null, leader: pt ? pt.leader.id : null,
+      m: pt ? [...pt.members].map(q => [q.id, q.c.name, Math.ceil(q.hp), q.maxHp, q.c.lv, q.c.zone]) : [] };
   }
   const alive = z => z.mons.filter(m => m.state !== 'dead');
   function doHit(p, z, sk, mult, ox, oy, dir) {
@@ -266,7 +327,7 @@ function createSim({ rand = Math.random } = {}) {
     if (m.state === 'return') { if (monMove(z, m, m.hx, m.hy, m.c.speed * 1.4, dt)) { m.state = 'idle'; m.hp = m.c.hp; } return; }
     if (m.state === 'chase') {
       const p = m.target;
-      if (!p || p.dead || !here.includes(p) || hd > m.c.leash || z.inSafe(p.c.x, p.c.y)) { m.state = 'return'; m.target = null; return; }
+      if (!p || p.dead || !here.includes(p) || hd > m.c.leash || z.inSafe(p.c.x, p.c.y)) { m.state = 'return'; m.target = null; m.dmgBy = null; return; } // หนีกลับแล้วฟื้น — ดาเมจที่สะสมไว้ไม่นับ
       const pd = Math.hypot(p.c.x - m.x, p.c.y - m.y);
       if (pd > m.c.atkRange) monMove(z, m, p.c.x, p.c.y, m.c.speed, dt); else if (m.atkT <= 0) { m.atkT = m.c.atkCd; hitPlayer(p, m); }
       return;
@@ -284,7 +345,7 @@ function createSim({ rand = Math.random } = {}) {
     if (!m.when) return;
     const on = CFG.bossActive(m.when, WT);
     if (on && m.away) {
-      m.away = false; m.state = 'idle'; m.hp = m.c.hp; m.x = m.hx; m.y = m.hy; m.target = null;
+      m.away = false; m.state = 'idle'; m.hp = m.c.hp; m.x = m.hx; m.y = m.hy; m.target = null; m.dmgBy = null;
       if (m.when !== 'always') for (const q of players) q.personal.push({ k: 'announce', msg: (m.when === 'world' ? 'World Boss ' : 'บอสคืนพระจันทร์สีเลือด ') + m.type + ' ปรากฏ!' });
     } else if (!on && !m.away && m.state !== 'chase') { m.away = true; m.state = 'dead'; m.respT = 1e9; m.target = null; }
   }
@@ -308,6 +369,6 @@ function createSim({ rand = Math.random } = {}) {
     }
   }
 
-  return { get WT() { return WT; }, setTimeOffset(s) { timeOff = s; }, zones, players, addPlayer, removePlayer, act, step, pathClear, stats, gain, addItem, inv, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
+  return { party, partyView, parties, get WT() { return WT; }, setTimeOffset(s) { timeOff = s; }, zones, players, addPlayer, removePlayer, act, step, pathClear, stats, gain, addItem, inv, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
 }
 module.exports = { createSim };

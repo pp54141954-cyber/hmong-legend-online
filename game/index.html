@@ -383,6 +383,24 @@ const CFG={
   'นักรบเผ่าป่า':[['ore',.4,1],['potion_m',.25,1],['sword_iron',.05,1]],
   'ปีศาจ':[['spirit',.7,2],['potion_m',.3,1],['charm_silver',.06,1]]}
 };
+/* ===== สมดุลค่าพลัง (V2-R21) — คำนวณจากเลเวลมอนสเตอร์ ใช้ทั้งเกมและเซิร์ฟเวอร์ (ค่าเป้าหมายปรับได้ใน CFG.balance) =====
+   เป้าหมายที่เลเวลเท่ากัน: ตีด้วยท่าพื้นฐาน ~5 ครั้งจึงตาย, มอนสเตอร์ตีผู้เล่น ~12 ครั้งจึงตาย, ล่า ~(14+L/3) ตัวต่อ 1 เลเวล
+   บอส: HP ×hpMul, ATK ×atkMul, EXP ×expMul ของมอนสเตอร์เลเวลเดียวกัน */
+CFG.balance={hits:5,survive:12,killsBase:14,killsPerLv:1/3,jobKillsBase:10,
+ lv:{'ไก่ฟ้า':1,'กระต่ายมีเขา':2,'หมูป่า':4,'หมาป่า':7,'ก็อบลิน':10,'ลิงป่า':12,'กวางภูเขา':15,'นักรบเผ่าป่า':18,'เสือ':22,'หมีเขา':27,'กระทิงผี':32,'โกเลมหิน':37,'ปีศาจ':42,'วิญญาณไม้':47,
+  'วิญญาณแห่งป่า':24,'เทพหมาป่าภูเขา':34,'วิญญาณหมาป่าศักดิ์สิทธิ์':36,'มังกรภูเขาดำ':44,'ราชาปีศาจภูเขา':50,'มังกรแห่งหุบเขาหมอก':60},
+ boss:{hpMul:40,atkMul:2.5,expMul:30},world:{hpMul:200,atkMul:3,expMul:100},
+ /* ค่าพื้นฐานของผู้เล่นเลเวล L (ไม่รวมอุปกรณ์/สกิลติดตัว) */
+ pAtk:L=>CFG.player.baseAtk+(L-1)*CFG.player.atkPerLv,pHp:L=>CFG.player.baseHP+(L-1)*CFG.player.hpPerLv};
+CFG.applyBalance=function(){const B=CFG.balance;
+ for(const[type,m]of Object.entries(CFG.monsters)){const L=B.lv[type];if(!L)continue;
+  const k=m.world?B.world:m.boss?B.boss:{hpMul:1,atkMul:1,expMul:1};
+  m.lv=L;m.hp=Math.round(B.pAtk(L)*B.hits*k.hpMul);m.atk=Math.max(2,Math.round(B.pHp(L)/B.survive*k.atkMul));
+  m.exp=Math.max(1,Math.round(CFG.expCurve(L)/(B.killsBase+L*B.killsPerLv)*k.expMul));
+  m.job=Math.max(1,Math.round(CFG.jobCurve(Math.min(L,CFG.player.maxJob-1))/(B.jobKillsBase+L*B.killsPerLv)*k.expMul))}};
+CFG.applyBalance();
+/* ปาร์ตี้ (V2-R21): แบ่ง EXP ให้สมาชิกในระยะ + โบนัสต่อคน; บอสแบ่งตามดาเมจที่ทำ */
+CFG.party={max:5,range:900,bonusPer:.1,bossMinShare:.3,bossMinDmgPct:.01};
 const Combat={
  damage(atk,mult,rnd,critRoll){const crit=critRoll<.1;return{dmg:Math.max(1,Math.round(atk*mult*(.9+.2*rnd)*(crit?1.5:1))),crit}},
  inShape(sk,range,ox,oy,dir,tx,ty){const fx={E:1,W:-1,N:0,S:0}[dir],fy={E:0,W:0,N:-1,S:1}[dir],dx=tx-ox,dy=ty-oy,d=Math.hypot(dx,dy);
@@ -552,7 +570,7 @@ function drawPlayer(){if(PS.dead)return;if(PS.hurt>0&&Math.floor(PS.hurt*20)%2)r
 function drawOther(o){const row={S:0,N:1,W:2,E:3}[o.dir]??0,dw=CWc*SCALE,dh=CHc*SCALE,px=o.x-dw/2,py=o.y-(CHc-4)*SCALE;
   ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(o.x,o.y+1,11,4,0,0,7);ctx.fill();
   ctx.imageSmoothingEnabled=true;ctx.drawImage(SPR,(o.moving?Math.floor(o.anim/0.14)%4:0)*CWc,row*CHc,CWc,CHc,px,py,dw,dh);
-  ctx.textAlign='center';ctx.font='bold 11px sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';const s=o.name+' Lv'+o.lv;ctx.strokeText(s,o.x,py-2);ctx.fillStyle='#bfe8ff';ctx.fillText(s,o.x,py-2)}
+  ctx.textAlign='center';ctx.font='bold 11px sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';const s=o.name+' Lv'+o.lv;ctx.strokeText(s,o.x,py-2);ctx.fillStyle=window.HLNET&&HLNET.partyIds&&HLNET.partyIds.has(o.id)?'#8fe38f':'#bfe8ff';ctx.fillText(s,o.x,py-2)}
 /* ภาพมอนสเตอร์ในฉาก: วาดด้วยโค้ดตามแบบออกแบบ V7 (สี เขา งา ลาย ดวงตา) */
 /* ภาพมอนสเตอร์จากเจ้าของ (ChatGPT) — สร้างโดย tools/build_monster_sprites.py ฝังโดย tools/embed_monster_sprites.py
    แผ่นเดิน: แถว ลง/ขึ้น/ซ้าย/ขวา × 4 เฟรม · แผ่นท่า (หันขวา): โจมตี4/รับดาเมจ2/ตาย4/ยืน4 · ไม่มีภาพ → วาดด้วยโค้ดแบบเดิม */
@@ -785,6 +803,13 @@ window.HL={get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASK
 #bag .stt{font-size:12px;opacity:.9}#bag .eqs,#bag .items{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 #bag .it{min-height:46px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;text-align:left;font-size:12px;line-height:1.2;padding:5px 7px;color:#f4efe2;border-color:#ffffff33;background:#ffffff0d}
 #bag .it small{font-size:10px;opacity:.75}#bag .it .ic{image-rendering:pixelated;width:30px;height:30px}#bag .it.eq{border-color:#ffb347aa}#bag .it.use{border-color:#7fd08aaa}#bag .it.none{opacity:.45}#bag .note{font-size:11px;opacity:.7}
+#ptb{flex:none;width:40px;height:40px;border-radius:50%;padding:0;font-size:18px;border-color:#ffffff40;background:#ffffff12;color:#f4efe2;position:relative}
+#ptb.inv::after{content:'';position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:#ff5a3a}
+#ptp{position:absolute;top:calc(66px + env(safe-area-inset-top,0px));left:8px;right:8px;max-width:420px;margin:0 auto;z-index:6;display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(18,22,18,.95);color:#f4efe2;border-radius:14px}
+#ptp[hidden]{display:none}#ptp h3{margin:0;font-size:14px;display:flex;justify-content:space-between;align-items:center}#ptp button{color:#f4efe2;border-color:#ffb347aa;padding:5px 10px}
+#ptp .row{display:flex;gap:6px;align-items:center}#ptp input{flex:1;min-width:0;font:inherit;font-size:16px;padding:6px 8px;border-radius:8px;border:1px solid #ffffff40;background:#0e140f;color:#f4efe2}
+#ptp .mem{display:flex;flex-direction:column;gap:3px;font-size:12px;padding:6px;border-radius:8px;background:#ffffff0a}#ptp .hb{height:6px;border-radius:3px;background:#0009;overflow:hidden}#ptp .hb i{display:block;height:100%;background:#e34848}
+#ptp .inv{background:#b4531a33;border:1px solid #ffb34788;border-radius:8px;padding:8px;font-size:13px}#ptp .note{font-size:11px;opacity:.7}
 #skb{flex:none;width:40px;height:40px;border-radius:50%;padding:0;font-size:19px;border-color:#ffffff40;background:#ffffff12;color:#f4efe2}
 #skp{position:absolute;top:calc(66px + env(safe-area-inset-top,0px));left:8px;right:8px;max-width:440px;margin:0 auto;max-height:calc(100% - 230px);overflow:auto;z-index:6;display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(18,22,18,.95);color:#f4efe2;border-radius:14px}
 #skp[hidden]{display:none}#skp h3{margin:0;font-size:14px;display:flex;justify-content:space-between;align-items:center}#skp h3 button{color:#f4efe2;border-color:#ffffff40;padding:2px 10px}
@@ -803,6 +828,7 @@ window.HL={get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASK
 <div id="netst" aria-live="polite"></div>
 <div id="bag" hidden role="dialog" aria-label="กระเป๋า"></div>
 <div id="skp" hidden role="dialog" aria-label="สกิล"></div>
+<div id="ptp" hidden role="dialog" aria-label="ปาร์ตี้"></div>
 <script>
 (function(){
 const $=id=>document.getElementById(id),HL=window.HL;
@@ -816,6 +842,24 @@ $('gear').before(bagBtn);
 /* ---------- แผงอัปสกิล (V2-R8) — ข้อมูลจาก SKILL_TABLE (CSV) เซิร์ฟเวอร์ตัดสินการอัป ---------- */
 const skEl2=$('skp'),skBtn=document.createElement('button');skBtn.id='skb';skBtn.textContent='📜';skBtn.setAttribute('aria-label','สกิล');skBtn.setAttribute('aria-expanded','false');
 bagBtn.before(skBtn);
+/* ---------- ปาร์ตี้ (V2-R21) — เซิร์ฟเวอร์ตัดสินทุกคำสั่ง ---------- */
+const ptEl=$('ptp'),ptBtn=document.createElement('button');ptBtn.id='ptb';ptBtn.textContent='👥';ptBtn.setAttribute('aria-label','ปาร์ตี้');ptBtn.setAttribute('aria-expanded','false');
+skBtn.before(ptBtn);NET.party={inv:null,m:[]};NET.partyIds=new Set();
+function renderParty(){ptBtn.classList.toggle('inv',!!NET.party.inv);if(ptEl.hidden)return;const P=NET.party;ptEl.innerHTML='';
+  const h=document.createElement('h3');h.innerHTML='<span>ปาร์ตี้</span>';const x=document.createElement('button');x.textContent='ปิด';x.onclick=togglePt;h.appendChild(x);ptEl.appendChild(h);
+  if(!NET.auth){const n=document.createElement('div');n.className='note';n.textContent='ปาร์ตี้ใช้ได้เมื่อเล่นออนไลน์ผ่านเซิร์ฟเวอร์';ptEl.appendChild(n);return}
+  if(P.inv){const d=document.createElement('div');d.className='inv';d.textContent=P.inv+' ชวนคุณเข้าปาร์ตี้';const r=document.createElement('div');r.className='row';
+    const a=document.createElement('button');a.id='ptacc';a.textContent='เข้าร่วม';a.onclick=()=>send({t:'party',op:'accept'});const b=document.createElement('button');b.textContent='ปฏิเสธ';b.onclick=()=>send({t:'party',op:'decline'});r.append(a,b);d.appendChild(r);ptEl.appendChild(d)}
+  for(const[id,name,hp,mx,lv,zone]of P.m){const d=document.createElement('div');d.className='mem';d.dataset.id=id;
+    const t=document.createElement('div');t.textContent=(id===P.leader?'👑 ':'')+name+' · Lv '+lv+(zone!==HL.Z.id?' · อยู่ '+((HL.ZONES[zone]||{}).name||zone):'')+(id===NET.id?' (คุณ)':'');
+    const b=document.createElement('div');b.className='hb';const i=document.createElement('i');i.style.width=Math.max(0,Math.min(100,100*hp/mx))+'%';b.appendChild(i);d.append(t,b);ptEl.appendChild(d)}
+  if(!P.m.length||P.leader===NET.id){const r=document.createElement('div');r.className='row';const inp=document.createElement('input');inp.id='ptname';inp.placeholder='ชื่อผู้เล่นที่จะชวน';inp.maxLength=16;
+    const b=document.createElement('button');b.id='ptinv';b.textContent='ชวน';b.onclick=()=>{const n=inp.value.trim();if(n)send({t:'party',op:'invite',name:n})};r.append(inp,b);ptEl.appendChild(r)}
+  if(P.m.length){const b=document.createElement('button');b.id='ptleave';b.textContent='ออกจากปาร์ตี้';b.onclick=()=>send({t:'party',op:'leave'});ptEl.appendChild(b)}
+  const n=document.createElement('div');n.className='note';n.textContent='สูงสุด 5 คน · EXP แบ่งให้สมาชิกที่อยู่ใกล้ +10% ต่อคน · บอสแบ่งรางวัลตามดาเมจที่ทำ';ptEl.appendChild(n)}
+function togglePt(){ptEl.hidden=!ptEl.hidden;ptBtn.setAttribute('aria-expanded',String(!ptEl.hidden));if(!ptEl.hidden){if(!bagEl.hidden)toggleBag();if(!skEl2.hidden)toggleSkills()}renderParty()}
+ptBtn.onclick=togglePt;ptEl.addEventListener('keydown',e=>e.stopPropagation());
+const DENY_PT={'no-player':'ไม่พบผู้เล่นชื่อนี้ (ต้องออนไลน์)','in-party':'ผู้เล่นนี้อยู่ในปาร์ตี้อื่นแล้ว','not-leader':'เฉพาะหัวหน้าปาร์ตี้ชวนได้','full':'ปาร์ตี้เต็มแล้ว (5 คน)','no-invite':'คำเชิญหมดอายุแล้ว','no-party':'ยังไม่ได้อยู่ในปาร์ตี้'};
 const BONUS_LIVE=['พลังโจมตีกายภาพ','พลังชีวิตสูงสุด','โอกาสคริติคอล','ความเสียหายสกิล','ระยะเวลาบัฟและสถานะที่สร้าง','รัศมีสกิลพื้นที่','ความเร็วเคลื่อนที่','ความเร็วฟื้นคูลดาวน์'];
 function renderSkills(){if(skEl2.hidden)return;skEl2.innerHTML='';const h=document.createElement('h3');h.innerHTML='<span>สกิล · นักดาบ</span>';const x=document.createElement('button');x.textContent='ปิด';x.onclick=toggleSkills;h.appendChild(x);skEl2.appendChild(h);
   if(!NET.auth){const n=document.createElement('div');n.className='note';n.textContent='การอัปสกิลใช้ได้เมื่อเล่นออนไลน์ผ่านเซิร์ฟเวอร์';skEl2.appendChild(n);return}
@@ -910,7 +954,7 @@ function connect(){if(!token)return;stopped=false;NET.state='connecting';status(
       for(const r of m.ps||[]){const id=r[0];seen.add(id);let o=byId.get(id);if(!o){o={id,x:r[1],y:r[2],anim:0};byId.set(id,o)}Object.assign(o,{tx:r[1],ty:r[2],dir:'NSEW'[r[3]],moving:!!r[4],name:(NET.pnames||{})[id]||'?',lv:r[5]})}
       for(const id of [...byId.keys()])if(!seen.has(id))byId.delete(id);NET.others=[...byId.values()];status('ออนไลน์ · '+NET.name+' · เห็น '+NET.others.length+' คน');
       if(NET.auth)applyWorld(m)}
-    else if(m.t==='deny'){NET.stats.denied++;if(m.r==='debug-off')HL.say('ปุ่มทดสอบปิดอยู่บนเซิร์ฟเวอร์นี้');else if(m.k==='inv')HL.say(DENY[m.r]||'ทำไม่ได้');else if(m.k==='skill')HL.say(DENY_SK[m.r]||'อัปสกิลไม่ได้')}
+    else if(m.t==='deny'){NET.stats.denied++;if(m.r==='debug-off')HL.say('ปุ่มทดสอบปิดอยู่บนเซิร์ฟเวอร์นี้');else if(m.k==='inv')HL.say(DENY[m.r]||'ทำไม่ได้');else if(m.k==='skill')HL.say(DENY_SK[m.r]||'อัปสกิลไม่ได้');else if(m.k==='party')HL.say(DENY_PT[m.r]||'ทำไม่ได้')}
     else if(m.t==='fix'){NET.stats.fixes++;if(HL.Z.id!==m.zone)HL.enterZone(m.zone,m.x,m.y);else{HL.player.x=m.x;HL.player.y=m.y}lastSent=''}
     else if(m.t==='err'){if(m.code==='auth'){token=null;store.set(null);stopped=true;$('net').hidden=false;$('neterr').textContent=m.msg}
       else if(m.code==='replaced'){stopped=true;status(m.msg)}}};
@@ -931,7 +975,7 @@ function applyWorld(m){const CFG=HL.CFG,P=HL.PS;if(m.mf)monById.clear();for(cons
   HL.setMons([...monById.values()]);
   for(const e of m.ev||[]){const o=monById.get(e.id);if(!o)continue;
     if(e.k==='dmg'){NET.stats.dmgEv++;o.hurt=.25;HL.addNum(o.x,o.y-o.c.size*.6-18,e.dmg,e.crit?'#ffd34a':'#ffffff');if(e.by===NET.id)HL.setTarget(o)}}
-  const me=m.me;if(me){NET.me=me;let bagCh=false,skCh=false;if(me.bag){NET.bag=me.bag;NET.eq=me.eq;bagCh=true}if(me.sk){NET.sk=me.sk;NET.pts=me.pts;NET.bon=me.bon||{};skCh=true}const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
+  const me=m.me;if(me){NET.me=me;let bagCh=false,skCh=false;if(me.bag){NET.bag=me.bag;NET.eq=me.eq;bagCh=true}if(me.sk){NET.sk=me.sk;NET.pts=me.pts;NET.bon=me.bon||{};skCh=true}if(me.party){NET.party=me.party;NET.partyIds=new Set(me.party.m.map(r=>r[0]));renderParty()}const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
     for(const e of me.ev||[]){const pl=HL.player;
       if(e.k==='reward'){const o=monById.get(e.id);HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-40,'+'+e.exp+' EXP','#8fe38f')}
       else if(e.k==='hurt'){const mo=monById.get(e.by);if(mo){mo.atkT0=HL.tNow;mo.dir=pl.x<mo.x?'W':'E'}if(e.guard)HL.addNum(pl.x,pl.y-66,'ป้องกัน','#9fd6ff');HL.addNum(pl.x,pl.y-52,e.dmg,'#ff6b6b');P.hurt=.4}
@@ -940,6 +984,9 @@ function applyWorld(m){const CFG=HL.CFG,P=HL.PS;if(m.mf)monById.clear();for(cons
       else if(e.k==='dead'){P.dead=true;P.deadT=HL.CFG.player.respawnSec;P.cast=null;HL.say('พ่ายแพ้ · กลับหมู่บ้านใน '+HL.CFG.player.respawnSec+' วินาที')}
       else if(e.k==='respawn'){P.dead=false;HL.enterZone(e.zone,e.x,e.y);lastSent=''}
       else if(e.k==='loot'){const it=HL.CFG.items[e.id],o=monById.get(e.from);NET.stats.loot=(NET.stats.loot||0)+e.n;if(it)HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-58,'+'+it.name+(e.n>1?' ×'+e.n:''),'#ffd27a')}
+      else if(e.k==='pinvite'){HL.say(e.from+' ชวนคุณเข้าปาร์ตี้ — แตะ 👥 เพื่อตอบรับ')}
+      else if(e.k==='pinfo'){HL.say(e.msg)}
+      else if(e.k==='bossShare'){HL.say('รางวัลบอส: ดาเมจของคุณ '+e.pct+'%')}
       else if(e.k==='announce'){HL.say(e.msg);NET.stats.ann=(NET.stats.ann||[]).concat(e.msg)}
       else if(e.k==='bagfull'){HL.say('กระเป๋าเต็ม · ทิ้ง '+(HL.CFG.items[e.id]||{}).name)}}
     P.dead=me.dead;

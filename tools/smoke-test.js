@@ -128,7 +128,7 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
       const m = HL.mons.find(m => m.state !== 'dead') || HL.mons[0];
       if (m && m.state === 'dead') { m.state = 'idle'; m.x = m.hx; m.y = m.hy; }
       const sk = HL.CFG.skills[i - 1], gap = sk.shape === 'pillar' ? sk.dist : 30; // วางเป้าตามระยะออกแบบของท่า
-      if (m) { HL.player.x = m.x - gap; HL.player.y = m.y + 14; HL.player.dir = 'E'; m.hp = m.c.hp; window.__t = m; }
+      if (m) { HL.player.x = m.x - gap; HL.player.y = m.y + 14; HL.player.dir = 'E'; m.hp = m.c.hp; m.state = 'idle'; m.t = 99; m.wx = m.x; m.wy = m.y; m.c = Object.assign({}, m.c, { aggro: 0, speed: 0 }); window.__t = m; } // ฉาก: เป้านิ่ง ไม่ไล่ (V2-R21 มอนสเตอร์ HP สูงขึ้น ตัวเดิมรอดจากท่าก่อนแล้ววิ่งไล่)
       for (const k in HL.PS.cd) HL.PS.cd[k] = 0; HL.PS.cast = null; HL.PS.dead = false; HL.PS.hp = HL.PS.maxHp;
       return { r: HL.useSkill(i), name: HL.CFG.skills[i - 1].name, shape: HL.CFG.skills[i - 1].shape, hp0: m ? m.hp : null };
     }, i);

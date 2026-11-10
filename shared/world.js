@@ -217,6 +217,24 @@ const CFG={
   'นักรบเผ่าป่า':[['ore',.4,1],['potion_m',.25,1],['sword_iron',.05,1]],
   'ปีศาจ':[['spirit',.7,2],['potion_m',.3,1],['charm_silver',.06,1]]}
 };
+/* ===== สมดุลค่าพลัง (V2-R21) — คำนวณจากเลเวลมอนสเตอร์ ใช้ทั้งเกมและเซิร์ฟเวอร์ (ค่าเป้าหมายปรับได้ใน CFG.balance) =====
+   เป้าหมายที่เลเวลเท่ากัน: ตีด้วยท่าพื้นฐาน ~5 ครั้งจึงตาย, มอนสเตอร์ตีผู้เล่น ~12 ครั้งจึงตาย, ล่า ~(14+L/3) ตัวต่อ 1 เลเวล
+   บอส: HP ×hpMul, ATK ×atkMul, EXP ×expMul ของมอนสเตอร์เลเวลเดียวกัน */
+CFG.balance={hits:5,survive:12,killsBase:14,killsPerLv:1/3,jobKillsBase:10,
+ lv:{'ไก่ฟ้า':1,'กระต่ายมีเขา':2,'หมูป่า':4,'หมาป่า':7,'ก็อบลิน':10,'ลิงป่า':12,'กวางภูเขา':15,'นักรบเผ่าป่า':18,'เสือ':22,'หมีเขา':27,'กระทิงผี':32,'โกเลมหิน':37,'ปีศาจ':42,'วิญญาณไม้':47,
+  'วิญญาณแห่งป่า':24,'เทพหมาป่าภูเขา':34,'วิญญาณหมาป่าศักดิ์สิทธิ์':36,'มังกรภูเขาดำ':44,'ราชาปีศาจภูเขา':50,'มังกรแห่งหุบเขาหมอก':60},
+ boss:{hpMul:40,atkMul:2.5,expMul:30},world:{hpMul:200,atkMul:3,expMul:100},
+ /* ค่าพื้นฐานของผู้เล่นเลเวล L (ไม่รวมอุปกรณ์/สกิลติดตัว) */
+ pAtk:L=>CFG.player.baseAtk+(L-1)*CFG.player.atkPerLv,pHp:L=>CFG.player.baseHP+(L-1)*CFG.player.hpPerLv};
+CFG.applyBalance=function(){const B=CFG.balance;
+ for(const[type,m]of Object.entries(CFG.monsters)){const L=B.lv[type];if(!L)continue;
+  const k=m.world?B.world:m.boss?B.boss:{hpMul:1,atkMul:1,expMul:1};
+  m.lv=L;m.hp=Math.round(B.pAtk(L)*B.hits*k.hpMul);m.atk=Math.max(2,Math.round(B.pHp(L)/B.survive*k.atkMul));
+  m.exp=Math.max(1,Math.round(CFG.expCurve(L)/(B.killsBase+L*B.killsPerLv)*k.expMul));
+  m.job=Math.max(1,Math.round(CFG.jobCurve(Math.min(L,CFG.player.maxJob-1))/(B.jobKillsBase+L*B.killsPerLv)*k.expMul))}};
+CFG.applyBalance();
+/* ปาร์ตี้ (V2-R21): แบ่ง EXP ให้สมาชิกในระยะ + โบนัสต่อคน; บอสแบ่งตามดาเมจที่ทำ */
+CFG.party={max:5,range:900,bonusPer:.1,bossMinShare:.3,bossMinDmgPct:.01};
 const Combat={
  damage(atk,mult,rnd,critRoll){const crit=critRoll<.1;return{dmg:Math.max(1,Math.round(atk*mult*(.9+.2*rnd)*(crit?1.5:1))),crit}},
  inShape(sk,range,ox,oy,dir,tx,ty){const fx={E:1,W:-1,N:0,S:0}[dir],fy={E:0,W:0,N:-1,S:1}[dir],dx=tx-ox,dy=ty-oy,d=Math.hypot(dx,dy);
