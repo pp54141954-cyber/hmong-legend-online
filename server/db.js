@@ -24,6 +24,10 @@ function open(file) {
       account_id INTEGER NOT NULL REFERENCES accounts(id),
       expire_at INTEGER NOT NULL
     );`);
+  // V2-R4: กระเป๋าและอุปกรณ์ (JSON) — เพิ่มคอลัมน์ให้ฐานข้อมูลเก่า
+  const cols = db.prepare('PRAGMA table_info(characters)').all().map(c => c.name);
+  if (!cols.includes('bag')) db.exec("ALTER TABLE characters ADD COLUMN bag TEXT NOT NULL DEFAULT '[]'");
+  if (!cols.includes('eq')) db.exec("ALTER TABLE characters ADD COLUMN eq TEXT NOT NULL DEFAULT '{}'");
 
   const hash = pass => {
     const salt = crypto.randomBytes(16);
@@ -37,9 +41,9 @@ function open(file) {
   const q = {
     insAcc: db.prepare('INSERT INTO accounts (username, password_hash, created_at) VALUES (?, ?, ?)'),
     getAcc: db.prepare('SELECT * FROM accounts WHERE username = ?'),
-    insChar: db.prepare('INSERT INTO characters VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
+    insChar: db.prepare('INSERT INTO characters (account_id, name, zone, x, y, dir, lv, exp, job, jexp, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
     getChar: db.prepare('SELECT * FROM characters WHERE account_id = ?'),
-    saveChar: db.prepare('UPDATE characters SET zone=?, x=?, y=?, dir=?, lv=?, exp=?, job=?, jexp=?, updated_at=? WHERE account_id=?'),
+    saveChar: db.prepare('UPDATE characters SET zone=?, x=?, y=?, dir=?, lv=?, exp=?, job=?, jexp=?, bag=?, eq=?, updated_at=? WHERE account_id=?'),
     insSess: db.prepare('INSERT INTO sessions VALUES (?, ?, ?)'),
     getSess: db.prepare('SELECT * FROM sessions WHERE token = ? AND expire_at > ?'),
     delOld: db.prepare('DELETE FROM sessions WHERE expire_at <= ?'),
@@ -65,8 +69,8 @@ function open(file) {
       return token;
     },
     session(token) { return typeof token === 'string' ? q.getSess.get(token, Date.now()) : undefined; },
-    character(accountId) { return q.getChar.get(accountId); },
-    save(c) { q.saveChar.run(c.zone, c.x, c.y, c.dir, c.lv, c.exp, c.job, c.jexp, Date.now(), c.account_id); },
+    character(accountId) { const c = q.getChar.get(accountId); if (c) { c.bag = JSON.parse(c.bag || '[]'); c.eq = JSON.parse(c.eq || '{}'); } return c; },
+    save(c) { q.saveChar.run(c.zone, c.x, c.y, c.dir, c.lv, c.exp, c.job, c.jexp, JSON.stringify(c.bag || []), JSON.stringify(c.eq || {}), Date.now(), c.account_id); },
     close() { db.close(); },
   };
 }

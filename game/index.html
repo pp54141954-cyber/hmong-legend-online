@@ -282,7 +282,40 @@ const CFG={
   'กวางภูเขา':{hp:120,atk:12,exp:32,job:12,speed:100,aggro:0,leash:230,atkRange:26,atkCd:1.2,size:14,respawn:10},
   'นักรบเผ่าป่า':{hp:200,atk:21,exp:60,job:22,speed:80,aggro:140,leash:240,atkRange:30,atkCd:1.3,size:13,respawn:15},
   'ปีศาจ':{hp:300,atk:27,exp:95,job:34,speed:85,aggro:150,leash:250,atkRange:30,atkCd:1.4,size:15,respawn:22},
-  'วิญญาณไม้':{hp:280,atk:23,exp:85,job:30,speed:55,aggro:120,leash:210,atkRange:34,atkCd:1.6,size:19,respawn:20,color:'#6b5a32',color2:'#3fa04a'}}
+  'วิญญาณไม้':{hp:280,atk:23,exp:85,job:30,speed:55,aggro:120,leash:210,atkRange:34,atkCd:1.6,size:19,respawn:20,color:'#6b5a32',color2:'#3fa04a'}},
+ /* ===== ไอเทม (V2-R4) — ชื่อ ค่า และอัตราดรอปทั้งหมดเป็นค่าชั่วคราว รอข้อกำหนด/อนุมัติ ===== */
+ bag:{slots:30,stack:99,potionCd:1},
+ items:{
+  potion_s:{name:'ยาสมุนไพรเล็ก',type:'use',heal:40},
+  potion_m:{name:'ยาสมุนไพรกลาง',type:'use',heal:100},
+  hide:{name:'หนังสัตว์',type:'mat'},
+  horn:{name:'เขาสัตว์',type:'mat'},
+  tusk:{name:'เขี้ยวหมูป่า',type:'mat'},
+  feather:{name:'ขนไก่ฟ้า',type:'mat'},
+  fang:{name:'เขี้ยวสัตว์ป่า',type:'mat'},
+  ore:{name:'เศษหินแร่',type:'mat'},
+  spirit:{name:'เศษวิญญาณ',type:'mat'},
+  sword_wood:{name:'ดาบไม้ฝึกหัด',type:'eq',slot:'weapon',atk:4},
+  sword_iron:{name:'ดาบเหล็กตีมือ',type:'eq',slot:'weapon',atk:10},
+  coat_cloth:{name:'เสื้อผ้าฝ้ายปัก',type:'eq',slot:'armor',def:2,hp:20},
+  coat_leather:{name:'เสื้อหนังสัตว์',type:'eq',slot:'armor',def:5,hp:45},
+  charm_silver:{name:'กำไลเงิน',type:'eq',slot:'acc',hp:30,atk:2}},
+ /* ตารางดรอป: [ไอเทม, โอกาส 0–1, จำนวน] ทอยแยกทีละแถว */
+ drops:{
+  'ไก่ฟ้า':[['feather',.6,1],['potion_s',.15,1]],
+  'กระต่ายมีเขา':[['horn',.5,1],['hide',.4,1],['potion_s',.15,1],['sword_wood',.04,1]],
+  'หมูป่า':[['tusk',.5,1],['hide',.5,1],['potion_s',.2,1],['coat_cloth',.05,1]],
+  'หมาป่า':[['fang',.5,1],['hide',.5,1],['potion_s',.2,1],['sword_wood',.06,1]],
+  'ก็อบลิน':[['ore',.4,1],['potion_s',.3,1],['coat_cloth',.06,1],['charm_silver',.03,1]],
+  'เสือ':[['fang',.7,2],['hide',.6,2],['potion_m',.25,1],['coat_leather',.06,1]],
+  'หมีเขา':[['hide',.7,2],['horn',.5,1],['potion_m',.3,1],['coat_leather',.07,1]],
+  'โกเลมหิน':[['ore',.8,3],['potion_m',.3,1],['sword_iron',.07,1]],
+  'กระทิงผี':[['horn',.6,2],['spirit',.4,1],['potion_m',.3,1],['sword_iron',.06,1]],
+  'วิญญาณไม้':[['spirit',.6,2],['potion_m',.3,1],['charm_silver',.06,1]],
+  'ลิงป่า':[['hide',.5,1],['potion_s',.2,1]],
+  'กวางภูเขา':[['horn',.6,1],['hide',.5,1]],
+  'นักรบเผ่าป่า':[['ore',.4,1],['potion_m',.25,1],['sword_iron',.05,1]],
+  'ปีศาจ':[['spirit',.7,2],['potion_m',.3,1],['charm_silver',.06,1]]}
 };
 const Combat={
  damage(atk,mult,rnd,critRoll){const crit=critRoll<.1;return{dmg:Math.max(1,Math.round(atk*mult*(.9+.2*rnd)*(crit?1.5:1))),crit}},
@@ -638,6 +671,12 @@ window.HL={say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get m
 #net input{font:inherit;font-size:16px;padding:8px 10px;border-radius:8px;border:1px solid #ffffff40;background:#0e140f;color:#f4efe2}
 #net .row{display:flex;gap:8px}#net .row button{flex:1;color:#f4efe2;font-size:15px;padding:9px}#net .row button.main{background:#b4531a;border-color:#b4531a}
 #neterr{min-height:18px;font-size:13px;color:#ff9a8a}
+#bagb{flex:none;width:40px;height:40px;border-radius:50%;padding:0;font-size:19px;border-color:#ffffff40;background:#ffffff12;color:#f4efe2}
+#bag{position:absolute;top:calc(66px + env(safe-area-inset-top,0px));left:8px;right:8px;max-width:420px;margin:0 auto;max-height:calc(100% - 230px);overflow:auto;z-index:6;display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(18,22,18,.94);color:#f4efe2;border-radius:14px}
+#bag[hidden]{display:none}#bag h3{margin:0;font-size:14px;display:flex;justify-content:space-between;align-items:center}#bag h3 button{color:#f4efe2;border-color:#ffffff40;padding:2px 10px}
+#bag .stt{font-size:12px;opacity:.9}#bag .eqs,#bag .items{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+#bag .it{min-height:46px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;text-align:left;font-size:12px;line-height:1.2;padding:5px 7px;color:#f4efe2;border-color:#ffffff33;background:#ffffff0d}
+#bag .it small{font-size:10px;opacity:.75}#bag .it.eq{border-color:#ffb347aa}#bag .it.use{border-color:#7fd08aaa}#bag .it.none{opacity:.45}#bag .note{font-size:11px;opacity:.7}
 #netst{position:absolute;left:8px;top:calc(64px + env(safe-area-inset-top,0px));z-index:4;font-size:11px;padding:3px 8px;border-radius:10px;background:rgba(18,22,18,.74);color:#f4efe2;display:none}
 </style>
 <div id="net" hidden><form id="netf" autocomplete="on">
@@ -648,12 +687,39 @@ window.HL={say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get m
 <div class="row"><button type="submit" class="main" id="netlogin">เข้าสู่ระบบ</button><button type="button" id="netreg">สมัครใหม่</button></div>
 </form></div>
 <div id="netst" aria-live="polite"></div>
+<div id="bag" hidden role="dialog" aria-label="กระเป๋า"></div>
 <script>
 (function(){
 const $=id=>document.getElementById(id),HL=window.HL;
 const store={get(){try{return localStorage.getItem('hl_token')}catch(e){return null}},set(v){try{v?localStorage.setItem('hl_token',v):localStorage.removeItem('hl_token')}catch(e){}}};
 const NET=window.HLNET={others:[],ws:null,state:'offline',joined:false,auth:false,stats:{snaps:0,fixes:0,reconnects:0,denied:0,dmgEv:0},connect,act,send};
 const monById=new Map();
+NET.bag=[];NET.eq={};NET.me={};
+/* ---------- กระเป๋า (ออนไลน์เท่านั้น — เซิร์ฟเวอร์ตัดสินทุกคำสั่ง) ---------- */
+const bagEl=$('bag'),bagBtn=document.createElement('button');bagBtn.id='bagb';bagBtn.textContent='🎒';bagBtn.setAttribute('aria-label','กระเป๋า');bagBtn.setAttribute('aria-expanded','false');
+$('gear').before(bagBtn);
+const SLOTN={weapon:'อาวุธ',armor:'เสื้อ',acc:'เครื่องประดับ'};
+const itemInfo=it=>it.type==='use'?'ฟื้น HP '+it.heal:it.type==='eq'?[it.atk?'ATK +'+it.atk:'',it.def?'DEF +'+it.def:'',it.hp?'HP +'+it.hp:''].filter(Boolean).join(' '):'วัตถุดิบ';
+function renderBag(){if(bagEl.hidden)return;const I=HL.CFG.items,me=NET.me;bagEl.innerHTML='';
+  const h=document.createElement('h3');h.innerHTML='<span>กระเป๋า</span>';const x=document.createElement('button');x.textContent='ปิด';x.onclick=toggleBag;h.appendChild(x);bagEl.appendChild(h);
+  if(!NET.auth){const n=document.createElement('div');n.className='note';n.textContent='กระเป๋าใช้ได้เมื่อเล่นออนไลน์ผ่านเซิร์ฟเวอร์';bagEl.appendChild(n);return}
+  const st=document.createElement('div');st.className='stt';st.id='bagstat';st.textContent='ATK '+(me.atk??'-')+' · DEF '+(me.def??'-')+' · HP '+(me.hp??'-')+'/'+(me.maxHp??'-')+' · ช่อง '+NET.bag.length+'/'+HL.CFG.bag.slots;bagEl.appendChild(st);
+  const eqs=document.createElement('div');eqs.className='eqs';
+  for(const k of ['weapon','armor','acc']){const id=NET.eq[k],it=id&&I[id],b=document.createElement('button');b.className='it'+(it?' eq':' none');b.dataset.eq=k;
+    b.innerHTML='<small>'+SLOTN[k]+'</small>';const t=document.createElement('span');t.textContent=it?it.name:'— ว่าง —';b.appendChild(t);
+    if(it){b.setAttribute('aria-label','ถอด '+it.name);b.onclick=()=>send({t:'inv',op:'unequip',slot:k})}else b.disabled=true;eqs.appendChild(b)}
+  bagEl.appendChild(eqs);
+  const items=document.createElement('div');items.className='items';
+  NET.bag.forEach((s,i)=>{const it=I[s.id];if(!it)return;const b=document.createElement('button');b.className='it '+it.type;b.dataset.slot=i;
+    const t=document.createElement('span');t.textContent=it.name+(s.n>1?' ×'+s.n:'');const sm=document.createElement('small');sm.textContent=itemInfo(it);b.append(t,sm);
+    if(it.type==='use'){b.setAttribute('aria-label','ใช้ '+it.name);b.onclick=()=>send({t:'inv',op:'use',slot:i})}
+    else if(it.type==='eq'){b.setAttribute('aria-label','ใส่ '+it.name);b.onclick=()=>send({t:'inv',op:'equip',slot:i})}
+    else b.setAttribute('aria-disabled','true');items.appendChild(b)});
+  if(!NET.bag.length){const n=document.createElement('div');n.className='note';n.textContent='ยังไม่มีของ — ล่ามอนสเตอร์เพื่อรับของดรอป';bagEl.appendChild(n)}else bagEl.appendChild(items);
+  const n=document.createElement('div');n.className='note';n.textContent='ไอเทม ค่า และอัตราดรอปเป็นค่าชั่วคราว';bagEl.appendChild(n)}
+function toggleBag(){bagEl.hidden=!bagEl.hidden;bagBtn.setAttribute('aria-expanded',String(!bagEl.hidden));renderBag()}
+bagBtn.onclick=toggleBag;bagEl.addEventListener('keydown',e=>e.stopPropagation());
+const DENY={'hp-full':'HP เต็มแล้ว','cooldown':'รอสักครู่ก่อนใช้อีกครั้ง','bag-full':'กระเป๋าเต็ม','dead':'ตายอยู่ ใช้ของไม่ได้','not-usable':'ใช้ของนี้ไม่ได้','not-equip':'ของนี้สวมใส่ไม่ได้','empty':'ช่องนี้ว่าง'};
 function send(o){const ws=NET.ws;if(ws&&ws.readyState===1&&NET.state==='online')ws.send(JSON.stringify(o))}
 // ส่งตำแหน่งล่าสุดก่อน แล้วค่อยส่งคำขอโจมตี/สกิล ให้เซิร์ฟเวอร์คิดจากตำแหน่งเดียวกับที่เห็นบนจอ
 function act(k,dir){sendMv(true);send({t:'act',k,dir})}
@@ -683,7 +749,7 @@ function connect(){if(!token)return;stopped=false;NET.state='connecting';status(
       for(const p of m.players){seen.add(p.id);let o=byId.get(p.id);if(!o){o={id:p.id,x:p.x,y:p.y,anim:0};byId.set(p.id,o)}Object.assign(o,{tx:p.x,ty:p.y,dir:p.dir,moving:p.moving,name:p.name,lv:p.lv})}
       for(const id of [...byId.keys()])if(!seen.has(id))byId.delete(id);NET.others=[...byId.values()];status('ออนไลน์ · '+NET.name+' · เห็น '+NET.others.length+' คน');
       if(NET.auth&&m.mons)applyWorld(m)}
-    else if(m.t==='deny'){NET.stats.denied++;if(m.r==='debug-off')HL.say('ปุ่มทดสอบปิดอยู่บนเซิร์ฟเวอร์นี้')}
+    else if(m.t==='deny'){NET.stats.denied++;if(m.r==='debug-off')HL.say('ปุ่มทดสอบปิดอยู่บนเซิร์ฟเวอร์นี้');else if(m.k==='inv')HL.say(DENY[m.r]||'ทำไม่ได้')}
     else if(m.t==='fix'){NET.stats.fixes++;if(HL.Z.id!==m.zone)HL.enterZone(m.zone,m.x,m.y);else{HL.player.x=m.x;HL.player.y=m.y}lastSent=''}
     else if(m.t==='err'){if(m.code==='auth'){token=null;store.set(null);stopped=true;$('net').hidden=false;$('neterr').textContent=m.msg}
       else if(m.code==='replaced'){stopped=true;status(m.msg)}}};
@@ -702,15 +768,18 @@ function applyWorld(m){const CFG=HL.CFG,P=HL.PS,seen=new Set();
   HL.setMons([...monById.values()]);
   for(const e of m.ev){const o=monById.get(e.id);if(!o)continue;
     if(e.k==='dmg'){NET.stats.dmgEv++;o.hurt=.25;HL.addNum(o.x,o.y-o.c.size*.6-18,e.dmg,e.crit?'#ffd34a':'#ffffff');if(e.by===NET.id)HL.setTarget(o)}}
-  const me=m.me;if(me){const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
+  const me=m.me;if(me){NET.me=me;let bagCh=false;if(me.bag){NET.bag=me.bag;NET.eq=me.eq;bagCh=true}const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
     for(const e of me.ev){const pl=HL.player;
       if(e.k==='reward'){const o=monById.get(e.id);HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-40,'+'+e.exp+' EXP','#8fe38f')}
       else if(e.k==='hurt'){if(e.guard)HL.addNum(pl.x,pl.y-66,'ป้องกัน','#9fd6ff');HL.addNum(pl.x,pl.y-52,e.dmg,'#ff6b6b');P.hurt=.4}
       else if(e.k==='lv')HL.say('เลเวลอัป! Lv '+e.lv);
       else if(e.k==='job')HL.say('Job เลเวลอัป! Job '+e.job);
       else if(e.k==='dead'){P.dead=true;P.deadT=HL.CFG.player.respawnSec;P.cast=null;HL.say('พ่ายแพ้ · กลับหมู่บ้านใน '+HL.CFG.player.respawnSec+' วินาที')}
-      else if(e.k==='respawn'){P.dead=false;HL.enterZone(e.zone,e.x,e.y);lastSent=''}}
-    P.dead=me.dead}}
+      else if(e.k==='respawn'){P.dead=false;HL.enterZone(e.zone,e.x,e.y);lastSent=''}
+      else if(e.k==='loot'){const it=HL.CFG.items[e.id],o=monById.get(e.from);NET.stats.loot=(NET.stats.loot||0)+e.n;if(it)HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-58,'+'+it.name+(e.n>1?' ×'+e.n:''),'#ffd27a')}
+      else if(e.k==='bagfull'){HL.say('กระเป๋าเต็ม · ทิ้ง '+(HL.CFG.items[e.id]||{}).name)}}
+    P.dead=me.dead;
+    if(bagCh)renderBag();else{const sEl=$('bagstat');if(sEl&&!bagEl.hidden)sEl.textContent='ATK '+me.atk+' · DEF '+me.def+' · HP '+me.hp+'/'+me.maxHp+' · ช่อง '+NET.bag.length+'/'+HL.CFG.bag.slots}}}
 // ส่งตำแหน่ง 10 ครั้ง/วินาทีเมื่อมีการเปลี่ยน + ทุก 1 วินาทีเป็นสัญญาณยังอยู่, ส่งความคืบหน้าเมื่อเปลี่ยน
 let last=performance.now(),beat=0;
 function loop(n){const dt=Math.min(.1,(n-last)/1000);last=n;

@@ -42,6 +42,72 @@ for (const [i, name, expectDx] of [[1, 'ท่าเคลื่อนที่'
   rec('มอนสเตอร์ไม่ทำร้ายผู้เล่นในเขตปลอดภัย', p.hp === p.maxHp && boar.state !== 'chase');
 }
 
+// ---------- V2-R4 กระเป๋า ของดรอป อุปกรณ์ ----------
+const mkP = (sim, extra) => { const p = { id: 1, c: Object.assign({ zone: 'village', x: PX, y: PY, dir: 'E', lv: 1, exp: 0, job: 1, jexp: 0 }, extra) }; sim.addPlayer(p); return p; };
+const killFirst = (sim, p, type) => {
+  const z = sim.zones.village, m = z.mons.find(m => m.type === type && m.state !== 'dead');
+  Object.assign(m, { x: PX + 20, y: PY, hx: PX + 20, hy: PY, wx: PX + 20, wy: PY, t: 99, hp: 1, state: 'idle' });
+  sim.act(p, 'b', 500); run(sim, .5, 500); return m;
+};
+{
+  const sim = createSim({ rand: () => 0 }), p = mkP(sim);
+  const m = killFirst(sim, p, 'กระต่ายมีเขา');
+  const want = W.CFG.drops['กระต่ายมีเขา'].map(r => r[0]).sort().join(',');
+  rec('โอกาสดรอปผ่านทุกแถว → ได้ของครบตามตาราง', m.state === 'dead' && p.c.bag.map(s => s.id).sort().join(',') === want, p.c.bag.map(s => s.id).join(','));
+  rec('มีเหตุการณ์ loot ส่งให้เครื่องผู้เล่น', p.personal.filter(e => e.k === 'loot').length === W.CFG.drops['กระต่ายมีเขา'].length);
+}
+{
+  const sim = createSim({ rand: () => .999 }), p = mkP(sim);
+  killFirst(sim, p, 'กระต่ายมีเขา');
+  rec('โอกาสดรอปไม่ผ่าน → ไม่ได้ของ', p.c.bag.length === 0);
+}
+{
+  const sim = createSim(), p = mkP(sim);
+  sim.addItem(p, 'hide', 150);
+  rec('วัตถุดิบซ้อนได้ช่องละ 99', p.c.bag.length === 2 && p.c.bag[0].n === 99 && p.c.bag[1].n === 51, JSON.stringify(p.c.bag));
+  for (let i = 0; i < 40; i++) sim.addItem(p, 'sword_wood', 1);
+  const got = sim.addItem(p, 'sword_iron', 1);
+  rec('กระเป๋าเต็ม 30 ช่อง → ใส่ไม่ได้ และแจ้ง bagfull', p.c.bag.length === 30 && got === 0 && p.personal.some(e => e.k === 'bagfull'));
+}
+{
+  const sim = createSim(), p = mkP(sim), atk0 = p.atk, hp0 = p.maxHp;
+  sim.addItem(p, 'sword_iron', 1); sim.addItem(p, 'coat_cloth', 1);
+  const r1 = sim.inv(p, 'equip', 0, 0);
+  rec('ใส่ดาบเหล็ก → ATK +10 และออกจากกระเป๋า', r1 === 'ok' && p.atk === atk0 + 10 && p.c.eq.weapon === 'sword_iron' && p.c.bag.length === 1);
+  sim.addItem(p, 'sword_wood', 1);
+  sim.inv(p, 'equip', 1, 0);
+  rec('ใส่ดาบไม้แทน → สลับดาบเหล็กกลับเข้ากระเป๋า ATK +4', p.c.eq.weapon === 'sword_wood' && p.atk === atk0 + 4 && p.c.bag.some(s => s.id === 'sword_iron'));
+  sim.inv(p, 'equip', p.c.bag.findIndex(s => s.id === 'coat_cloth'), 0);
+  rec('ใส่เสื้อผ้าฝ้าย → HP สูงสุด +20 DEF 2', p.maxHp === hp0 + 20 && p.def === 2);
+  rec('ถอดเสื้อ → HP สูงสุดกลับ และ HP ไม่เกินสูงสุด', sim.inv(p, 'unequip', 'armor', 0) === 'ok' && p.maxHp === hp0 && p.hp <= p.maxHp && p.c.bag.some(s => s.id === 'coat_cloth'));
+  rec('สั่งใส่วัตถุดิบ / ช่องว่าง / ช่องอุปกรณ์ปลอม → ปฏิเสธ', (sim.addItem(p, 'hide', 1), sim.inv(p, 'equip', p.c.bag.findIndex(s => s.id === 'hide'), 0)) === 'not-equip' && sim.inv(p, 'equip', 99, 0) === 'empty' && sim.inv(p, 'unequip', '__proto__', 0) === 'empty');
+}
+{
+  const sim = createSim(), p = mkP(sim);
+  sim.addItem(p, 'potion_s', 2);
+  rec('HP เต็มใช้ยาไม่ได้', sim.inv(p, 'use', 0, 10) === 'hp-full' && p.c.bag[0].n === 2);
+  p.hp = 10;
+  const r = sim.inv(p, 'use', 0, 10);
+  rec('ใช้ยา → ฟื้น 40 และยาลด 1', r === 'ok' && p.hp === 50 && p.c.bag[0].n === 1);
+  rec('ใช้ยาซ้ำภายใน 1 วินาที → ติดคูลดาวน์', sim.inv(p, 'use', 0, 10.5) === 'cooldown');
+  rec('ใช้ยาขวดสุดท้าย → ช่องหายจากกระเป๋า', sim.inv(p, 'use', 0, 11.2) === 'ok' && p.c.bag.length === 0);
+  p.dead = true;
+  sim.addItem(p, 'potion_s', 1);
+  rec('ตายอยู่ใช้ของไม่ได้', sim.inv(p, 'use', 0, 20) === 'dead');
+}
+{
+  // เกราะลดดาเมจ: หมาป่า ATK 11 (rand=.5 → ดาเมจฐาน 11) ใส่เสื้อหนัง DEF 5 → 6
+  const hitBy = def => {
+    const sim = createSim({ rand: () => .5 }), p = mkP(sim, { eq: def ? { armor: 'coat_leather' } : {} });
+    const z = sim.zones.village, wolf = z.mons.find(m => m.type === 'กระต่ายมีเขา');
+    wolf.c = W.CFG.monsters['หมาป่า'];
+    Object.assign(wolf, { x: PX + 20, y: PY, hx: PX + 20, hy: PY, state: 'chase', target: p, atkT: 0 });
+    const h0 = p.hp; run(sim, .1, 0); return h0 - p.hp;
+  };
+  const a = hitBy(false), b = hitBy(true);
+  rec('เกราะ DEF 5 ลดดาเมจหมาป่าจาก 11 เป็น 6', a === 11 && b === 6, 'ไม่ใส่=' + a + ' ใส่=' + b);
+}
+
 const fail = results.filter(r => !r.pass).length;
 console.log('\nสรุป: ' + (results.length - fail) + '/' + results.length + ' ผ่าน');
 process.exit(fail ? 1 : 0);

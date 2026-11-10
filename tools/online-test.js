@@ -78,8 +78,10 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   const pa = SA(); Object.assign(chick, { x: pa.c.x + 20, y: pa.c.y, hx: pa.c.x + 20, hy: pa.c.y, wx: pa.c.x + 20, wy: pa.c.y, t: 99, hp: 1, state: 'idle' });
   await A.page.evaluate(() => { HL.player.dir = 'E'; });
   const exp0 = pa.c.exp;
+  srv.sim.setRand(() => 0); // ฉาก: ให้ทุกแถวในตารางดรอปผ่าน
   await sleep(250);
   await A.page.locator('#atk').dispatchEvent('pointerdown'); await sleep(100); await A.page.locator('#atk').dispatchEvent('pointerup');
+  await until(() => chick.state === 'dead', 2000); srv.sim.setRand(Math.random);
   const gotExp = await until(async () => SA().c.exp > exp0 && (await st(A.page)).exp === SA().c.exp);
   rec('ปุ่ม ⚔ ฆ่ามอนสเตอร์ของเซิร์ฟเวอร์ ได้ EXP จากเซิร์ฟเวอร์', gotExp && chick.state === 'dead', 'server exp ' + exp0 + '→' + SA().c.exp + ', Job EXP ' + SA().c.jexp);
   rec('B เห็นมอนสเตอร์ตัวนั้นตาย', await until(async () => !(await B.page.evaluate(id => HL.mons.some(m => m.id === id && m.state !== 'dead'), chick.id))));
@@ -90,6 +92,26 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   await sleep(500);
   const c54 = await st(A.page);
   rec('แก้ EXP/Lv ในเครื่องแล้วเซิร์ฟเวอร์ไม่เปลี่ยน และเครื่องถูกแก้กลับ', SA().c.exp === expS && SA().c.lv === 1 && c54.exp === expS && c54.lv === 1, 'server exp=' + SA().c.exp + ' client exp=' + c54.exp);
+  // 5.4b กระเป๋า (V2-R4)
+  rec('ของดรอปจากไก่ฟ้าเข้ากระเป๋าบนเซิร์ฟเวอร์', SA().c.bag.some(s => s.id === 'feather') && SA().c.bag.some(s => s.id === 'potion_s'), JSON.stringify(SA().c.bag));
+  rec('เครื่อง A เห็นตัวเลขของดรอป', await until(async () => (await A.page.evaluate(() => HLNET.stats.loot || 0)) >= 2));
+  await A.page.click('#bagb');
+  rec('ปุ่ม 🎒 เปิดกระเป๋า เห็นของที่ได้', await until(async () => { const t = await A.page.textContent('#bag'); return t.includes('ขนไก่ฟ้า') && t.includes('ยาสมุนไพรเล็ก'); }));
+  srv.sim.addItem(SA(), 'sword_iron', 1); // ฉาก: ให้ดาบเหล็ก 1 เล่ม
+  await A.page.waitForSelector('#bag button[aria-label="ใส่ ดาบเหล็กตีมือ"]', { timeout: 3000 });
+  const atkBase = SA().atk;
+  await A.page.click('#bag button[aria-label="ใส่ ดาบเหล็กตีมือ"]');
+  const equipped = await until(async () => SA().c.eq.weapon === 'sword_iron' && (await A.page.textContent('#bag')).includes('ATK ' + (atkBase + 10)));
+  rec('แตะดาบในกระเป๋า → สวมใส่ ATK +10 (เซิร์ฟเวอร์และจอตรงกัน)', equipped, 'ATK ' + atkBase + '→' + SA().atk);
+  SA().hp = 20;
+  await A.page.click('#bag button[aria-label="ใช้ ยาสมุนไพรเล็ก"]');
+  rec('แตะยา → HP บนเซิร์ฟเวอร์ฟื้น และยาหมด', await until(async () => SA().hp >= 55 && !SA().c.bag.some(s => s.id === 'potion_s')), 'HP 20→' + Math.round(SA().hp));
+  const dInv = (await st(A.page)).stats.denied;
+  await A.page.evaluate(() => HLNET.send({ t: 'inv', op: 'equip', slot: 99 }));
+  rec('คำสั่งกระเป๋าปลอม (ช่อง 99) ถูกปฏิเสธ', await until(async () => (await st(A.page)).stats.denied > dInv));
+  await A.page.screenshot({ path: 'tools/last-bag.png' });
+  await A.page.click('#bag h3 button');
+
   // 5.5 เดินทะลุบ้าน (เปิด "เดินได้ทุกที่" ในเครื่อง) → เซิร์ฟเวอร์ไม่ยอม
   const s55 = await st(A.page);
   await A.page.evaluate(() => { HL.player.x = 368; });
@@ -177,7 +199,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
 
   // 8) บันทึกแล้วรีสตาร์ตเซิร์ฟเวอร์
   await A.page.keyboard.down('ArrowDown'); await sleep(500); await A.page.keyboard.up('ArrowDown'); await sleep(400);
-  const saved = await st(A.page);
+  const saved = await st(A.page), savedBag = JSON.stringify(SA().c.bag), savedEq = JSON.stringify(SA().c.eq);
   await A.ctx.close(); await B.ctx.close();
   await srv.close();
   srv = createServer({ dbFile, quiet: true }); port = await srv.listen(0); url = 'http://127.0.0.1:' + port + '/';
@@ -187,6 +209,8 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   const re = await st(A2.page);
   const posOk = re.zone === saved.zone && Math.hypot(re.x - saved.x, re.y - saved.y) < 4;
   rec('รีสตาร์ตเซิร์ฟเวอร์แล้วตำแหน่งกลับมาถูก', posOk, 'ก่อน=(' + saved.zone + ',' + Math.round(saved.x) + ',' + Math.round(saved.y) + ') หลัง=(' + re.zone + ',' + Math.round(re.x) + ',' + Math.round(re.y) + ')');
+  const SA2 = [...srv.online.values()].find(p => p.c.name === 'Tester_A');
+  rec('รีสตาร์ตแล้วกระเป๋าและอุปกรณ์กลับมาครบ', JSON.stringify(SA2.c.bag) === savedBag && JSON.stringify(SA2.c.eq) === savedEq && (await A2.page.evaluate(() => JSON.stringify(HLNET.bag))) === savedBag, savedEq + ' ' + savedBag);
   rec('รีสตาร์ตแล้ว Lv/EXP/Job กลับมาถูก', re.lv === saved.lv && re.exp === saved.exp && re.job === saved.job && re.jexp === saved.jexp, JSON.stringify({ lv: re.lv, exp: re.exp, job: re.job, jexp: re.jexp }));
 
   // 9) เปิดเกมซ้ำ (โทเคนในเครื่อง) เข้าเกมเองไม่ต้องล็อกอินใหม่

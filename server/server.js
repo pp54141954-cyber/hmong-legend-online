@@ -88,6 +88,7 @@ function createServer(opts = {}) {
         const old = online.get(s.account_id);
         if (old) { flush(old); send(old.ws, { t: 'err', code: 'replaced', msg: 'บัญชีนี้เข้าเกมจากที่อื่น' }); old.ws.close(); p = old; p.ws = ws; p.allow = conf.burst; p.lastT = now; }
         else { p = { ws, c: db.character(s.account_id), id: s.account_id, moving: false, allow: conf.burst, lastT: now, dirty: false }; sim.addPlayer(p); online.set(p.id, p); }
+        p.bagDirty = true; // ส่งกระเป๋าเต็มชุดใน snapshot แรกหลังเข้าเกม/ต่อใหม่
         const c = p.c;
         log('join', c.name, c.zone, Math.round(c.x), Math.round(c.y));
         return send(ws, { t: 'welcome', id: p.id, name: c.name, auth: true, state: { zone: c.zone, x: c.x, y: c.y, dir: c.dir, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, hp: p.hp, maxHp: p.maxHp } });
@@ -110,6 +111,11 @@ function createServer(opts = {}) {
         const key = m.k === 'b' ? 'b' : Math.floor(+m.k);
         const r = sim.act(p, key, now / 1000);
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: m.k, r }); }
+        return;
+      }
+      if (m.t === 'inv') {
+        const r = sim.inv(p, String(m.op), m.op === 'unequip' ? String(m.slot) : m.slot, now / 1000);
+        if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'inv', op: m.op, r }); }
         return;
       }
       if (m.t === 'dbg') {
@@ -136,8 +142,9 @@ function createServer(opts = {}) {
     for (const p of online.values()) {
       const z = zs[p.c.zone], c = p.c;
       send(p.ws, { t: 'snap', players: (byZone[c.zone] || []).filter(o => o.id !== p.id), mons: z.mons, ev: z.ev,
-        me: { zone: c.zone, x: R(c.x), y: R(c.y), hp: Math.ceil(p.hp), maxHp: p.maxHp, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, dead: p.dead, buffT: p.buffT, guardT: p.guardT, ev: p.personal } });
-      p.personal = [];
+        me: { zone: c.zone, x: R(c.x), y: R(c.y), hp: Math.ceil(p.hp), maxHp: p.maxHp, atk: p.atk, def: p.def, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, dead: p.dead, buffT: p.buffT, guardT: p.guardT, ev: p.personal,
+          ...(p.bagDirty ? { bag: c.bag, eq: c.eq } : {}) } });
+      p.personal = []; p.bagDirty = false;
     }
   }, 1000 / conf.tickHz);
   const saver = setInterval(() => { for (const p of online.values()) if (p.dirty) flush(p); }, conf.saveEverySec * 1000);

@@ -121,7 +121,40 @@ const CFG={
   'กวางภูเขา':{hp:120,atk:12,exp:32,job:12,speed:100,aggro:0,leash:230,atkRange:26,atkCd:1.2,size:14,respawn:10},
   'นักรบเผ่าป่า':{hp:200,atk:21,exp:60,job:22,speed:80,aggro:140,leash:240,atkRange:30,atkCd:1.3,size:13,respawn:15},
   'ปีศาจ':{hp:300,atk:27,exp:95,job:34,speed:85,aggro:150,leash:250,atkRange:30,atkCd:1.4,size:15,respawn:22},
-  'วิญญาณไม้':{hp:280,atk:23,exp:85,job:30,speed:55,aggro:120,leash:210,atkRange:34,atkCd:1.6,size:19,respawn:20,color:'#6b5a32',color2:'#3fa04a'}}
+  'วิญญาณไม้':{hp:280,atk:23,exp:85,job:30,speed:55,aggro:120,leash:210,atkRange:34,atkCd:1.6,size:19,respawn:20,color:'#6b5a32',color2:'#3fa04a'}},
+ /* ===== ไอเทม (V2-R4) — ชื่อ ค่า และอัตราดรอปทั้งหมดเป็นค่าชั่วคราว รอข้อกำหนด/อนุมัติ ===== */
+ bag:{slots:30,stack:99,potionCd:1},
+ items:{
+  potion_s:{name:'ยาสมุนไพรเล็ก',type:'use',heal:40},
+  potion_m:{name:'ยาสมุนไพรกลาง',type:'use',heal:100},
+  hide:{name:'หนังสัตว์',type:'mat'},
+  horn:{name:'เขาสัตว์',type:'mat'},
+  tusk:{name:'เขี้ยวหมูป่า',type:'mat'},
+  feather:{name:'ขนไก่ฟ้า',type:'mat'},
+  fang:{name:'เขี้ยวสัตว์ป่า',type:'mat'},
+  ore:{name:'เศษหินแร่',type:'mat'},
+  spirit:{name:'เศษวิญญาณ',type:'mat'},
+  sword_wood:{name:'ดาบไม้ฝึกหัด',type:'eq',slot:'weapon',atk:4},
+  sword_iron:{name:'ดาบเหล็กตีมือ',type:'eq',slot:'weapon',atk:10},
+  coat_cloth:{name:'เสื้อผ้าฝ้ายปัก',type:'eq',slot:'armor',def:2,hp:20},
+  coat_leather:{name:'เสื้อหนังสัตว์',type:'eq',slot:'armor',def:5,hp:45},
+  charm_silver:{name:'กำไลเงิน',type:'eq',slot:'acc',hp:30,atk:2}},
+ /* ตารางดรอป: [ไอเทม, โอกาส 0–1, จำนวน] ทอยแยกทีละแถว */
+ drops:{
+  'ไก่ฟ้า':[['feather',.6,1],['potion_s',.15,1]],
+  'กระต่ายมีเขา':[['horn',.5,1],['hide',.4,1],['potion_s',.15,1],['sword_wood',.04,1]],
+  'หมูป่า':[['tusk',.5,1],['hide',.5,1],['potion_s',.2,1],['coat_cloth',.05,1]],
+  'หมาป่า':[['fang',.5,1],['hide',.5,1],['potion_s',.2,1],['sword_wood',.06,1]],
+  'ก็อบลิน':[['ore',.4,1],['potion_s',.3,1],['coat_cloth',.06,1],['charm_silver',.03,1]],
+  'เสือ':[['fang',.7,2],['hide',.6,2],['potion_m',.25,1],['coat_leather',.06,1]],
+  'หมีเขา':[['hide',.7,2],['horn',.5,1],['potion_m',.3,1],['coat_leather',.07,1]],
+  'โกเลมหิน':[['ore',.8,3],['potion_m',.3,1],['sword_iron',.07,1]],
+  'กระทิงผี':[['horn',.6,2],['spirit',.4,1],['potion_m',.3,1],['sword_iron',.06,1]],
+  'วิญญาณไม้':[['spirit',.6,2],['potion_m',.3,1],['charm_silver',.06,1]],
+  'ลิงป่า':[['hide',.5,1],['potion_s',.2,1]],
+  'กวางภูเขา':[['horn',.6,1],['hide',.5,1]],
+  'นักรบเผ่าป่า':[['ore',.4,1],['potion_m',.25,1],['sword_iron',.05,1]],
+  'ปีศาจ':[['spirit',.7,2],['potion_m',.3,1],['charm_silver',.06,1]]}
 };
 const Combat={
  damage(atk,mult,rnd,critRoll){const crit=critRoll<.1;return{dmg:Math.max(1,Math.round(atk*mult*(.9+.2*rnd)*(crit?1.5:1))),crit}},

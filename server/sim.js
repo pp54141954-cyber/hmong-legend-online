@@ -32,15 +32,73 @@ function makeZone(id) {
 }
 
 function createSim({ rand = Math.random } = {}) {
+  // rand เปลี่ยนได้ (setRand) สำหรับฉากทดสอบ
   const zones = {};
   for (const id of Object.keys(ZONES)) zones[id] = makeZone(id);
   const players = new Set();
 
   // ---------- ผู้เล่น ----------
-  function stats(p) { const P = CFG.player; p.maxHp = P.baseHP + (p.c.lv - 1) * P.hpPerLv; p.atk = P.baseAtk + (p.c.lv - 1) * P.atkPerLv; }
+  // ค่าสถานะ = ฐานตามเลเวล + อุปกรณ์ที่ใส่
+  function stats(p) {
+    const P = CFG.player, eq = p.c.eq || {};
+    let atk = 0, def = 0, hp = 0;
+    for (const id of Object.values(eq)) { const it = id && CFG.items[id]; if (it) { atk += it.atk || 0; def += it.def || 0; hp += it.hp || 0; } }
+    p.maxHp = P.baseHP + (p.c.lv - 1) * P.hpPerLv + hp; p.atk = P.baseAtk + (p.c.lv - 1) * P.atkPerLv + atk; p.def = def;
+    if (p.hp > p.maxHp) p.hp = p.maxHp;
+  }
   function addPlayer(p) {
-    Object.assign(p, { hp: 0, dead: false, deadT: 0, cd: {}, castUntil: 0, buffT: 0, buffBonus: 0, guardT: 0, guardRed: 0, personal: [] });
+    p.c.bag = Array.isArray(p.c.bag) ? p.c.bag.filter(s => s && CFG.items[s.id] && s.n > 0) : [];
+    p.c.eq = Object.assign({ weapon: null, armor: null, acc: null }, p.c.eq || {});
+    Object.assign(p, { hp: 0, dead: false, deadT: 0, cd: {}, castUntil: 0, buffT: 0, buffBonus: 0, guardT: 0, guardRed: 0, personal: [], potionAt: 0, bagDirty: true });
     stats(p); p.hp = p.maxHp; players.add(p);
+  }
+
+  // ---------- กระเป๋า / อุปกรณ์ ----------
+  const B = CFG.bag;
+  // ใส่ของเข้ากระเป๋า: ของใช้/วัตถุดิบซ้อนได้ถึง B.stack, อุปกรณ์ช่องละชิ้น — คืนจำนวนที่ใส่ได้จริง
+  function addItem(p, id, n) {
+    const it = CFG.items[id]; if (!it || n <= 0) return 0;
+    const bag = p.c.bag; let left = n;
+    if (it.type !== 'eq') for (const s of bag) { if (s.id !== id || left <= 0) continue; const k = Math.min(left, B.stack - s.n); s.n += k; left -= k; }
+    while (left > 0 && bag.length < B.slots) { const k = it.type === 'eq' ? 1 : Math.min(left, B.stack); bag.push({ id, n: k }); left -= k; }
+    if (left < n) { p.bagDirty = true; p.dirty = true; }
+    if (left > 0) p.personal.push({ k: 'bagfull', id, lost: left });
+    return n - left;
+  }
+  function rollDrops(p, m) {
+    for (const [id, chance, n] of CFG.drops[m.type] || []) {
+      if (rand() >= chance) continue;
+      const got = addItem(p, id, n);
+      if (got) p.personal.push({ k: 'loot', id, n: got, from: m.id });
+    }
+  }
+  // คำขอจากเครื่องผู้เล่น: use / equip (ช่องในกระเป๋า) หรือ unequip (ชื่อช่องอุปกรณ์)
+  function inv(p, op, arg, now) {
+    if (p.dead) return 'dead';
+    const bag = p.c.bag;
+    if (op === 'use' || op === 'equip') {
+      const i = Math.floor(+arg), s = bag[i]; if (!Number.isInteger(i) || !s) return 'empty';
+      const it = CFG.items[s.id];
+      if (op === 'use') {
+        if (it.type !== 'use') return 'not-usable';
+        if (now < p.potionAt) return 'cooldown';
+        if (p.hp >= p.maxHp) return 'hp-full';
+        p.hp = Math.min(p.maxHp, p.hp + it.heal); p.potionAt = now + B.potionCd;
+        if (--s.n <= 0) bag.splice(i, 1);
+      } else {
+        if (it.type !== 'eq') return 'not-equip';
+        const old = p.c.eq[it.slot];
+        p.c.eq[it.slot] = s.id;
+        if (old) bag[i] = { id: old, n: 1 }; else bag.splice(i, 1);
+        stats(p);
+      }
+    } else if (op === 'unequip') {
+      if (!Object.prototype.hasOwnProperty.call(p.c.eq, arg) || !p.c.eq[arg]) return 'empty';
+      if (bag.length >= B.slots) return 'bag-full';
+      bag.push({ id: p.c.eq[arg], n: 1 }); p.c.eq[arg] = null; stats(p);
+    } else return 'invalid';
+    p.bagDirty = true; p.dirty = true;
+    return 'ok';
   }
   function removePlayer(p) { players.delete(p); for (const z of Object.values(zones)) for (const m of z.mons) if (m.target === p) m.target = null; }
   const zoneOf = p => zones[p.c.zone];
@@ -75,6 +133,7 @@ function createSim({ rand = Math.random } = {}) {
     if (m.hp <= 0) {
       m.state = 'dead'; m.respT = m.c.respawn; m.target = null; p.kills = (p.kills || 0) + 1;
       gain(p, m.c.exp, m.c.job);
+      rollDrops(p, m);
       z.events.push({ k: 'kill', id: m.id, by: p.id });
       p.personal.push({ k: 'reward', id: m.id, exp: m.c.exp, job: m.c.job });
     }
@@ -131,6 +190,7 @@ function createSim({ rand = Math.random } = {}) {
 
   function hitPlayer(p, m) {
     const r = Combat.damage(m.c.atk, 1, rand(), 1);
+    r.dmg = Math.max(1, r.dmg - (p.def || 0)); // เกราะลดดาเมจแบบหักตรง (ค่าชั่วคราว)
     if (p.guardT > 0) r.dmg = Math.max(1, Math.round(r.dmg * (1 - p.guardRed)));
     p.hp -= r.dmg; p.personal.push({ k: 'hurt', dmg: r.dmg, guard: p.guardT > 0, by: m.id });
     if (p.hp <= 0) { p.hp = 0; p.dead = true; p.deadT = CFG.player.respawnSec; p.personal.push({ k: 'dead' }); for (const z of Object.values(zones)) for (const mm of z.mons) if (mm.target === p) mm.target = null; }
@@ -183,6 +243,6 @@ function createSim({ rand = Math.random } = {}) {
     }
   }
 
-  return { zones, players, addPlayer, removePlayer, act, step, pathClear, stats, gain };
+  return { zones, players, addPlayer, removePlayer, act, step, pathClear, stats, gain, addItem, inv, setRand(f) { rand = f; } };
 }
 module.exports = { createSim };
