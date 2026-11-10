@@ -1,5 +1,12 @@
 # ประวัติเวอร์ชัน
 
+## V2-R9 — 2026-11-10 (รูปหน้าเป้าหมายมอนสเตอร์จากภาพออกแบบ)
+
+- สำรองไฟล์ก่อนแก้: `game/versions/r10-before-portraits.html`
+- `tools/build_monster_portraits.py`: ตัดภาพใหญ่ 14 มอนสเตอร์ + 6 บอสจาก `assets/design_refs/08_monsters14_bosses6_animset.png` → `assets/portraits/`
+- `tools/embed_monster_portraits.py` + `game/index.html`: ช่องเป้าหมายใช้รูปใหม่ (ไม่มีรูปใช้ ATL เดิม)
+- ทดสอบ: smoke 26/26 (เพิ่มรูปครบ 14 และเทียบพิกเซลช่องเป้าหมาย), online 56/56, sim 46/46
+
 ## V2-R8 — 2026-11-10 (แต้มอัปสกิลจากตาราง CSV)
 
 - สำรองไฟล์ก่อนแก้: `game/versions/r9-before-skillpoints.html`
