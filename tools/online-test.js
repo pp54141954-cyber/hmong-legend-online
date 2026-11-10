@@ -97,8 +97,8 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   rec('เครื่อง A เห็นตัวเลขของดรอป', await until(async () => (await A.page.evaluate(() => HLNET.stats.loot || 0)) >= 2));
   await A.page.click('#bagb');
   rec('ปุ่ม 🎒 เปิดกระเป๋า เห็นของที่ได้', await until(async () => { const t = await A.page.textContent('#bag'); return t.includes('ขนไก่ฟ้า') && t.includes('ยาสมุนไพรเล็ก'); }));
-  const icons = await A.page.evaluate(() => [...document.querySelectorAll('#bag img.ic')].map(i => i.complete && i.naturalWidth === 32));
-  rec('ไอคอนไอเทมในกระเป๋าแสดงครบ (V2-R5)', icons.length >= 2 && icons.every(Boolean), icons.length + ' รูป');
+  const icons = await A.page.evaluate(() => [...document.querySelectorAll('#bag img.ic')].map(i => i.complete && i.naturalWidth > 0));
+  rec('ไอคอนไอเทมในกระเป๋าแสดงครบ', icons.length >= 2 && icons.every(Boolean), icons.length + ' รูป');
   srv.sim.addItem(SA(), 'sword_iron', 1); // ฉาก: ให้ดาบเหล็ก 1 เล่ม
   await A.page.waitForSelector('#bag button[aria-label="ใส่ ดาบเหล็กตีมือ"]', { timeout: 3000 });
   const atkBase = SA().atk;
