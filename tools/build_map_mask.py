@@ -15,11 +15,17 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 T, COLS, ROWS = 32, 48, 32
 ZONES = {
     'village2': dict(src='assets/design_refs/09_village_walkpath_model.jpg', thr=.3),
+    # ทุ่งใหม่: พื้นเดินได้คือหญ้าเขียวสว่าง (+ บันได/สะพาน/ทางดิน)
+    'field2': dict(src='assets/design_refs/11_field_walkpath_model.png', thr=.3, kind='grass'),
 }
 
 def is_path(p):
     r, g, b = p
     return r > 140 and g > 95 and b < 150 and r - b > 40 and r > g > b - 10 and r - g < 75
+
+def is_grass(p):
+    r, g, b = p
+    return g > 140 and r < 150 and b < 110 and g - r > 50 and g - b > 70
 
 def is_water(p):
     r, g, b = p
@@ -34,7 +40,7 @@ def auto(im):
             for y in range(ty * T + 2, ty * T + T - 2, 3):
                 for x in range(tx * T + 2, tx * T + T - 2, 3):
                     p = px[x, y][:3]; n += 1
-                    pa += is_path(p); wa += is_water(p)
+                    pa += (is_grass(p) if ZONES_CUR.get('kind') == 'grass' else is_path(p)); wa += is_water(p)
             row += '.' if pa / n >= ZONES_CUR['thr'] else ('~' if wa / n > .5 else '#')
         rows.append(row)
     return rows
@@ -84,8 +90,26 @@ LINK = {'village2': [
     ('.', 37, 16, 40, 18),                   # ทางไปบ้านหลังที่ 4
 ]}
 
+LINK['field2'] = [
+    ('.', 13, 9, 14, 11),    # บันไดถ้ำ → ทุ่งบนซ้าย
+    ('.', 9, 20, 10, 22),    # บันไดซ้าย → ทุ่งล่าง
+    ('.', 21, 14, 28, 15),   # สะพานเชือก
+    ('.', 40, 11, 42, 14),   # บันไดขวาบน → ประตูหิน
+    ('.', 40, 18, 42, 21),   # บันไดขวากลาง
+    ('.', 16, 27, 18, 31),   # บันไดล่างซ้าย (ทางออกใต้)
+    ('.', 33, 26, 35, 29),   # บันไดล่างขวา
+    ('.', 9, 5, 11, 7), ('.', 42, 6, 44, 7),  # หน้าปากถ้ำ / หน้าประตูหิน
+]
+
 # แก้ด้วยมือ: (อักษร, x0, y0, x1, y1) รวมปลายทาง — อ่านจากภาพตรวจ docs/evidence/map_<zone>_mask.png
-FIX = {'village2': [
+FIX = {'field2': [
+    ('#', 0, 13, 6, 18),     # บ้านบ่อน้ำและแปลงผัก
+    ('E', 9, 4, 11, 4),     # ปากถ้ำ → โซนถัดไป
+    ('E', 43, 5, 44, 5),    # ประตูหิน → โซนถัดไป
+    ('#', 0, 7, 3, 10),     # ต้นไม้มุมซ้ายบน
+    ('#', 0, 19, 2, 24),    # ต้นไม้ขอบซ้ายล่าง
+    ('.', 0, 11, 2, 12), ('E', 0, 11, 0, 12),  # ทางเข้าจากหมู่บ้าน (ขอบซ้าย)
+], 'village2': [
     # หลังคามุงจากสีใกล้ทางดิน → กีดขวาง
     ('#', 9, 7, 11, 9),     # โรงตีเหล็ก
     ('#', 8, 13, 9, 14),    # บ้านหลังที่ 1

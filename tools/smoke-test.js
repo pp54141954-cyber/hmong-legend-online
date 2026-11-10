@@ -157,7 +157,24 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   // เดินออกทางล่าง → ทุ่งมอนสเตอร์
   await page.evaluate(() => { HL.player.x = 35.5 * HL.T; HL.player.y = 29.6 * HL.T; });
   await page.keyboard.down('ArrowDown'); await page.waitForTimeout(900); await page.keyboard.up('ArrowDown');
-  rec('เดินออกบันไดล่างแล้วย้ายไปทุ่งมอนสเตอร์', (await pos()).zone === 'field');
+  rec('เดินออกบันไดล่างแล้วย้ายไปทุ่งน้ำตก (แผนที่ใหม่)', (await pos()).zone === 'field2');
+  // ทุ่งน้ำตก (V2-R12)
+  await page.waitForTimeout(400);
+  const f2 = await page.evaluate(() => {
+    const T = HL.T, s = HL.ZONES.field2.start, sx = Math.floor(s[0] / T), sy = Math.floor(s[1] / T), seen = new Set([sx + ',' + sy]), q = [[sx, sy]];
+    while (q.length) { const [x, y] = q.shift(); for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = (x + a) + ',' + (y + b); if (!seen.has(k) && !HL.tileBlocked(x + a, y + b)) { seen.add(k); q.push([x + a, y + b]); } } }
+    const im = HL.mapImg('field2');
+    const monsOk = HL.mons.filter(m => seen.has(Math.floor(m.x / T) + ',' + Math.floor(m.y / T)));
+    return { img: im && im.complete ? im.naturalWidth : 0, reach: seen.size, mons: HL.mons.length, monsReach: monsOk.length, types: new Set(HL.mons.map(m => m.type)).size,
+      cave: [9, 10, 11].some(x => seen.has(x + ',4')), portal: [43, 44].some(x => seen.has(x + ',5')), water: HL.tileBlocked(32, 20), cliff: HL.tileBlocked(24, 11) };
+  });
+  rec('ทุ่งน้ำตก: ภาพโหลด + เดินถึงปากถ้ำและประตูหินได้', f2.img === 1536 && f2.cave && f2.portal, 'ถึงได้ ' + f2.reach + ' ช่อง');
+  rec('ทุ่งน้ำตก: มอนสเตอร์ 10 ชนิดเกิดบนพื้นที่เดินถึงได้ทุกตัว', f2.types === 10 && f2.monsReach === f2.mons, f2.monsReach + '/' + f2.mons + ' ตัว');
+  rec('ทุ่งน้ำตก: น้ำและหน้าผาเดินทะลุไม่ได้', f2.water && f2.cliff);
+  await page.screenshot({ path: 'tools/last-field2.png' });
+  await page.evaluate(() => { HL.player.x = 1.5 * HL.T; HL.player.y = 11.5 * HL.T; });
+  await page.keyboard.down('ArrowLeft'); await page.waitForTimeout(600); await page.keyboard.up('ArrowLeft');
+  rec('เดินออกขอบซ้ายกลับหมู่บ้านแผนที่ใหม่', (await pos()).zone === 'village2');
   await page.evaluate(() => { const s = HL.ZONES.village.start; HL.enterZone('village', s[0], s[1]); });
 
   // ย้ายโซนผ่านปุ่มทดสอบ
