@@ -33,6 +33,11 @@ function makeZone(id) {
   };
   const mons = [];
   let nid = 1;
+  // บอส (V2-R16): เริ่มแบบซ่อน แล้ว step() เปิดตามช่วงเวลา
+  (CFG.bosses[id] || []).forEach(b => {
+    const c = CFG.monsters[b.type], [hx, hy] = findFree(b.tx, b.ty);
+    mons.push({ id: nid++, type: b.type, c, when: b.when, away: true, x: hx, y: hy, hx, hy, hp: c.hp, state: 'dead', t: 9, atkT: 0, dir: 'S', wx: hx, wy: hy, respT: 1e9, markT: 0, markBonus: 0, target: null });
+  });
   (G.D.spawns || []).forEach(sp => {
     const c = CFG.monsters[sp.type];
     for (let i = 0; i < sp.count; i++) {
@@ -44,6 +49,7 @@ function makeZone(id) {
 }
 
 function createSim({ rand = Math.random } = {}) {
+  let timeOff = 0, WT = CFG.worldClock(Date.now() / 1000); // นาฬิกาโลก (ทดสอบเลื่อนเวลาได้ด้วย setTimeOffset)
   // rand เปลี่ยนได้ (setRand) สำหรับฉากทดสอบ
   const zones = {};
   for (const id of Object.keys(ZONES)) zones[id] = makeZone(id);
@@ -173,7 +179,8 @@ function createSim({ rand = Math.random } = {}) {
     if (m.state === 'idle' || m.state === 'return') { m.state = 'chase'; m.target = p; }
     if (m.hp <= 0) {
       m.state = 'dead'; m.respT = m.c.respawn; m.target = null; p.kills = (p.kills || 0) + 1;
-      gain(p, m.c.exp, m.c.job);
+      gain(p, Math.round(m.c.exp * WT.exp), Math.round(m.c.job * WT.exp));
+      if (m.c.boss) for (const q of players) q.personal.push({ k: 'announce', msg: q === p ? 'ปราบบอส ' + m.type + ' สำเร็จ!' : (p.c.name || 'ผู้เล่น') + ' ปราบบอส ' + m.type + ' แล้ว' });
       rollDrops(p, m);
       z.events.push({ k: 'kill', id: m.id, by: p.id });
       p.personal.push({ k: 'reward', id: m.id, exp: m.c.exp, job: m.c.job });
@@ -237,7 +244,7 @@ function createSim({ rand = Math.random } = {}) {
   }
 
   function hitPlayer(p, m) {
-    const r = Combat.damage(m.c.atk, 1, rand(), 1);
+    const r = Combat.damage(m.c.atk * WT.atk, 1, rand(), 1);
     r.dmg = Math.max(1, r.dmg - (p.def || 0)); // เกราะลดดาเมจแบบหักตรง (ค่าชั่วคราว)
     if (p.guardT > 0) r.dmg = Math.max(1, Math.round(r.dmg * (1 - p.guardRed)));
     p.hp -= r.dmg; p.personal.push({ k: 'hurt', dmg: r.dmg, guard: p.guardT > 0, by: m.id });
@@ -253,7 +260,7 @@ function createSim({ rand = Math.random } = {}) {
     return false;
   }
   function updMon(z, m, dt, here) {
-    if (m.state === 'dead') { m.respT -= dt; if (m.respT <= 0) { m.state = 'idle'; m.hp = m.c.hp; m.x = m.hx; m.y = m.hy; m.markT = 0; } return; }
+    if (m.state === 'dead') { m.respT -= dt; if (m.respT <= 0 && (!m.when || CFG.bossActive(m.when, WT))) { m.state = 'idle'; m.hp = m.c.hp; m.x = m.hx; m.y = m.hy; m.markT = 0; } return; }
     m.atkT = Math.max(0, m.atkT - dt); m.markT = Math.max(0, m.markT - dt);
     const hd = Math.hypot(m.x - m.hx, m.y - m.hy);
     if (m.state === 'return') { if (monMove(z, m, m.hx, m.hy, m.c.speed * 1.4, dt)) { m.state = 'idle'; m.hp = m.c.hp; } return; }
@@ -273,7 +280,17 @@ function createSim({ rand = Math.random } = {}) {
     monMove(z, m, m.wx, m.wy, m.c.speed * .35, dt);
   }
 
+  function gateBoss(m) {
+    if (!m.when) return;
+    const on = CFG.bossActive(m.when, WT);
+    if (on && m.away) {
+      m.away = false; m.state = 'idle'; m.hp = m.c.hp; m.x = m.hx; m.y = m.hy; m.target = null;
+      if (m.when !== 'always') for (const q of players) q.personal.push({ k: 'announce', msg: (m.when === 'world' ? 'World Boss ' : 'บอสคืนพระจันทร์สีเลือด ') + m.type + ' ปรากฏ!' });
+    } else if (!on && !m.away && m.state !== 'chase') { m.away = true; m.state = 'dead'; m.respT = 1e9; m.target = null; }
+  }
   function step(dt, now) {
+    WT = CFG.worldClock((now ?? Date.now() / 1000) + timeOff);
+    for (const z of Object.values(zones)) for (const m of z.mons) gateBoss(m);
     for (const p of players) {
       p.buffT = Math.max(0, p.buffT - dt); p.guardT = Math.max(0, p.guardT - dt);
       if (p.dead) { p.deadT -= dt; if (p.deadT <= 0) { const h = CFG.player.home, s = ZONES[h].start; p.dead = false; p.hp = p.maxHp; p.c.zone = h; p.c.x = s[0]; p.c.y = s[1]; p.c.dir = 'S'; p.personal.push({ k: 'respawn', zone: h, x: s[0], y: s[1] }); p.dirty = true; } }
@@ -291,6 +308,6 @@ function createSim({ rand = Math.random } = {}) {
     }
   }
 
-  return { zones, players, addPlayer, removePlayer, act, step, pathClear, stats, gain, addItem, inv, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
+  return { get WT() { return WT; }, setTimeOffset(s) { timeOff = s; }, zones, players, addPlayer, removePlayer, act, step, pathClear, stats, gain, addItem, inv, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
 }
 module.exports = { createSim };

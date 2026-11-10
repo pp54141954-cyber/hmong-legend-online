@@ -171,6 +171,40 @@ const killFirst = (sim, p, type) => {
   rec('โอกาสคริติคอล +10% (2 สกิลบวกกัน) ทำให้คริได้', n && !n.crit && c && c.crit);
 }
 
+// ---------- V2-R16 กลางวัน/กลางคืน/คืนพระจันทร์สีเลือด/บอส ----------
+{
+  const C = W.CFG.time, wc = W.CFG.worldClock;
+  const day = wc(C.cycleSec * 1 + 10), night = wc(C.cycleSec * 1 + C.cycleSec * C.dayFrac + 10), blood = wc(C.cycleSec * 3 + C.cycleSec * C.dayFrac + 10);
+  rec('นาฬิกา: กลางวัน / กลางคืน / ทุกคืนที่ 3 = พระจันทร์สีเลือด', !day.night && night.night && !night.blood && blood.blood, [day.name, night.name, blood.name].join(' · '));
+  rec('World Boss เปิด ' + C.worldWindow + ' วิ ทุก ' + C.worldEvery + ' วิ', wc(10).world && !wc(C.worldWindow + 10).world && wc(C.worldEvery + 5).world);
+  // เวลาที่ใช้ทดสอบ (ไม่ใช่ช่วง World Boss): กลางวัน / กลางคืนธรรมดา / คืนเลือด
+  const T_DAY = C.cycleSec * 2.25, T_NIGHT = C.cycleSec * 2.75, T_BLOOD = C.cycleSec * 3.67; // รอบที่ 2 = คืนธรรมดา, รอบที่ 3 = คืนเลือด; T_DAY/T_NIGHT อยู่นอกช่วง World Boss
+  const bossState = (t, zone, type) => { const sim = createSim(); sim.step(.05, t); return sim.zones[zone].mons.find(m => m.type === type); };
+  rec('บอสประจำพื้นที่ (ราชาปีศาจภูเขา) อยู่ตลอด', bossState(T_DAY, 'peak', 'ราชาปีศาจภูเขา').state === 'idle' && bossState(T_NIGHT, 'peak', 'ราชาปีศาจภูเขา').state === 'idle');
+  const bd = bossState(T_DAY, 'rainforest', 'วิญญาณหมาป่าศักดิ์สิทธิ์'), bb = bossState(T_BLOOD, 'rainforest', 'วิญญาณหมาป่าศักดิ์สิทธิ์');
+  rec('บอสคืนเลือดซ่อนตอนกลางวัน และปรากฏคืนพระจันทร์สีเลือด', bd.away && bd.state === 'dead' && !bb.away && bb.state === 'idle');
+  const wOff = bossState(C.worldWindow + 30, 'peak', 'มังกรแห่งหุบเขาหมอก'), wOn = bossState(C.worldEvery + 30, 'peak', 'มังกรแห่งหุบเขาหมอก');
+  rec('World Boss ซ่อนนอกช่วง และปรากฏในช่วง', wOff.away && !wOn.away && wOn.state === 'idle');
+  // ประกาศ: ผู้เล่นออนไลน์ได้ข้อความเมื่อ World Boss ปรากฏ
+  { const sim = createSim(), p = mkP(sim); sim.step(.05, C.worldWindow + 30); p.personal = []; sim.step(.05, C.worldEvery + 30);
+    rec('ประกาศ World Boss ถึงผู้เล่นทุกคน', p.personal.some(e => e.k === 'announce' && e.msg.includes('มังกรแห่งหุบเขาหมอก'))); }
+  // กลางคืน: มอนสเตอร์ตีแรงขึ้น ×1.2, คืนเลือด ×1.5; รางวัล EXP ×1.25 / ×2
+  const hit = t => { const sim = createSim({ rand: () => .5 }), p = mkP(sim); sim.step(.01, t);
+    const z = sim.zones.village, m = z.mons.find(m => m.type === 'กระต่ายมีเขา'); m.c = W.CFG.monsters['หมาป่า'];
+    Object.assign(m, { x: PX + 20, y: PY, hx: PX + 20, hy: PY, state: 'chase', target: p, atkT: 0 }); const h0 = p.hp; sim.step(.05, t); return h0 - p.hp; };
+  const dD = hit(T_DAY), dN = hit(T_NIGHT), dB = hit(T_BLOOD);
+  rec('ดาเมจหมาป่า กลางวัน/กลางคืน/คืนเลือด = 11 / 13 / 17', dD === 11 && dN === 13 && dB === 17, dD + ' / ' + dN + ' / ' + dB);
+  const ex = t => { const sim = createSim({ rand: () => .5 }), p = mkP(sim, { job: 30 }); sim.step(.01, t);
+    const z = sim.zones.village, m = z.mons.find(m => m.type === 'ไก่ฟ้า'); Object.assign(m, { x: PX + 20, y: PY, hx: PX + 20, hy: PY, wx: PX + 20, wy: PY, t: 99, hp: 1, state: 'idle' });
+    sim.act(p, 'b', t); for (let k = 0; k < 10; k++) sim.step(.05, t + k * .05); return p.c.exp; };
+  rec('EXP ไก่ฟ้า กลางวัน/กลางคืน/คืนเลือด = 6 / 8 / 12', ex(T_DAY) === 6 && ex(T_NIGHT) === 8 && ex(T_BLOOD) === 12, ex(T_DAY) + ' / ' + ex(T_NIGHT) + ' / ' + ex(T_BLOOD));
+  // ปราบบอส → รางวัลบอส + ประกาศ
+  { const sim = createSim({ rand: () => .5 }), p = mkP(sim, { zone: 'peak', job: 30 }); sim.step(.01, T_DAY);
+    const z = sim.zones.peak, b = z.mons.find(m => m.type === 'ราชาปีศาจภูเขา'); Object.assign(p.c, { x: b.x - 20, y: b.y, dir: 'E' }); b.hp = 1; b.t = 99; p.hp = p.maxHp = 1e6; // ฉาก: ผู้เล่นทนพอให้ท่าออก
+    sim.act(p, 'b', T_DAY); for (let k = 0; k < 10; k++) sim.step(.05, T_DAY + k * .05);
+    rec('ปราบบอสได้ EXP บอส (8000) และมีประกาศ', b.state === 'dead' && p.c.lv > 1 && p.personal.some(e => e.k === 'announce' && e.msg.includes('ราชาปีศาจภูเขา')), 'Lv ' + p.c.lv); }
+}
+
 const fail = results.filter(r => !r.pass).length;
 console.log('\nสรุป: ' + (results.length - fail) + '/' + results.length + ' ผ่าน');
 process.exit(fail ? 1 : 0);

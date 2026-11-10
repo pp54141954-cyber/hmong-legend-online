@@ -162,8 +162,28 @@ const CFG={
   'กวางภูเขา':{hp:120,atk:12,exp:32,job:12,speed:100,aggro:0,leash:230,atkRange:26,atkCd:1.2,size:14,respawn:10},
   'นักรบเผ่าป่า':{hp:200,atk:21,exp:60,job:22,speed:80,aggro:140,leash:240,atkRange:30,atkCd:1.3,size:13,respawn:15},
   'ปีศาจ':{hp:300,atk:27,exp:95,job:34,speed:85,aggro:150,leash:250,atkRange:30,atkCd:1.4,size:15,respawn:22},
-  'วิญญาณไม้':{hp:280,atk:23,exp:85,job:30,speed:55,aggro:120,leash:210,atkRange:34,atkCd:1.6,size:19,respawn:20,color:'#6b5a32',color2:'#3fa04a'}},
+  'วิญญาณไม้':{hp:280,atk:23,exp:85,job:30,speed:55,aggro:120,leash:210,atkRange:34,atkCd:1.6,size:19,respawn:20,color:'#6b5a32',color2:'#3fa04a'},
+  /* ===== บอส 6 ตัว (V2-R16) — ค่าชั่วคราวทั้งหมด รอปรับสมดุล; boss:1 = ป้ายบอส/ไม่หนีกลับง่าย ===== */
+  'วิญญาณแห่งป่า':{boss:1,hp:3000,atk:45,exp:900,job:200,speed:70,aggro:170,leash:320,atkRange:46,atkCd:1.6,size:28,respawn:600,color:'#2f8a7a',color2:'#7fe0d0'},
+  'เทพหมาป่าภูเขา':{boss:1,hp:6000,atk:70,exp:1800,job:380,speed:95,aggro:180,leash:340,atkRange:48,atkCd:1.4,size:30,respawn:900,color:'#dfe8f2',color2:'#8fc0ff'},
+  'มังกรภูเขาดำ':{boss:1,hp:12000,atk:110,exp:4000,job:800,speed:60,aggro:190,leash:360,atkRange:56,atkCd:1.8,size:36,respawn:1200,color:'#2a2a32',color2:'#7a3aa0'},
+  'ราชาปีศาจภูเขา':{boss:1,hp:20000,atk:150,exp:8000,job:1500,speed:70,aggro:200,leash:380,atkRange:54,atkCd:1.6,size:34,respawn:1800,color:'#7a1414',color2:'#1a1a1a'},
+  'วิญญาณหมาป่าศักดิ์สิทธิ์':{boss:1,hp:9000,atk:90,exp:5000,job:1000,speed:100,aggro:190,leash:360,atkRange:50,atkCd:1.3,size:32,respawn:1e6,color:'#f4ead2',color2:'#f2c14e'},
+  'มังกรแห่งหุบเขาหมอก':{boss:1,world:1,hp:60000,atk:200,exp:30000,job:5000,speed:55,aggro:240,leash:460,atkRange:70,atkCd:2,size:44,respawn:1e6,color:'#e8f2ff',color2:'#8fc8ff'}},
  /* ===== ไอเทม (V2-R4) — ชื่อ ค่า และอัตราดรอปทั้งหมดเป็นค่าชั่วคราว รอข้อกำหนด/อนุมัติ ===== */
+ /* ===== กลางวัน/กลางคืน/คืนพระจันทร์สีเลือด/World Boss (V2-R16) — เวลาจริง (วินาที) เกมกับเซิร์ฟเวอร์คิดเหมือนกัน ===== */
+ time:{cycleSec:1200,dayFrac:.6,bloodEvery:3,worldEvery:3600,worldWindow:900,
+  night:{atk:1.2,exp:1.25},blood:{atk:1.5,exp:2}},
+ worldClock(t){const C=CFG.time,ci=Math.floor(t/C.cycleSec),ph=(t%C.cycleSec)/C.cycleSec,night=ph>=C.dayFrac,blood=night&&ci%C.bloodEvery===0,
+  wph=t%C.worldEvery,world=wph<C.worldWindow,M=blood?C.blood:night?C.night:{atk:1,exp:1};
+  return{night,blood,world,atk:M.atk,exp:M.exp,name:blood?'คืนพระจันทร์สีเลือด':night?'กลางคืน':'กลางวัน',
+   left:Math.ceil(night?C.cycleSec*(1-ph):C.cycleSec*(C.dayFrac-ph)),worldLeft:Math.ceil(world?C.worldWindow-wph:C.worldEvery-wph)}},
+ /* บอสประจำโซน: when = always (บอสประจำพื้นที่) / bloodmoon / world */
+ bosses:{bamboo:[{type:'วิญญาณแห่งป่า',tx:24,ty:24,when:'always'}],
+  rainforest:[{type:'เทพหมาป่าภูเขา',tx:33,ty:17,when:'always'},{type:'วิญญาณหมาป่าศักดิ์สิทธิ์',tx:11,ty:20,when:'bloodmoon'}],
+  mine:[{type:'มังกรภูเขาดำ',tx:28,ty:15,when:'always'}],
+  peak:[{type:'ราชาปีศาจภูเขา',tx:13,ty:9,when:'always'},{type:'มังกรแห่งหุบเขาหมอก',tx:35,ty:20,when:'world'}]},
+ bossActive(when,wt){return !when||when==='always'||(when==='bloodmoon'&&wt.blood)||(when==='world'&&wt.world)},
  bag:{slots:30,stack:99,potionCd:1},
  items:{
   potion_s:{name:'ยาสมุนไพรเล็ก',type:'use',heal:40},

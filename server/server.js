@@ -157,7 +157,8 @@ function createServer(opts = {}) {
     }
     for (const p of online.values()) {
       const z = zs[p.c.zone], c = p.c;
-      send(p.ws, { t: 'snap', players: (byZone[c.zone] || []).filter(o => o.id !== p.id), mons: z.mons, ev: z.ev,
+      const W = sim.WT;
+      send(p.ws, { t: 'snap', tm: { night: W.night, blood: W.blood, world: W.world, atk: W.atk, exp: W.exp, name: W.name, left: W.left, worldLeft: W.worldLeft }, players: (byZone[c.zone] || []).filter(o => o.id !== p.id), mons: z.mons, ev: z.ev,
         me: { zone: c.zone, x: R(c.x), y: R(c.y), hp: Math.ceil(p.hp), maxHp: p.maxHp, atk: p.atk, def: p.def, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, dead: p.dead, buffT: p.buffT, guardT: p.guardT, ev: p.personal,
           ...(p.bagDirty ? { bag: c.bag, eq: c.eq } : {}),
           ...(p.skDirty ? { sk: c.sk, pts: sim.freePoints(p), bon: p.bon } : {}) } });

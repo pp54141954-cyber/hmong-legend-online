@@ -39,7 +39,10 @@ def main():
         buf = io.BytesIO(); p.save(buf, 'JPEG', quality=88)
         uris[name] = 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode()
     for name, b in zip(BOSSES, boss_boxes()):
-        im.crop(b).resize((SIZE, SIZE), Image.LANCZOS).save(os.path.join(OUT, 'boss_' + name + '.png'), optimize=True)
+        p = im.crop(b).resize((SIZE, SIZE), Image.LANCZOS)
+        p.save(os.path.join(OUT, 'boss_' + name + '.png'), optimize=True)
+        buf = io.BytesIO(); p.save(buf, 'JPEG', quality=88)
+        uris[name] = 'data:image/jpeg;base64,' + base64.b64encode(buf.getvalue()).decode()  # V2-R16: บอสใช้ในเกมแล้ว
     json.dump(uris, open(os.path.join(OUT, 'portraits.json'), 'w'), ensure_ascii=False, separators=(',', ':'))
     print('มอนสเตอร์', len(uris), 'บอส', len(BOSSES), 'bytes', sum(len(v) for v in uris.values()))
 

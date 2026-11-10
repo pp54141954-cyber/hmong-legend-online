@@ -160,9 +160,7 @@ def main():
         print(key, e)
     uris = {}
     for key, e in meta.items():
-        if key.startswith('boss:'):
-            continue
-        d = dict(e)
+        d = dict(e); key = key.replace('boss:', '')  # V2-R16: ฝังภาพบอสด้วย (คีย์ = ชื่อบอส)
         for k in ('walk', 'act'):
             if k in e:
                 # ฝังเป็น WebP (เล็กกว่า PNG ~5 เท่า) — Safari 14+, Chrome, Firefox รองรับ

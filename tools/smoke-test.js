@@ -87,8 +87,8 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   rec('ได้ EXP และ Job EXP เมื่อฆ่า', after.kills > before.kills && (after.exp > before.exp || after.lv > before.lv) && (after.jexp > before.jexp || after.job > before.job), JSON.stringify({ before, after }));
 
   // รูปหน้าเป้าหมาย (V2-R9): รูปครบ 14 ตัว และช่องเป้าหมายวาดรูปจริง
-  const arts = await page.evaluate(() => Promise.all(Object.keys(HL.CFG.monsters).map(ty => new Promise(res => { const im = HL.monArt(ty); if (!im) return res([ty, 0]); if (im.complete) return res([ty, im.naturalWidth]); im.onload = () => res([ty, im.naturalWidth]); im.onerror = () => res([ty, -1]); }))));
-  rec('รูปหน้าเป้าหมายมอนสเตอร์ครบ 14 ตัว', arts.length === 14 && arts.every(a => a[1] === 112), arts.filter(a => a[1] !== 112).map(a => a[0]).join(',') || '14/14');
+  const arts = await page.evaluate(() => Promise.all(Object.keys(HL.CFG.monsters).filter(t => !HL.CFG.monsters[t].boss).map(ty => new Promise(res => { const im = HL.monArt(ty); if (!im) return res([ty, 0]); if (im.complete) return res([ty, im.naturalWidth]); im.onload = () => res([ty, im.naturalWidth]); im.onerror = () => res([ty, -1]); }))));
+  rec('รูปหน้าเป้าหมายมอนสเตอร์ทั่วไปครบ 14 ตัว', arts.length === 14 && arts.every(a => a[1] === 112), arts.filter(a => a[1] !== 112).map(a => a[0]).join(',') || '14/14');
   const live = await page.evaluate(() => { const m = HL.mons.find(m => m.state !== 'dead' && m.type === 'หมูป่า') || HL.mons.find(m => m.state !== 'dead'); m.hp = 9999; m.state = 'idle'; HL.player.x = m.x - 20; HL.player.y = m.y; HL.player.dir = 'E'; window.__p = m; return m.type; });
   await page.locator('#atk').dispatchEvent('pointerdown'); await page.waitForTimeout(80); await page.locator('#atk').dispatchEvent('pointerup');
   await page.waitForTimeout(500);
@@ -103,11 +103,11 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   await page.evaluate(() => { const m = window.__p; m.hp = m.c.hp; m.state = 'return'; const s = HL.ZONES.village.start; HL.player.x = s[0]; HL.player.y = s[1]; HL.PS.hp = HL.PS.maxHp; });
 
   // ภาพมอนสเตอร์ในฉาก (V2-R10): ภาพเดิน/ท่าของทั้ง 14 ชนิดโหลดได้
-  const spr = await page.evaluate(() => Promise.all(Object.keys(HL.CFG.monsters).map(ty => { const S = HL.monSpr(ty); if (!S) return [ty, 'none'];
+  const spr = await page.evaluate(() => Promise.all(Object.keys(HL.CFG.monsters).filter(t => !HL.CFG.monsters[t].boss).map(ty => { const S = HL.monSpr(ty); if (!S) return [ty, 'none'];
     const w = im => !im ? Promise.resolve(-1) : im.complete ? Promise.resolve(im.naturalWidth) : new Promise(r => { im.onload = () => r(im.naturalWidth); im.onerror = () => r(0); });
     return Promise.all([w(S.walk), w(S.act)]).then(([a, b]) => [ty, a, b]); })));
   const bad = spr.filter(x => x[1] === 'none' || x[1] === 0 || x[2] === 0 || (x[1] === -1 && x[2] === -1));
-  rec('ภาพมอนสเตอร์ในฉากโหลดได้ครบ 14 ชนิด (เดิน 13 + ท่า 13)', bad.length === 0 && spr.filter(x => x[1] > 0).length === 13 && spr.filter(x => x[2] > 0).length === 13, bad.map(x => x[0]).join(',') || 'กระทิงผีมีเฉพาะท่า');
+  rec('ภาพมอนสเตอร์ทั่วไปในฉากโหลดได้ครบ 14 ชนิด (เดิน 13 + ท่า 13)', bad.length === 0 && spr.filter(x => x[1] > 0).length === 13 && spr.filter(x => x[2] > 0).length === 13, bad.map(x => x[0]).join(',') || 'กระทิงผีมีเฉพาะท่า');
 
   // มอนสเตอร์เกิดใหม่
   const resp = await page.evaluate(() => window.__t.c.respawn);
@@ -166,6 +166,30 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   await page.waitForTimeout(1100);
   await page.keyboard.down('ArrowDown'); await page.waitForTimeout(700); await page.keyboard.up('ArrowDown');
   rec('เดินลงสะพานหมู่บ้านแล้วไปทุ่งน้ำตก', (await pos()).zone === 'field2', (await pos()).zone);
+
+  // ===== V2-R16 กลางวัน/กลางคืน/บอส (ออฟไลน์) =====
+  const setT = t => page.evaluate(t => { HL.setClock(t - Date.now() / 1000); HL.update(0.01); }, t);
+  const C = await page.evaluate(() => HL.CFG.time);
+  const T_DAY = C.cycleSec * 2.25, T_NIGHT = C.cycleSec * 2.75, T_BLOOD = C.cycleSec * 3.67;
+  const px = () => page.evaluate(() => { const c = document.getElementById('c'), k = c.getContext('2d'), d = k.getImageData(Math.floor(c.width / 2), Math.floor(c.height / 3), 1, 1).data; return [d[0], d[1], d[2]]; });
+  await page.evaluate(() => { const s = HL.ZONES.rainforest.start; HL.enterZone('rainforest', s[0], s[1]); });
+  await setT(T_DAY); await page.waitForTimeout(250); const cDay = await px();
+  const bossDay = await page.evaluate(() => HL.mons.filter(m => m.c.boss && m.state !== 'dead').map(m => m.type));
+  await setT(T_BLOOD); await page.waitForTimeout(250); const cBlood = await px();
+  const wt = await page.evaluate(() => ({ n: HL.WT.name, st: document.getElementById('st').textContent }));
+  const bossBlood = await page.evaluate(() => HL.mons.filter(m => m.c.boss && m.state !== 'dead').map(m => m.type));
+  rec('กลางวัน: ป่าดิบชื้นมีบอสประจำพื้นที่ตัวเดียว', bossDay.length === 1 && bossDay[0] === 'เทพหมาป่าภูเขา', bossDay.join(','));
+  rec('คืนพระจันทร์สีเลือด: บอสคืนเลือดปรากฏ + HUD แสดง 🩸', bossBlood.includes('วิญญาณหมาป่าศักดิ์สิทธิ์') && wt.st.startsWith('🩸'), wt.n + ' · ' + bossBlood.join(','));
+  rec('คืนพระจันทร์สีเลือด: จอมีโทนแดงเข้มกว่ากลางวัน', cBlood[0] - cBlood[2] > cDay[0] - cDay[2] && cBlood[1] < cDay[1], JSON.stringify({ cDay, cBlood }));
+  await page.screenshot({ path: 'tools/last-bloodmoon.png' });
+  await page.evaluate(() => { const s = HL.ZONES.peak.start; HL.enterZone('peak', s[0], s[1]); });
+  await setT(C.worldEvery * 2 + 30);
+  const peak = await page.evaluate(() => { const w = HL.mons.find(m => m.type === 'มังกรแห่งหุบเขาหมอก'); HL.player.x = w.x; HL.player.y = w.y + 120; return { on: w.state !== 'dead', img: !!HL.monSpr(w.type), port: !!HL.monArt(w.type) }; });
+  await page.waitForTimeout(300);
+  rec('World Boss มังกรแห่งหุบเขาหมอกปรากฏที่ยอดเขาในช่วงเวลา มีภาพและรูปเป้าหมาย', peak.on && peak.img && peak.port, JSON.stringify(peak));
+  await page.screenshot({ path: 'tools/last-worldboss.png' });
+  await setT(T_DAY);
+  await page.evaluate(() => { HL.setClock(0); HL.PS.hp = HL.PS.maxHp; HL.PS.dead = false; const s = HL.ZONES.village.start; HL.enterZone('village', s[0], s[1]); });
 
   // ย้ายโซนผ่านปุ่มทดสอบ
   await page.click('#gear'); await page.click('#wp');

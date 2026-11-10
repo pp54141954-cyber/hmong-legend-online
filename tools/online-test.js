@@ -225,6 +225,19 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   await A.page.click('#gear'); await A.page.click('#wp'); await A.page.click('#gear');
   await until(async () => (await st(B.page)).others.some(o => o.name === 'Tester_A'));
 
+  // V2-R16: เวลาโลกจากเซิร์ฟเวอร์ + World Boss + ประกาศ
+  { const C = W.CFG.time;
+    srv.sim.setTimeOffset(C.worldEvery * 2 + 30 - Date.now() / 1000 - C.worldWindow - 60); // นอกช่วง World Boss
+    await sleep(300);
+    srv.sim.setTimeOffset(C.cycleSec * 3.67 - Date.now() / 1000 + C.worldEvery * 3); // คืนเลือด + ช่วง World Boss เริ่ม
+    const got = await until(async () => { const t = await A.page.evaluate(() => HLNET.wt); return t && t.blood; }, 3000);
+    const ann = await until(async () => (await A.page.evaluate(() => (HLNET.stats.ann || []).join('|'))).includes('มังกรแห่งหุบเขาหมอก'), 3000);
+    const wb = srv.sim.zones.peak.mons.find(m => m.type === 'มังกรแห่งหุบเขาหมอก');
+    rec('เครื่องผู้เล่นได้เวลาโลก (คืนพระจันทร์สีเลือด) จากเซิร์ฟเวอร์', got, JSON.stringify(await A.page.evaluate(() => HLNET.wt && HLNET.wt.name)));
+    rec('World Boss เกิดบนเซิร์ฟเวอร์และประกาศถึงผู้เล่นทุกโซน', ann && wb.state !== 'dead', 'state=' + wb.state);
+    srv.sim.setTimeOffset(C.cycleSec * 2.25 - Date.now() / 1000 + C.worldEvery * 5 + C.worldWindow); // กลับกลางวัน นอกช่วง
+    await sleep(300); }
+
   // 7) หลุดแล้วต่อใหม่เอง
   await A.page.evaluate(() => HLNET.ws.close());
   const back = await until(async () => { const s = await st(A.page); return s.state === 'online' && s.stats.reconnects === 1; }, 6000);
