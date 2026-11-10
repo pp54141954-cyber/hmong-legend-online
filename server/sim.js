@@ -2,7 +2,19 @@
 // ตรรกะแปลงมาจาก game/index.html (updMon, release, damageMon, gain, hitPlayer) — ส่วนภาพ/เอฟเฟกต์อยู่ในเครื่องผู้เล่น
 'use strict';
 const W = require('../shared/world.js');
-const { T, CFG, Combat, BLOCKT, ZONES } = W;
+const { T, CFG, Combat, BLOCKT, ZONES, SKILL_TABLE } = W;
+
+// ---------- ตารางสกิลจาก CSV (data/Hmong_Legend_All_8_Class_Skills.csv = SKILL_TABLE ในเกม) ----------
+// แถว: [อาชีพ, สาย, ชื่อ, 'a'|'p', สกิลเริ่มต้น, ขั้น, Job ปลดล็อก, ระดับสูงสุด, โบนัสต่อระดับ]
+const CLASS = 'นักดาบ'; // รอบนี้มีอาชีพเดียวในเกม
+const SKROWS = SKILL_TABLE.filter(r => r[0] === CLASS).map(r => ({ cls: r[0], path: r[1], name: r[2], type: r[3], start: r[4], tier: r[5], job: r[6], max: r[7], bonus: String(r[8] || '').trim() }));
+const SKBYNAME = new Map(SKROWS.map(r => [r.name, r]));
+// โบนัสต่อระดับ เช่น "พลังโจมตีกายภาพ 2 %" → {key:'พลังโจมตีกายภาพ', per:0.02}
+const parseBonus = b => { const m = /^(.*?)\s+([\d.]+)\s*(%|จุดเปอร์เซ็นต์)$/.exec(b); return m ? { key: m[1].trim(), per: +m[2] / 100 } : null; };
+// โบนัสที่เกมมีระบบรองรับแล้ว → ชื่อภายใน; ที่เหลือบันทึกระดับไว้แต่ยังไม่มีผล
+const BONUS_KEYS = { 'พลังโจมตีกายภาพ': 'atkPct', 'พลังชีวิตสูงสุด': 'hpPct', 'โอกาสคริติคอล': 'crit', 'ความเสียหายสกิล': 'skillDmg',
+  'ระยะเวลาบัฟและสถานะที่สร้าง': 'dur', 'รัศมีสกิลพื้นที่': 'radius', 'ความเร็วเคลื่อนที่': 'spd', 'ความเร็วฟื้นคูลดาวน์': 'cdr' };
+const SKILL_POINTS = job => Math.min(50, job); // 1 แต้มเริ่มต้น + 1 แต้มต่อ Job เลเวลอัป (สูงสุด 50)
 const DV = { E: [1, 0], W: [-1, 0], N: [0, -1], S: [0, 1] };
 const HW = 8, HH = 5;
 
@@ -43,13 +55,42 @@ function createSim({ rand = Math.random } = {}) {
     const P = CFG.player, eq = p.c.eq || {};
     let atk = 0, def = 0, hp = 0;
     for (const id of Object.values(eq)) { const it = id && CFG.items[id]; if (it) { atk += it.atk || 0; def += it.def || 0; hp += it.hp || 0; } }
-    p.maxHp = P.baseHP + (p.c.lv - 1) * P.hpPerLv + hp; p.atk = P.baseAtk + (p.c.lv - 1) * P.atkPerLv + atk; p.def = def;
+    const B = p.bon = skillBonus(p);
+    p.maxHp = Math.round((P.baseHP + (p.c.lv - 1) * P.hpPerLv + hp) * (1 + B.hpPct)); p.atk = Math.round((P.baseAtk + (p.c.lv - 1) * P.atkPerLv + atk) * (1 + B.atkPct)); p.def = def;
     if (p.hp > p.maxHp) p.hp = p.maxHp;
+  }
+
+  // ---------- สกิล / แต้มอัปสกิล ----------
+  const skLv = (p, name) => (p.c.sk && p.c.sk[name]) || 0;
+  // แต้มที่ใช้ = ระดับที่เพิ่มเกินระดับฟรี (สกิลเริ่มต้นได้ระดับ 1 ฟรี)
+  const spentPoints = p => SKROWS.reduce((n, r) => n + Math.max(0, skLv(p, r.name) - (r.start ? 1 : 0)), 0);
+  const freePoints = p => SKILL_POINTS(p.c.job) - spentPoints(p);
+  // สกิลติดตัว: โบนัสชื่อเดียวกันบวกกันข้ามสาย (ตามคำอธิบายใน CSV)
+  function skillBonus(p) {
+    const B = { atkPct: 0, hpPct: 0, crit: 0, skillDmg: 0, dur: 0, radius: 0, spd: 0, cdr: 0, other: {} };
+    for (const r of SKROWS) {
+      const lv = skLv(p, r.name); if (r.type !== 'p' || !lv) continue;
+      const b = parseBonus(r.bonus); if (!b) continue;
+      const k = BONUS_KEYS[b.key];
+      if (k) B[k] += b.per * lv; else B.other[b.key] = (B.other[b.key] || 0) + b.per * lv;
+    }
+    return B;
+  }
+  function learn(p, name) {
+    const r = SKBYNAME.get(String(name)); if (!r) return 'invalid';
+    if (p.c.job < r.job) return 'locked';
+    if (skLv(p, name) >= r.max) return 'max';
+    if (freePoints(p) <= 0) return 'no-points';
+    p.c.sk[r.name] = skLv(p, r.name) + 1;
+    stats(p); p.skDirty = true; p.dirty = true;
+    return 'ok';
   }
   function addPlayer(p) {
     p.c.bag = Array.isArray(p.c.bag) ? p.c.bag.filter(s => s && CFG.items[s.id] && s.n > 0) : [];
     p.c.eq = Object.assign({ weapon: null, armor: null, acc: null }, p.c.eq || {});
-    Object.assign(p, { hp: 0, dead: false, deadT: 0, cd: {}, castUntil: 0, buffT: 0, buffBonus: 0, guardT: 0, guardRed: 0, personal: [], potionAt: 0, bagDirty: true });
+    p.c.sk = Object.assign({}, p.c.sk || {});
+    for (const r of SKROWS) if (r.start && !p.c.sk[r.name]) p.c.sk[r.name] = 1; // สกิลเริ่มต้นได้ระดับ 1 ฟรี
+    Object.assign(p, { hp: 0, dead: false, deadT: 0, cd: {}, castUntil: 0, buffT: 0, buffBonus: 0, guardT: 0, guardRed: 0, personal: [], potionAt: 0, bagDirty: true, skDirty: true });
     stats(p); p.hp = p.maxHp; players.add(p);
   }
 
@@ -121,13 +162,13 @@ function createSim({ rand = Math.random } = {}) {
   function gain(p, e, j) {
     const c = p.c, P = CFG.player;
     if (c.lv < P.maxLv) { c.exp += e; while (c.lv < P.maxLv && c.exp >= CFG.expCurve(c.lv)) { c.exp -= CFG.expCurve(c.lv); c.lv++; stats(p); p.hp = p.maxHp; p.personal.push({ k: 'lv', lv: c.lv }); } }
-    if (c.job < P.maxJob) { c.jexp += j; while (c.job < P.maxJob && c.jexp >= CFG.jobCurve(c.job)) { c.jexp -= CFG.jobCurve(c.job); c.job++; p.personal.push({ k: 'job', job: c.job }); } }
+    if (c.job < P.maxJob) { c.jexp += j; while (c.job < P.maxJob && c.jexp >= CFG.jobCurve(c.job)) { c.jexp -= CFG.jobCurve(c.job); c.job++; p.personal.push({ k: 'job', job: c.job }); p.skDirty = true; } }
     p.dirty = true;
   }
 
   function damageMon(p, z, m, mult) {
     mult *= (p.buffT > 0 ? 1 + p.buffBonus : 1) * (m.markT > 0 ? 1 + m.markBonus : 1);
-    const r = Combat.damage(p.atk, mult, rand(), rand());
+    const r = Combat.damage(p.atk, mult, rand(), rand() - (p.bon ? p.bon.crit : 0)); // โอกาสคริติคอล = 10% + โบนัสสกิลติดตัว
     m.hp -= r.dmg; z.events.push({ k: 'dmg', id: m.id, dmg: r.dmg, crit: r.crit, by: p.id });
     if (m.state === 'idle' || m.state === 'return') { m.state = 'chase'; m.target = p; }
     if (m.hp <= 0) {
@@ -179,12 +220,19 @@ function createSim({ rand = Math.random } = {}) {
     if (p.dead) return 'dead';
     const sk = key === 'b' ? CFG.basic : CFG.skills[key - 1];
     if (!sk) return 'invalid';
-    if (key !== 'b' && p.c.job < sk.job) return 'locked';
+    if (key !== 'b' && (p.c.job < sk.job || skLv(p, sk.name) < 1)) return 'locked'; // ต้องถึง Job และอัปสกิลแล้วอย่างน้อยระดับ 1
     if ((p.cd[key] || 0) > now + LAG) return 'cooldown';
     if (p.castUntil > now + LAG) return 'busy';
-    p.cd[key] = now + sk.cd; p.castUntil = now + sk.poseT;
+    const B = p.bon || skillBonus(p);
+    p.cd[key] = now + sk.cd * Math.max(.5, 1 - B.cdr); p.castUntil = now + sk.poseT;
+    // ค่าที่ใช้จริงของท่านี้ = ค่าใน CFG ปรับด้วยโบนัสสกิลติดตัว
+    const eff = Object.assign({}, sk);
+    if (key !== 'b' && eff.mult) eff.mult = sk.mult * (1 + B.skillDmg);
+    for (const k of ['dur', 'markDur']) if (eff[k]) eff[k] = sk[k] * (1 + B.dur);
+    if (eff.radius) eff.radius = sk.radius * (1 + B.radius);
+    if (sk.shape === 'circle') eff.range = sk.range * (1 + B.radius);
     const from = { zone: p.c.zone, x: p.c.x, y: p.c.y, dir: p.c.dir };
-    later(zoneOf(p), sk.poseT * .6, () => release(p, sk, from));
+    later(zoneOf(p), sk.poseT * .6, () => release(p, eff, from));
     return 'ok';
   }
 
@@ -243,6 +291,6 @@ function createSim({ rand = Math.random } = {}) {
     }
   }
 
-  return { zones, players, addPlayer, removePlayer, act, step, pathClear, stats, gain, addItem, inv, setRand(f) { rand = f; } };
+  return { zones, players, addPlayer, removePlayer, act, step, pathClear, stats, gain, addItem, inv, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
 }
 module.exports = { createSim };

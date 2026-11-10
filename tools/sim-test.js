@@ -13,7 +13,8 @@ for (const [i, name, expectDx] of [[1, 'ท่าเคลื่อนที่'
     const sim = createSim({ rand: () => .5 });
     const p = { id: 1, c: { zone: 'village', x: PX, y: PY, dir: 'E', lv: 1, exp: 0, job: 30, jexp: 0 } };
     sim.addPlayer(p);
-    sim.act(p, i, 100);
+    sim.learn(p, W.CFG.skills[i - 1].name); // V2-R8: ท่ากดต้องอัประดับ 1 ก่อน
+    rec(name + (early ? ' (mv มาก่อน)' : ' (mv มาทีหลัง)') + ' ใช้ท่าได้', sim.act(p, i, 100) === 'ok');
     if (early) { p.c.x = PX + expectDx; } // จำลอง mv จากเครื่องผู้เล่นที่ขยับแล้ว มาถึงก่อน
     run(sim, 1, 100);
     rec(name + (early ? ' (mv มาก่อน)' : ' (mv มาทีหลัง)') + ' ขยับครั้งเดียว', Math.abs(p.c.x - (PX + expectDx)) < 0.01, 'x=' + p.c.x + ' คาด ' + (PX + expectDx));
@@ -106,6 +107,68 @@ const killFirst = (sim, p, type) => {
   };
   const a = hitBy(false), b = hitBy(true);
   rec('เกราะ DEF 5 ลดดาเมจหมาป่าจาก 11 เป็น 6', a === 11 && b === 6, 'ไม่ใส่=' + a + ' ใส่=' + b);
+}
+
+// ---------- V2-R8 แต้มอัปสกิลจากตาราง CSV ----------
+{
+  const sim = createSim(), p = mkP(sim);
+  rec('Job 1: แต้มสกิล 1 แต้ม, สกิลเริ่มต้น 3 ท่าได้ระดับ 1 ฟรี', sim.freePoints(p) === 1 && sim.skLv(p, 'ท่าพื้นฐาน') === 1 && sim.skLv(p, 'ท่าเคลื่อนที่') === 1 && sim.skLv(p, 'ท่าป้องกัน') === 1);
+  rec('อัปสกิลที่ยังไม่ถึง Job → ปฏิเสธ', sim.learn(p, 'ลงอาคมคมดาบ') === 'locked');
+  rec('ชื่อสกิลที่ไม่มีในตาราง → ปฏิเสธ', sim.learn(p, 'ท่าปลอม') === 'invalid');
+  rec('อัปสกิลติดตัว Job 1 ได้ แต้มเหลือ 0', sim.learn(p, 'คมดาบลงยันต์') === 'ok' && sim.freePoints(p) === 0);
+  rec('แต้มหมด → ปฏิเสธ', sim.learn(p, 'กำลังขุนเขา') === 'no-points');
+  p.c.job = 50;
+  rec('Job 50: แต้มรวมสูงสุด 50 (ใช้ไป 1 เหลือ 49)', sim.freePoints(p) === 49);
+  for (let i = 0; i < 9; i++) sim.learn(p, 'คมดาบลงยันต์');
+  rec('อัปเกินระดับสูงสุด (10) → ปฏิเสธ', sim.skLv(p, 'คมดาบลงยันต์') === 10 && sim.learn(p, 'คมดาบลงยันต์') === 'max');
+}
+{
+  const sim = createSim({ rand: () => .5 }), p = mkP(sim, { lv: 30, job: 30 });
+  sim.stats(p); const atk0 = p.atk, hp0 = p.maxHp;
+  for (let i = 0; i < 10; i++) { sim.learn(p, 'คมดาบลงยันต์'); }
+  for (let i = 0; i < 10; i++) { sim.learn(p, 'กำลังขุนเขา'); }
+  rec('โบนัสชื่อเดียวกันบวกข้ามสาย: พลังโจมตีกายภาพ 2%×20 = +40%', p.atk === Math.round(atk0 * 1.4), atk0 + '→' + p.atk);
+  for (let i = 0; i < 5; i++) sim.learn(p, 'ร่างแกร่งดั่งผา');
+  rec('พลังชีวิตสูงสุด +2%×5', p.maxHp === Math.round(hp0 * 1.1), hp0 + '→' + p.maxHp);
+}
+{
+  // ท่ากดต้องอัปก่อนใช้; ความเสียหายสกิล % มีผลกับสกิลแต่ไม่มีผลกับท่าพื้นฐาน
+  const hit = (learnDmg, key) => {
+    const sim = createSim({ rand: () => .5 }), p = mkP(sim, { job: 30 });
+    if (key !== 'b') sim.learn(p, W.CFG.skills[key - 1].name);
+    if (learnDmg) { for (let i = 0; i < 3; i++) sim.learn(p, 'แก่นดาบวิญญาณ'); }
+    const z = sim.zones.village, m = z.mons.find(m => m.type === 'หมูป่า');
+    Object.assign(m, { x: PX + 30, y: PY + 14, hx: PX + 30, hy: PY + 14, wx: PX + 30, wy: PY + 14, t: 99, hp: 999, state: 'idle' });
+    const r = sim.act(p, key, 100); run(sim, 1, 100); return { r, dmg: 999 - m.hp };
+  };
+  const sim0 = createSim(), p0 = mkP(sim0, { job: 30 });
+  rec('ท่ากดที่ยังไม่อัป (ระดับ 0) ใช้ไม่ได้ แม้ Job ถึง', sim0.act(p0, 8, 1) === 'locked');
+  const a = hit(false, 8), b = hit(true, 8), c = hit(false, 'b'), d = hit(true, 'b');
+  rec('ความเสียหายสกิล +6% เพิ่มดาเมจท่า "ดาบทลายขุนเขา"', a.r === 'ok' && b.dmg > a.dmg, a.dmg + '→' + b.dmg);
+  rec('ความเสียหายสกิลไม่มีผลกับท่าพื้นฐาน', c.dmg === d.dmg && c.dmg > 0, c.dmg + ' = ' + d.dmg);
+}
+{
+  const sim = createSim(), p = mkP(sim, { job: 30 });
+  sim.learn(p, 'ลงอาคมคมดาบ');
+  for (let i = 0; i < 5; i++) sim.learn(p, 'จังหวะไร้ช่องว่าง');
+  for (let i = 0; i < 5; i++) sim.learn(p, 'อาคมต่อเนื่อง');
+  sim.act(p, 3, 100); run(sim, .5, 100);
+  const sk = W.CFG.skills[2];
+  rec('ความเร็วฟื้นคูลดาวน์ 1%×5 → คูลดาวน์สั้นลง 5%', Math.abs((p.cd[3] - 100) - sk.cd * .95) < 1e-9, (p.cd[3] - 100).toFixed(2) + ' วิ (เดิม ' + sk.cd + ')');
+  rec('ระยะเวลาบัฟ 2%×5 → บัฟนานขึ้น 10%', Math.abs(p.buffT - (sk.dur * 1.1 - (0.5 - sk.poseT * .6))) < .06, p.buffT.toFixed(2) + ' วิ');
+}
+{
+  // โอกาสคริติคอล: rand=0.15 ปกติไม่คริ (ต้อง <0.10); +1%×10 → เกณฑ์ 0.20 → คริ
+  const one = learnCrit => {
+    const sim = createSim({ rand: () => .15 }), p = mkP(sim, { job: 30 });
+    if (learnCrit) for (let i = 0; i < 5; i++) { sim.learn(p, 'จิตประสานคม'); sim.learn(p, 'คมดาบแม่นยำ'); }
+    const z = sim.zones.village, m = z.mons.find(m => m.type === 'หมูป่า');
+    Object.assign(m, { x: PX + 20, y: PY, hx: PX + 20, hy: PY, wx: PX + 20, wy: PY, t: 99, hp: 999, state: 'idle' });
+    sim.act(p, 'b', 100); run(sim, .5, 100);
+    return sim.zones.village.events.find(e => e.k === 'dmg');
+  };
+  const n = one(false), c = one(true);
+  rec('โอกาสคริติคอล +10% (2 สกิลบวกกัน) ทำให้คริได้', n && !n.crit && c && c.crit);
 }
 
 const fail = results.filter(r => !r.pass).length;

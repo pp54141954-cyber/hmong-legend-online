@@ -391,8 +391,8 @@ function release(sk){const ox=player.x,oy=player.y-14,dir=player.dir,[ux,uy]=DV[
   else{doHit(sk,sk.mult,ox,oy,dir);if(sk!==CFG.basic)fx.push({k:sk.fxk||sk.shape,sk,t:sk.fxk?.5:.22,x:ox,y:oy,dir});if(sk.fxk==='quake'){burst(ox,oy+14,'#ffb43a',46,280,.7,140);shake(7,.4)}}}
 function startCast(sk,key){PS.cast={sk,t:0,done:false,key};}
 function attack(){if(PS.dead||PS.cast||(PS.cd.b||0)>0)return false;PS.cd.b=CFG.basic.cd;startCast(CFG.basic,'b');if(netOn())HLNET.act('b',player.dir);return true}
-function useSkill(i){const sk=CFG.skills[i-1];if(!sk||PS.dead)return'invalid';if(PS.job<sk.job)return'locked';if((PS.cd[i]||0)>0)return'cooldown';if(PS.cast)return'busy';
-  PS.cd[i]=sk.cd;startCast(sk,i);if(netOn())HLNET.act(i,player.dir);return'ok'}
+function useSkill(i){const sk=CFG.skills[i-1];if(!sk||PS.dead)return'invalid';if(PS.job<sk.job||(netOn()&&!(HLNET.sk[sk.name]>0)))return'locked';if((PS.cd[i]||0)>0)return'cooldown';if(PS.cast)return'busy';
+  PS.cd[i]=sk.cd*(netOn()?Math.max(.5,1-(HLNET.bon.cdr||0)):1);startCast(sk,i);if(netOn())HLNET.act(i,player.dir);return'ok'}
 function updCast(dt){const c=PS.cast;if(!c)return;c.t+=dt;if(!c.done&&c.t>=c.sk.poseT*.6){c.done=true;release(c.sk)}if(c.t>=c.sk.poseT)PS.cast=null}
 function updShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i],d=s.sk.speed*dt;s.x+=s.ux*d;s.y+=s.uy*d;s.dist+=d;if(Math.random()<.7)burst(s.x-s.ux*10+(Math.random()-.5)*s.uy*s.sk.width,s.y-s.uy*10+(Math.random()-.5)*s.ux*s.sk.width,'#c89bff',1,40,.4,0);
   for(const m of mons){if(m.state==='dead'||s.hit.has(m))continue;if(Math.hypot(m.x-s.x,(m.y-m.c.size*.6)-s.y)<=s.sk.width/2+m.c.size){s.hit.add(m);damageMon(m,s.sk.mult)}}
@@ -417,11 +417,11 @@ $('atk').addEventListener('pointerdown',e=>{e.preventDefault();atkHeld=true;atta
 ['pointerup','pointercancel','pointerleave'].forEach(n=>$('atk').addEventListener(n,()=>{atkHeld=false}));
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=1;if(e.key.startsWith('Arrow'))e.preventDefault();
   if(e.key==='+'||e.key==='=')zoomMul=Math.min(4,zoomMul*1.25);if(e.key==='-')zoomMul=Math.max(.2,zoomMul/1.25);
-  if(e.key===' '||k==='j'){atkHeld=true;e.preventDefault()}const n=+e.key;if(n>=1&&n<=9){const r=useSkill(n);if(r==='locked')say(CFG.skills[n-1].name+' ปลดล็อกที่ Job '+CFG.skills[n-1].job)}});
+  if(e.key===' '||k==='j'){atkHeld=true;e.preventDefault()}const n=+e.key;if(n>=1&&n<=9){const r=useSkill(n);if(r==='locked')say(PS.job<CFG.skills[n-1].job?CFG.skills[n-1].name+' ปลดล็อกที่ Job '+CFG.skills[n-1].job:CFG.skills[n-1].name+' ต้องอัปสกิลก่อน (📜)')}});
 addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0;if(e.key===' '||e.key.toLowerCase()==='j')atkHeld=false});
 let dpr=1,cw=0,ch=0;function fit(){dpr=window.devicePixelRatio||1;cw=cv.clientWidth;ch=cv.clientHeight;cv.width=cw*dpr;cv.height=ch*dpr}addEventListener('resize',fit);fit();
 
-function step(dx,dy,dt){const sp=CFG.player.speed*dt;
+function step(dx,dy,dt){const sp=CFG.player.speed*(netOn()?1+(HLNET.bon.spd||0):1)*dt;
   if(dx){player.dir=dx>0?'E':'W';player.lastH=player.dir;const nx=Math.max(8,Math.min(W-8,player.x+dx*sp));if(freeMode||!boxBlocked(nx,player.y))player.x=nx}
   if(dy){player.dir=dy>0?'S':'N';const ny=Math.max(8,Math.min(H-8,player.y+dy*sp));if(freeMode||!boxBlocked(player.x,ny))player.y=ny}
   const tx=Math.floor(player.x/T),ty=Math.floor(player.y/T),t=inb(tx,ty)?Z.g[ty][tx]:-1;
@@ -619,7 +619,7 @@ function draw(){
 let hudT=0;const skEl=$('skills');
 function buildSkills(){skEl.innerHTML='';for(let s=0;s<6;s++){const i=PS.page*6+s+1,sk=CFG.skills[i-1],b=document.createElement('button');b.className='sk';
   if(!sk){b.disabled=true;b.style.visibility='hidden';skEl.appendChild(b);continue}b.dataset.i=i;b.setAttribute('aria-label',sk.name);
-  b.addEventListener('pointerdown',e=>{e.preventDefault();const r=useSkill(i);if(r==='locked')say(sk.name+' ปลดล็อกที่ Job '+sk.job)});skEl.appendChild(b)}hudT=0}
+  b.addEventListener('pointerdown',e=>{e.preventDefault();const r=useSkill(i);if(r==='locked')say(PS.job<sk.job?sk.name+' ปลดล็อกที่ Job '+sk.job:sk.name+' ต้องอัปสกิลก่อน (📜)')});skEl.appendChild(b)}hudT=0}
 buildSkills();
 $('pg').onclick=()=>{PS.page=1-PS.page;$('pg').textContent=PS.page?'ชุด 1':'ชุด 2';buildSkills()};$('pg').textContent='ชุด 2';
 $('tm').onclick=()=>{if(netOn()){HLNET.send({t:'dbg'});return}PS.job=Math.max(PS.job,30);PS.jexp=0;say('โหมดทดสอบ: ตั้ง Job 30 แล้ว ปลดล็อกท่าครบตามตาราง');hudT=0};
@@ -637,8 +637,8 @@ function hud(dt){hudT-=dt;if(hudT>0)return;hudT=.1;
     $('tgth').style.width=Math.max(0,100*t.hp/t.c.hp)+'%';$('tgtl').textContent='HP '+Math.max(0,Math.ceil(t.hp))+'/'+t.c.hp+' · ATK '+t.c.atk}}
   $('st').textContent=Z.D.name+' · Job '+PS.job+' · EXP '+PS.exp+'/'+CFG.expCurve(PS.lv);$('lvn').textContent=PS.lv;$('hpt').textContent=Math.ceil(PS.hp)+' / '+PS.maxHp;$('xpf').style.width=Math.min(100,100*PS.exp/CFG.expCurve(PS.lv))+'%';
   $('hpf').style.width=(100*PS.hp/PS.maxHp)+'%';
-  for(const b of skEl.children){const i=+b.dataset.i;if(!i)continue;const sk=CFG.skills[i-1],cd=PS.cd[i]||0,lk=PS.job<sk.job;
-    b.classList.toggle('lock',lk);b.classList.toggle('cd',cd>0);b.style.setProperty('--cd',cd>0?(100*cd/sk.cd).toFixed(1)+'%':'0%');b.innerHTML=lk?'<b>🔒'+i+'</b><small>Job '+sk.job+'</small>':cd>0?'<b>'+cd.toFixed(1)+'</b><small>'+sk.name+'</small>':'<b>'+i+'</b><small>'+sk.name+'</small>'}}
+  for(const b of skEl.children){const i=+b.dataset.i;if(!i)continue;const sk=CFG.skills[i-1],cd=PS.cd[i]||0,lk=PS.job<sk.job||(netOn()&&!(HLNET.sk[sk.name]>0));
+    b.classList.toggle('lock',lk);b.classList.toggle('cd',cd>0);b.style.setProperty('--cd',cd>0?(100*cd/sk.cd).toFixed(1)+'%':'0%');b.innerHTML=lk?'<b>🔒'+i+'</b><small>'+(PS.job<sk.job?'Job '+sk.job:'อัปสกิล')+'</small>':cd>0?'<b>'+cd.toFixed(1)+'</b><small>'+sk.name+'</small>':'<b>'+i+'</b><small>'+sk.name+'</small>'}}
 function update(dt){tNow+=dt;switchCd=Math.max(0,switchCd-dt);
   for(const k in PS.cd)PS.cd[k]=Math.max(0,PS.cd[k]-dt);PS.hurt=Math.max(0,PS.hurt-dt);PS.buffT=Math.max(0,PS.buffT-dt);PS.guardT=Math.max(0,PS.guardT-dt);
   if(PS.dead){moving=false;PS.deadT-=dt;if(PS.deadT<=0&&!netOn())respawn()}
@@ -656,7 +656,7 @@ enterZone('village',ZONES.village.start[0],ZONES.village.start[1]);
 let last=performance.now();
 function loop(n){const dt=Math.min((n-last)/1000,.05);last=n;update(dt);draw();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
-window.HL={say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
+window.HL={SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
 })();
 
 </script>
@@ -677,6 +677,12 @@ window.HL={say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get m
 #bag .stt{font-size:12px;opacity:.9}#bag .eqs,#bag .items{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 #bag .it{min-height:46px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;text-align:left;font-size:12px;line-height:1.2;padding:5px 7px;color:#f4efe2;border-color:#ffffff33;background:#ffffff0d}
 #bag .it small{font-size:10px;opacity:.75}#bag .it .ic{image-rendering:pixelated;width:30px;height:30px}#bag .it.eq{border-color:#ffb347aa}#bag .it.use{border-color:#7fd08aaa}#bag .it.none{opacity:.45}#bag .note{font-size:11px;opacity:.7}
+#skb{flex:none;width:40px;height:40px;border-radius:50%;padding:0;font-size:19px;border-color:#ffffff40;background:#ffffff12;color:#f4efe2}
+#skp{position:absolute;top:calc(66px + env(safe-area-inset-top,0px));left:8px;right:8px;max-width:440px;margin:0 auto;max-height:calc(100% - 230px);overflow:auto;z-index:6;display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(18,22,18,.95);color:#f4efe2;border-radius:14px}
+#skp[hidden]{display:none}#skp h3{margin:0;font-size:14px;display:flex;justify-content:space-between;align-items:center}#skp h3 button{color:#f4efe2;border-color:#ffffff40;padding:2px 10px}
+#skp h4{margin:6px 0 0;font-size:13px;color:#ffcf8a}#skp .row{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 6px;border-radius:8px;background:#ffffff0a}
+#skp .row .nm{flex:1;min-width:0}#skp .row small{display:block;font-size:10px;opacity:.75}#skp .row .lv{white-space:nowrap;font-weight:700}#skp .row.lock{opacity:.45}
+#skp .row button{color:#f4efe2;border-color:#ffb347aa;padding:3px 10px;font-size:15px}#skp .row button:disabled{opacity:.35}#skp .pts{font-size:13px}#skp .note{font-size:11px;opacity:.7}
 #netst{position:absolute;left:8px;top:calc(64px + env(safe-area-inset-top,0px));z-index:4;font-size:11px;padding:3px 8px;border-radius:10px;background:rgba(18,22,18,.74);color:#f4efe2;display:none}
 </style>
 <div id="net" hidden><form id="netf" autocomplete="on">
@@ -688,16 +694,37 @@ window.HL={say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get m
 </form></div>
 <div id="netst" aria-live="polite"></div>
 <div id="bag" hidden role="dialog" aria-label="กระเป๋า"></div>
+<div id="skp" hidden role="dialog" aria-label="สกิล"></div>
 <script>
 (function(){
 const $=id=>document.getElementById(id),HL=window.HL;
 const store={get(){try{return localStorage.getItem('hl_token')}catch(e){return null}},set(v){try{v?localStorage.setItem('hl_token',v):localStorage.removeItem('hl_token')}catch(e){}}};
 const NET=window.HLNET={others:[],ws:null,state:'offline',joined:false,auth:false,stats:{snaps:0,fixes:0,reconnects:0,denied:0,dmgEv:0},connect,act,send};
 const monById=new Map();
-NET.bag=[];NET.eq={};NET.me={};
+NET.bag=[];NET.eq={};NET.me={};NET.sk={};NET.bon={};NET.pts=0;
 /* ---------- กระเป๋า (ออนไลน์เท่านั้น — เซิร์ฟเวอร์ตัดสินทุกคำสั่ง) ---------- */
 const bagEl=$('bag'),bagBtn=document.createElement('button');bagBtn.id='bagb';bagBtn.textContent='🎒';bagBtn.setAttribute('aria-label','กระเป๋า');bagBtn.setAttribute('aria-expanded','false');
 $('gear').before(bagBtn);
+/* ---------- แผงอัปสกิล (V2-R8) — ข้อมูลจาก SKILL_TABLE (CSV) เซิร์ฟเวอร์ตัดสินการอัป ---------- */
+const skEl2=$('skp'),skBtn=document.createElement('button');skBtn.id='skb';skBtn.textContent='📜';skBtn.setAttribute('aria-label','สกิล');skBtn.setAttribute('aria-expanded','false');
+bagBtn.before(skBtn);
+const BONUS_LIVE=['พลังโจมตีกายภาพ','พลังชีวิตสูงสุด','โอกาสคริติคอล','ความเสียหายสกิล','ระยะเวลาบัฟและสถานะที่สร้าง','รัศมีสกิลพื้นที่','ความเร็วเคลื่อนที่','ความเร็วฟื้นคูลดาวน์'];
+function renderSkills(){if(skEl2.hidden)return;skEl2.innerHTML='';const h=document.createElement('h3');h.innerHTML='<span>สกิล · นักดาบ</span>';const x=document.createElement('button');x.textContent='ปิด';x.onclick=toggleSkills;h.appendChild(x);skEl2.appendChild(h);
+  if(!NET.auth){const n=document.createElement('div');n.className='note';n.textContent='การอัปสกิลใช้ได้เมื่อเล่นออนไลน์ผ่านเซิร์ฟเวอร์';skEl2.appendChild(n);return}
+  const P=HL.PS,pt=document.createElement('div');pt.className='pts';pt.id='skpts';pt.textContent='แต้มสกิลคงเหลือ '+NET.pts+' · Job '+P.job;skEl2.appendChild(pt);
+  const rows=HL.SKILL_TABLE_REF().filter(r=>r[0]==='นักดาบ');let path=null;
+  for(const r of rows){const [,pa,name,type,start,tier,job,max,bonus]=r;
+    if(pa!==path){path=pa;const h4=document.createElement('h4');h4.textContent=pa==='เริ่มต้น'?'สกิลเริ่มต้น':'สาย '+pa;skEl2.appendChild(h4)}
+    const lv=NET.sk[name]||0,lock=P.job<job,row=document.createElement('div');row.className='row'+(lock?' lock':'');row.dataset.skill=name;
+    const nm=document.createElement('div');nm.className='nm';nm.textContent=(type==='a'?'⚔ ':'✦ ')+name;const sm=document.createElement('small');
+    const b=String(bonus||'').trim(),live=!b||BONUS_LIVE.some(k=>b.startsWith(k));
+    sm.textContent=(type==='a'?'ท่ากด':'ติดตัว: '+b+' ต่อระดับ'+(live?'':' (ยังไม่มีระบบรองรับ)'))+' · Job '+job;nm.appendChild(sm);
+    const l=document.createElement('span');l.className='lv';l.textContent=lv+'/'+max;
+    const up=document.createElement('button');up.textContent='+';up.setAttribute('aria-label','อัป '+name);up.disabled=lock||lv>=max||NET.pts<=0;up.onclick=()=>send({t:'skill',op:'up',name});
+    row.append(nm,l,up);skEl2.appendChild(row)}
+  const n=document.createElement('div');n.className='note';n.textContent='ได้ 1 แต้มเริ่มต้น + 1 แต้มต่อ Job เลเวลอัป (สูงสุด 50) · สกิลเริ่มต้นได้ระดับ 1 ฟรี · โบนัสชื่อเดียวกันบวกกันข้ามสาย';skEl2.appendChild(n)}
+function toggleSkills(){skEl2.hidden=!skEl2.hidden;skBtn.setAttribute('aria-expanded',String(!skEl2.hidden));if(!skEl2.hidden&&!bagEl.hidden)toggleBag();renderSkills()}
+skBtn.onclick=toggleSkills;skEl2.addEventListener('keydown',e=>e.stopPropagation());
 const SLOTN={weapon:'อาวุธ',armor:'เสื้อ',acc:'เครื่องประดับ'};
 /* ---------- ไอคอนไอเทม (V2-R5): พิกเซลอาร์ต 16×16 วาดด้วยโค้ด ขยาย 2 เท่า สีตามโทนเกม ---------- */
 const ICON={};
@@ -740,8 +767,9 @@ function renderBag(){if(bagEl.hidden)return;const I=HL.CFG.items,me=NET.me;bagEl
     else b.setAttribute('aria-disabled','true');items.appendChild(b)});
   if(!NET.bag.length){const n=document.createElement('div');n.className='note';n.textContent='ยังไม่มีของ — ล่ามอนสเตอร์เพื่อรับของดรอป';bagEl.appendChild(n)}else bagEl.appendChild(items);
   const n=document.createElement('div');n.className='note';n.textContent='ชื่อ ค่า และอัตราดรอปของไอเทมเป็นค่าชั่วคราว';bagEl.appendChild(n)}
-function toggleBag(){bagEl.hidden=!bagEl.hidden;bagBtn.setAttribute('aria-expanded',String(!bagEl.hidden));renderBag()}
+function toggleBag(){if(bagEl.hidden&&!skEl2.hidden)toggleSkills();bagEl.hidden=!bagEl.hidden;bagBtn.setAttribute('aria-expanded',String(!bagEl.hidden));renderBag()}
 bagBtn.onclick=toggleBag;bagEl.addEventListener('keydown',e=>e.stopPropagation());
+const DENY_SK={'locked':'ยังไม่ถึง Job ที่ปลดล็อก','max':'สกิลนี้ระดับสูงสุดแล้ว','no-points':'แต้มสกิลไม่พอ','invalid':'ไม่มีสกิลนี้'};
 const DENY={'hp-full':'HP เต็มแล้ว','cooldown':'รอสักครู่ก่อนใช้อีกครั้ง','bag-full':'กระเป๋าเต็ม','dead':'ตายอยู่ ใช้ของไม่ได้','not-usable':'ใช้ของนี้ไม่ได้','not-equip':'ของนี้สวมใส่ไม่ได้','empty':'ช่องนี้ว่าง'};
 function send(o){const ws=NET.ws;if(ws&&ws.readyState===1&&NET.state==='online')ws.send(JSON.stringify(o))}
 // ส่งตำแหน่งล่าสุดก่อน แล้วค่อยส่งคำขอโจมตี/สกิล ให้เซิร์ฟเวอร์คิดจากตำแหน่งเดียวกับที่เห็นบนจอ
@@ -772,7 +800,7 @@ function connect(){if(!token)return;stopped=false;NET.state='connecting';status(
       for(const p of m.players){seen.add(p.id);let o=byId.get(p.id);if(!o){o={id:p.id,x:p.x,y:p.y,anim:0};byId.set(p.id,o)}Object.assign(o,{tx:p.x,ty:p.y,dir:p.dir,moving:p.moving,name:p.name,lv:p.lv})}
       for(const id of [...byId.keys()])if(!seen.has(id))byId.delete(id);NET.others=[...byId.values()];status('ออนไลน์ · '+NET.name+' · เห็น '+NET.others.length+' คน');
       if(NET.auth&&m.mons)applyWorld(m)}
-    else if(m.t==='deny'){NET.stats.denied++;if(m.r==='debug-off')HL.say('ปุ่มทดสอบปิดอยู่บนเซิร์ฟเวอร์นี้');else if(m.k==='inv')HL.say(DENY[m.r]||'ทำไม่ได้')}
+    else if(m.t==='deny'){NET.stats.denied++;if(m.r==='debug-off')HL.say('ปุ่มทดสอบปิดอยู่บนเซิร์ฟเวอร์นี้');else if(m.k==='inv')HL.say(DENY[m.r]||'ทำไม่ได้');else if(m.k==='skill')HL.say(DENY_SK[m.r]||'อัปสกิลไม่ได้')}
     else if(m.t==='fix'){NET.stats.fixes++;if(HL.Z.id!==m.zone)HL.enterZone(m.zone,m.x,m.y);else{HL.player.x=m.x;HL.player.y=m.y}lastSent=''}
     else if(m.t==='err'){if(m.code==='auth'){token=null;store.set(null);stopped=true;$('net').hidden=false;$('neterr').textContent=m.msg}
       else if(m.code==='replaced'){stopped=true;status(m.msg)}}};
@@ -791,7 +819,7 @@ function applyWorld(m){const CFG=HL.CFG,P=HL.PS,seen=new Set();
   HL.setMons([...monById.values()]);
   for(const e of m.ev){const o=monById.get(e.id);if(!o)continue;
     if(e.k==='dmg'){NET.stats.dmgEv++;o.hurt=.25;HL.addNum(o.x,o.y-o.c.size*.6-18,e.dmg,e.crit?'#ffd34a':'#ffffff');if(e.by===NET.id)HL.setTarget(o)}}
-  const me=m.me;if(me){NET.me=me;let bagCh=false;if(me.bag){NET.bag=me.bag;NET.eq=me.eq;bagCh=true}const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
+  const me=m.me;if(me){NET.me=me;let bagCh=false,skCh=false;if(me.bag){NET.bag=me.bag;NET.eq=me.eq;bagCh=true}if(me.sk){NET.sk=me.sk;NET.pts=me.pts;NET.bon=me.bon||{};skCh=true}const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
     for(const e of me.ev){const pl=HL.player;
       if(e.k==='reward'){const o=monById.get(e.id);HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-40,'+'+e.exp+' EXP','#8fe38f')}
       else if(e.k==='hurt'){if(e.guard)HL.addNum(pl.x,pl.y-66,'ป้องกัน','#9fd6ff');HL.addNum(pl.x,pl.y-52,e.dmg,'#ff6b6b');P.hurt=.4}
@@ -802,6 +830,7 @@ function applyWorld(m){const CFG=HL.CFG,P=HL.PS,seen=new Set();
       else if(e.k==='loot'){const it=HL.CFG.items[e.id],o=monById.get(e.from);NET.stats.loot=(NET.stats.loot||0)+e.n;if(it)HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-58,'+'+it.name+(e.n>1?' ×'+e.n:''),'#ffd27a')}
       else if(e.k==='bagfull'){HL.say('กระเป๋าเต็ม · ทิ้ง '+(HL.CFG.items[e.id]||{}).name)}}
     P.dead=me.dead;
+    if(skCh)renderSkills();
     if(bagCh)renderBag();else{const sEl=$('bagstat');if(sEl&&!bagEl.hidden)sEl.textContent='ATK '+me.atk+' · DEF '+me.def+' · HP '+me.hp+'/'+me.maxHp+' · ช่อง '+NET.bag.length+'/'+HL.CFG.bag.slots}}}
 // ส่งตำแหน่ง 10 ครั้ง/วินาทีเมื่อมีการเปลี่ยน + ทุก 1 วินาทีเป็นสัญญาณยังอยู่, ส่งความคืบหน้าเมื่อเปลี่ยน
 let last=performance.now(),beat=0;

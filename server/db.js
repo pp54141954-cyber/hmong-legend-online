@@ -28,6 +28,8 @@ function open(file) {
   const cols = db.prepare('PRAGMA table_info(characters)').all().map(c => c.name);
   if (!cols.includes('bag')) db.exec("ALTER TABLE characters ADD COLUMN bag TEXT NOT NULL DEFAULT '[]'");
   if (!cols.includes('eq')) db.exec("ALTER TABLE characters ADD COLUMN eq TEXT NOT NULL DEFAULT '{}'");
+  // V2-R8: ระดับสกิล (JSON ชื่อสกิล → ระดับ)
+  if (!cols.includes('skills')) db.exec("ALTER TABLE characters ADD COLUMN skills TEXT NOT NULL DEFAULT '{}'");
 
   const hash = pass => {
     const salt = crypto.randomBytes(16);
@@ -43,7 +45,7 @@ function open(file) {
     getAcc: db.prepare('SELECT * FROM accounts WHERE username = ?'),
     insChar: db.prepare('INSERT INTO characters (account_id, name, zone, x, y, dir, lv, exp, job, jexp, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
     getChar: db.prepare('SELECT * FROM characters WHERE account_id = ?'),
-    saveChar: db.prepare('UPDATE characters SET zone=?, x=?, y=?, dir=?, lv=?, exp=?, job=?, jexp=?, bag=?, eq=?, updated_at=? WHERE account_id=?'),
+    saveChar: db.prepare('UPDATE characters SET zone=?, x=?, y=?, dir=?, lv=?, exp=?, job=?, jexp=?, bag=?, eq=?, skills=?, updated_at=? WHERE account_id=?'),
     insSess: db.prepare('INSERT INTO sessions VALUES (?, ?, ?)'),
     getSess: db.prepare('SELECT * FROM sessions WHERE token = ? AND expire_at > ?'),
     delOld: db.prepare('DELETE FROM sessions WHERE expire_at <= ?'),
@@ -69,8 +71,8 @@ function open(file) {
       return token;
     },
     session(token) { return typeof token === 'string' ? q.getSess.get(token, Date.now()) : undefined; },
-    character(accountId) { const c = q.getChar.get(accountId); if (c) { c.bag = JSON.parse(c.bag || '[]'); c.eq = JSON.parse(c.eq || '{}'); } return c; },
-    save(c) { q.saveChar.run(c.zone, c.x, c.y, c.dir, c.lv, c.exp, c.job, c.jexp, JSON.stringify(c.bag || []), JSON.stringify(c.eq || {}), Date.now(), c.account_id); },
+    character(accountId) { const c = q.getChar.get(accountId); if (c) { c.bag = JSON.parse(c.bag || '[]'); c.eq = JSON.parse(c.eq || '{}'); c.sk = JSON.parse(c.skills || '{}'); delete c.skills; } return c; },
+    save(c) { q.saveChar.run(c.zone, c.x, c.y, c.dir, c.lv, c.exp, c.job, c.jexp, JSON.stringify(c.bag || []), JSON.stringify(c.eq || {}), JSON.stringify(c.sk || {}), Date.now(), c.account_id); },
     close() { db.close(); },
   };
 }

@@ -15,6 +15,7 @@ const zones = grab(/const ZONES=\{/, /\n\/\* =+ สร้างโซน/, 'ZONE
 const build = grab(/function buildZone\(id\)\{/, /\n \/\* วาดพื้น \*\//, 'buildZone');
 const cfg = grab(/const CFG=\{/, /\nconst Combat=\{/, 'CFG');
 const combat = grab(/const Combat=\{/, /\nconst PS=\{/, 'Combat');
+const table = grab(/const SKILL_TABLE=\[/, /\n/, 'SKILL_TABLE');
 
 const out = `// ไฟล์นี้สร้างอัตโนมัติจาก game/index.html โดย tools/extract-shared.js — ห้ามแก้ด้วยมือ
 'use strict';
@@ -26,9 +27,10 @@ ${build.replace('function buildZone(id){', 'function buildGrid(id){')}
 const BLOCKT=new Set([WA,CF,BD,CR]);
 ${cfg}
 ${combat}
-module.exports={T,COLS,ROWS,W,H,inb,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX},BLOCKT,ZONES,buildGrid,CFG,Combat};
+${table}
+module.exports={T,COLS,ROWS,W,H,inb,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX},BLOCKT,ZONES,buildGrid,CFG,Combat,SKILL_TABLE};
 `;
 fs.mkdirSync(path.join(root, 'shared'), { recursive: true });
 fs.writeFileSync(path.join(root, 'shared/world.js'), out);
 const W = require(path.join(root, 'shared/world.js'));
-console.log('shared/world.js: zones=' + Object.keys(W.ZONES).join(',') + ' skills=' + W.CFG.skills.length + ' monsters=' + Object.keys(W.CFG.monsters).length);
+console.log('shared/world.js: zones=' + Object.keys(W.ZONES).join(',') + ' skills=' + W.CFG.skills.length + ' monsters=' + Object.keys(W.CFG.monsters).length + ' skill-table=' + W.SKILL_TABLE.length);

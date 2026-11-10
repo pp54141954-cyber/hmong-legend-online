@@ -88,7 +88,7 @@ function createServer(opts = {}) {
         const old = online.get(s.account_id);
         if (old) { flush(old); send(old.ws, { t: 'err', code: 'replaced', msg: 'บัญชีนี้เข้าเกมจากที่อื่น' }); old.ws.close(); p = old; p.ws = ws; p.allow = conf.burst; p.lastT = now; }
         else { p = { ws, c: db.character(s.account_id), id: s.account_id, moving: false, allow: conf.burst, lastT: now, dirty: false }; sim.addPlayer(p); online.set(p.id, p); }
-        p.bagDirty = true; // ส่งกระเป๋าเต็มชุดใน snapshot แรกหลังเข้าเกม/ต่อใหม่
+        p.bagDirty = true; p.skDirty = true; // ส่งกระเป๋าและสกิลเต็มชุดใน snapshot แรกหลังเข้าเกม/ต่อใหม่
         const c = p.c;
         log('join', c.name, c.zone, Math.round(c.x), Math.round(c.y));
         return send(ws, { t: 'welcome', id: p.id, name: c.name, auth: true, state: { zone: c.zone, x: c.x, y: c.y, dir: c.dir, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, hp: p.hp, maxHp: p.maxHp } });
@@ -96,7 +96,7 @@ function createServer(opts = {}) {
       if (m.t === 'mv') {
         if (p.dead) return;
         const c = p.c, x = +m.x, y = +m.y, zone = String(m.zone), dir = 'NSEW'.includes(m.dir) && m.dir.length === 1 ? m.dir : c.dir;
-        p.allow = Math.min(conf.burst, p.allow + (now - p.lastT) / 1000 * conf.speed * 1.3); p.lastT = now;
+        p.allow = Math.min(conf.burst, p.allow + (now - p.lastT) / 1000 * conf.speed * (1 + (p.bon ? p.bon.spd : 0)) * 1.3); p.lastT = now;
         const inMap = Number.isFinite(x) && Number.isFinite(y) && x >= 0 && y >= 0 && x <= conf.W && y <= conf.H;
         const d = Math.hypot(x - c.x, y - c.y);
         let ok = inMap && ENTRY[zone] && (zone === c.zone ? (d <= p.allow && sim.pathClear(zone, c.x, c.y, x, y)) || nearEntry(zone, x, y) : nearEntry(zone, x, y));
@@ -118,9 +118,14 @@ function createServer(opts = {}) {
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'inv', op: m.op, r }); }
         return;
       }
+      if (m.t === 'skill') {
+        const r = m.op === 'up' ? sim.learn(p, m.name) : 'invalid';
+        if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'skill', name: m.name, r }); }
+        return;
+      }
       if (m.t === 'dbg') {
         if (!conf.allowDebug) return send(ws, { t: 'deny', k: 'dbg', r: 'debug-off' });
-        p.c.job = Math.max(p.c.job, 30); p.c.jexp = 0; p.dirty = true; return;
+        p.c.job = Math.max(p.c.job, 30); p.c.jexp = 0; p.dirty = true; p.skDirty = true; return;
       }
     });
     ws.on('close', () => {
@@ -143,8 +148,9 @@ function createServer(opts = {}) {
       const z = zs[p.c.zone], c = p.c;
       send(p.ws, { t: 'snap', players: (byZone[c.zone] || []).filter(o => o.id !== p.id), mons: z.mons, ev: z.ev,
         me: { zone: c.zone, x: R(c.x), y: R(c.y), hp: Math.ceil(p.hp), maxHp: p.maxHp, atk: p.atk, def: p.def, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, dead: p.dead, buffT: p.buffT, guardT: p.guardT, ev: p.personal,
-          ...(p.bagDirty ? { bag: c.bag, eq: c.eq } : {}) } });
-      p.personal = []; p.bagDirty = false;
+          ...(p.bagDirty ? { bag: c.bag, eq: c.eq } : {}),
+          ...(p.skDirty ? { sk: c.sk, pts: sim.freePoints(p), bon: p.bon } : {}) } });
+      p.personal = []; p.bagDirty = false; p.skDirty = false;
     }
   }, 1000 / conf.tickHz);
   const saver = setInterval(() => { for (const p of online.values()) if (p.dirty) flush(p); }, conf.saveEverySec * 1000);

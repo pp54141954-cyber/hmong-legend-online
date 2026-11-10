@@ -117,6 +117,20 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   await A.page.screenshot({ path: 'tools/last-bag.png' });
   await A.page.click('#bag h3 button');
 
+  // 5.4c แต้มอัปสกิล (V2-R8) — ผ่านแผง 📜 จริง
+  await A.page.click('#skb');
+  rec('ปุ่ม 📜 เปิดแผงสกิล เห็นแต้มคงเหลือ 1 ที่ Job 1', await until(async () => (await A.page.textContent('#skp')).includes('แต้มสกิลคงเหลือ 1')));
+  rec('สกิลที่ยังไม่ถึง Job ปุ่ม + กดไม่ได้', await A.page.isDisabled('#skp button[aria-label="อัป ลงอาคมคมดาบ"]'));
+  const atkSk0 = SA().atk;
+  await A.page.click('#skp button[aria-label="อัป คมดาบลงยันต์"]');
+  const learned = await until(async () => SA().c.sk['คมดาบลงยันต์'] === 1 && (await A.page.textContent('#skp')).includes('แต้มสกิลคงเหลือ 0'));
+  rec('กด + อัป "คมดาบลงยันต์" → เซิร์ฟเวอร์บันทึกระดับ 1 แต้มเหลือ 0', learned, 'ATK ' + atkSk0 + '→' + SA().atk);
+  const dSk = (await st(A.page)).stats.denied;
+  await A.page.evaluate(() => HLNET.send({ t: 'skill', op: 'up', name: 'ปลุกคมอาคม' }));
+  rec('ส่งคำขออัปสกิลที่ยังล็อกตรง ๆ → เซิร์ฟเวอร์ปฏิเสธ', await until(async () => (await st(A.page)).stats.denied > dSk) && !SA().c.sk['ปลุกคมอาคม']);
+  await A.page.screenshot({ path: 'tools/last-skills.png' });
+  await A.page.click('#skp h3 button');
+
   // 5.5 เดินทะลุบ้าน (เปิด "เดินได้ทุกที่" ในเครื่อง) → เซิร์ฟเวอร์ไม่ยอม
   const s55 = await st(A.page);
   await A.page.evaluate(() => { HL.player.x = 368; });
@@ -142,6 +156,8 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   rec('ปุ่ม "ตั้ง Job 30" ใช้ไม่ได้บนเซิร์ฟเวอร์ปกติ', SA().c.job === 1 && (await st(A.page)).job === 1);
   // 5.8 สกิลทั้ง 11 ท่าคิดดาเมจที่เซิร์ฟเวอร์ (ฉาก: ตั้ง Job 30 บนเซิร์ฟเวอร์ + วางเป้าตามระยะท่า)
   SA().c.job = 30;
+  for (const sk of W.CFG.skills) if (!SA().c.sk[sk.name]) SA().c.sk[sk.name] = 1; // ฉาก: อัปท่ากดทั้ง 11 ท่าเป็นระดับ 1
+  SA().skDirty = true;
   // ยืนนอกเขตปลอดภัย (ในเขตปลอดภัยมอนสเตอร์จะถอยกลับและฟื้น HP ทันทีตามกติกาเดิม)
   const PX = 752, PY = 464;
   Object.assign(SA().c, { x: PX, y: PY }); await A.page.evaluate(([x, y]) => { HL.player.x = x; HL.player.y = y; }, [PX, PY]);
@@ -204,7 +220,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
 
   // 8) บันทึกแล้วรีสตาร์ตเซิร์ฟเวอร์
   await A.page.keyboard.down('ArrowDown'); await sleep(500); await A.page.keyboard.up('ArrowDown'); await sleep(400);
-  const saved = await st(A.page), savedBag = JSON.stringify(SA().c.bag), savedEq = JSON.stringify(SA().c.eq);
+  const saved = await st(A.page), savedBag = JSON.stringify(SA().c.bag), savedEq = JSON.stringify(SA().c.eq), savedSk = JSON.stringify(SA().c.sk);
   await A.ctx.close(); await B.ctx.close();
   await srv.close();
   srv = createServer({ dbFile, quiet: true }); port = await srv.listen(0); url = 'http://127.0.0.1:' + port + '/';
@@ -216,6 +232,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   rec('รีสตาร์ตเซิร์ฟเวอร์แล้วตำแหน่งกลับมาถูก', posOk, 'ก่อน=(' + saved.zone + ',' + Math.round(saved.x) + ',' + Math.round(saved.y) + ') หลัง=(' + re.zone + ',' + Math.round(re.x) + ',' + Math.round(re.y) + ')');
   const SA2 = [...srv.online.values()].find(p => p.c.name === 'Tester_A');
   rec('รีสตาร์ตแล้วกระเป๋าและอุปกรณ์กลับมาครบ', JSON.stringify(SA2.c.bag) === savedBag && JSON.stringify(SA2.c.eq) === savedEq && (await A2.page.evaluate(() => JSON.stringify(HLNET.bag))) === savedBag, savedEq + ' ' + savedBag);
+  rec('รีสตาร์ตแล้วระดับสกิลกลับมาครบ', JSON.stringify(SA2.c.sk) === savedSk && (await A2.page.evaluate(() => JSON.stringify(HLNET.sk))) === savedSk, savedSk.slice(0, 120));
   rec('รีสตาร์ตแล้ว Lv/EXP/Job กลับมาถูก', re.lv === saved.lv && re.exp === saved.exp && re.job === saved.job && re.jexp === saved.jexp, JSON.stringify({ lv: re.lv, exp: re.exp, job: re.job, jexp: re.jexp }));
 
   // 9) เปิดเกมซ้ำ (โทเคนในเครื่อง) เข้าเกมเองไม่ต้องล็อกอินใหม่
