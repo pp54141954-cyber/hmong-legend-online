@@ -23,6 +23,11 @@ const CONF = {
   burst: 160,               // เผื่อท่าพุ่ง (ไกลสุด 120 px) + ความหน่วงเครือข่าย
   maxMsgPerSec: 40, maxMsgBytes: 1024,
   maxLv: 100, maxJob: 50,
+  // ความปลอดภัยสำหรับเปิดใช้งานจริง (V2-R22) — ตั้งผ่าน env ได้
+  authPerMin: +(process.env.AUTH_PER_MIN ?? 20),      // สมัคร/ล็อกอินต่อ IP ต่อนาที (0 = ไม่จำกัด)
+  wsPerIp: +(process.env.WS_PER_IP ?? 8),            // การเชื่อมต่อพร้อมกันต่อ IP (0 = ไม่จำกัด)
+  trustProxy: process.env.TRUST_PROXY === '1',        // อยู่หลัง Caddy/nginx: อ่าน IP จาก X-Forwarded-For
+  allowedOrigin: process.env.ALLOWED_ORIGIN || '',    // เช่น https://game.example.com (ว่าง = ไม่ตรวจ)
 };
 const T = CONF.T;
 // จุดที่วาร์ปไปได้ (เริ่มเกม ประตูโซน ปุ่มทดสอบ จุดเกิดหลังตาย) — คัดจาก ZONES ใน game/index.html
@@ -52,9 +57,18 @@ function createServer(opts = {}) {
   const validName = n => typeof n === 'string' && /^[\p{L}\p{N}_]{3,16}$/u.test(n);
   const validPass = p => typeof p === 'string' && p.length >= 6 && p.length <= 64;
 
+  const ipOf = req => (conf.trustProxy && String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()) || req.socket.remoteAddress || '?';
+  const authHits = new Map(); // ip -> [เวลา]
+  const authLimited = ip => { if (!conf.authPerMin) return false; const now = Date.now(), a = (authHits.get(ip) || []).filter(t => now - t < 60000); a.push(now); authHits.set(ip, a); return a.length > conf.authPerMin; };
+  setInterval(() => { const now = Date.now(); for (const [ip, a] of authHits) if (!a.some(t => now - t < 60000)) authHits.delete(ip); }, 60000).unref();
+  // หัวข้อความปลอดภัยทุกคำตอบ: เกมใช้สคริปต์/สไตล์ในไฟล์เดียว รูป data: และเชื่อมต่อเฉพาะเซิร์ฟเวอร์นี้
+  const SEC_HEADERS = { 'x-content-type-options': 'nosniff', 'referrer-policy': 'same-origin', 'x-frame-options': 'SAMEORIGIN',
+    'content-security-policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'self'" };
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
+    for (const [k, v] of Object.entries(SEC_HEADERS)) res.setHeader(k, v);
     try {
+      if (req.method === 'GET' && url.pathname === '/healthz') return json(res, 200, { ok: true, online: online.size, uptime: Math.round(process.uptime()) });
       if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
         return fs.createReadStream(conf.gameFile).pipe(res);
@@ -77,6 +91,7 @@ function createServer(opts = {}) {
       }
       if (req.method === 'GET' && url.pathname === '/api/hello') return json(res, 200, { game: 'hmong-legend', online: online.size });
       if (req.method === 'POST' && (url.pathname === '/api/register' || url.pathname === '/api/login')) {
+        if (authLimited(ipOf(req))) return json(res, 429, { error: 'ลองบ่อยเกินไป กรุณารอ 1 นาที' });
         const b = await readBody(req);
         if (!validName(b.name)) return json(res, 400, { error: 'ชื่อต้องยาว 3–16 ตัว ใช้ตัวอักษร ตัวเลข หรือ _' });
         if (!validPass(b.pass)) return json(res, 400, { error: 'รหัสผ่านต้องยาว 6–64 ตัว' });
@@ -95,7 +110,13 @@ function createServer(opts = {}) {
   const send = (ws, o) => { if (ws.readyState === 1) { const s = JSON.stringify(o); ST.bytes += s.length; ST.msgs++; ws.send(s); } };
   const flush = p => { try { db.save(p.c); p.dirty = false; } catch (e) { log('save error', e.message); } };
 
-  wss.on('connection', ws => {
+  const wsByIp = new Map();
+  wss.on('connection', (ws, req) => {
+    // ต้นทางที่อนุญาต + จำนวนการเชื่อมต่อต่อ IP (V2-R22)
+    if (conf.allowedOrigin && req.headers.origin !== conf.allowedOrigin) return ws.close(1008, 'origin');
+    const ip = ipOf(req), nIp = (wsByIp.get(ip) || 0) + 1;
+    if (conf.wsPerIp && nIp > conf.wsPerIp) return ws.close(1008, 'too many');
+    wsByIp.set(ip, nIp); ws.on('close', () => { const n = (wsByIp.get(ip) || 1) - 1; if (n) wsByIp.set(ip, n); else wsByIp.delete(ip); });
     let p = null, msgs = 0, win = Date.now();
     ws.on('message', raw => {
       const now = Date.now();

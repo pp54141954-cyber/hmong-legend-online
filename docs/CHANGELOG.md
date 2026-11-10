@@ -1,5 +1,14 @@
 # ประวัติเวอร์ชัน
 
+## V2-R22 — 2026-11-10 (เตรียมเปิดใช้งานจริง)
+
+- สำรองไฟล์ก่อนแก้: `game/versions/r23-before-deploy.html` (ตัวเกมไม่ได้แก้รอบนี้)
+- `Dockerfile` (ผู้ใช้ไม่ใช่ root, healthcheck), `deploy/docker-compose.yml` + `deploy/Caddyfile` (HTTPS อัตโนมัติ) + `deploy/.env.example`
+- เซิร์ฟเวอร์: หัวข้อความปลอดภัย (CSP ฯลฯ), `/healthz`, จำกัดสมัคร/ล็อกอินต่อ IP, ตรวจต้นทาง WebSocket, จำกัดการเชื่อมต่อต่อ IP, อ่าน IP หลัง proxy
+- `tools/backup-db.js` สำรองฐานข้อมูลขณะทำงาน; `tools/deploy-test.js` ทดสอบชุดติดตั้งจริง
+- `docs/DEPLOY.md`, `docs/DEVICE_TEST.md`
+- ทดสอบ: deploy 12/12 (รวม HTTPS), online 70/70, smoke 46/46, sim 72/72, โหลด 50 คนผ่าน
+
 ## V2-R21 — 2026-11-10 (ปาร์ตี้ + แบ่งรางวัลบอส + สมดุลค่าพลัง)
 
 - สำรองไฟล์ก่อนแก้: `game/versions/r22-before-party-balance.html`

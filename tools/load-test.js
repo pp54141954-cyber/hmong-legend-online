@@ -16,7 +16,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hl-load-'));
   const port = 20000 + Math.floor(Math.random() * 20000);
-  const srv = spawn(process.execPath, [path.join(__dirname, '../server/server.js')], { env: { ...process.env, PORT: port, DB_FILE: path.join(dir, 'load.db'), STATS: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  const srv = spawn(process.execPath, [path.join(__dirname, '../server/server.js')], { env: { ...process.env, PORT: port, DB_FILE: path.join(dir, 'load.db'), STATS: '1', AUTH_PER_MIN: '0', WS_PER_IP: '0' }, stdio: ['ignore', 'pipe', 'pipe'] });
   srv.stderr.on('data', () => {});
   await new Promise(r => srv.stdout.on('data', d => { if (String(d).includes('http://')) r(); }));
   const B = 'http://127.0.0.1:' + port;

@@ -1,0 +1,29 @@
+# เปิดใช้งานจริงบน VPS: เกม + Caddy (ขอใบรับรอง HTTPS จาก Let's Encrypt ให้อัตโนมัติ)
+# ใช้: ตั้งค่า deploy/.env (ดู .env.example) แล้ว  docker compose -f deploy/docker-compose.yml up -d --build
+services:
+  game:
+    build: ..
+    restart: unless-stopped
+    environment:
+      ALLOWED_ORIGIN: https://${DOMAIN}
+      AUTH_PER_MIN: ${AUTH_PER_MIN:-20}
+      WS_PER_IP: ${WS_PER_IP:-8}
+    volumes:
+      - gamedata:/data
+    expose: ["8080"]
+  caddy:
+    image: caddy:2.8
+    restart: unless-stopped
+    depends_on: [game]
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+volumes:
+  gamedata:
+  caddydata:
+  caddyconfig:
