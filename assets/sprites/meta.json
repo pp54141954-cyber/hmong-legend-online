@@ -1,0 +1,140 @@
+{
+ "หมูป่า": {
+  "ss": 2,
+  "walk": "boar_walk.png",
+  "cw": 53,
+  "ch": 49,
+  "act": "boar_action.png",
+  "aw": 59,
+  "ah": 45
+ },
+ "กระต่ายมีเขา": {
+  "ss": 2,
+  "walk": "horned_rabbit_walk.png",
+  "cw": 35,
+  "ch": 39
+ },
+ "หมาป่า": {
+  "ss": 2,
+  "walk": "wolf_walk.png",
+  "cw": 53,
+  "ch": 50,
+  "act": "wolf_action.png",
+  "aw": 65,
+  "ah": 47
+ },
+ "ลิงป่า": {
+  "ss": 2,
+  "walk": "monkey_walk.png",
+  "cw": 41,
+  "ch": 40,
+  "act": "monkey_action.png",
+  "aw": 49,
+  "ah": 38
+ },
+ "ไก่ฟ้า": {
+  "ss": 2,
+  "walk": "pheasant_walk.png",
+  "cw": 44,
+  "ch": 41,
+  "act": "pheasant_action.png",
+  "aw": 57,
+  "ah": 40
+ },
+ "กวางภูเขา": {
+  "ss": 2,
+  "walk": "mountain_deer_walk.png",
+  "cw": 48,
+  "ch": 55,
+  "act": "mountain_deer_action.png",
+  "aw": 55,
+  "ah": 53
+ },
+ "เสือ": {
+  "ss": 2,
+  "walk": "tiger_walk.png",
+  "cw": 70,
+  "ch": 63,
+  "act": "tiger_action.png",
+  "aw": 72,
+  "ah": 53
+ },
+ "ก็อบลิน": {
+  "ss": 2,
+  "walk": "goblin_walk.png",
+  "cw": 38,
+  "ch": 44,
+  "act": "goblin_action.png",
+  "aw": 59,
+  "ah": 44
+ },
+ "นักรบเผ่าป่า": {
+  "ss": 2,
+  "walk": "forest_warrior_walk.png",
+  "cw": 46,
+  "ch": 58,
+  "act": "forest_warrior_action.png",
+  "aw": 68,
+  "ah": 54
+ },
+ "หมีเขา": {
+  "ss": 2,
+  "walk": "horned_bear_walk.png",
+  "cw": 69,
+  "ch": 67,
+  "act": "horned_bear_action.png",
+  "aw": 72,
+  "ah": 62
+ },
+ "ปีศาจ": {
+  "ss": 2,
+  "walk": "demon_walk.png",
+  "cw": 51,
+  "ch": 61,
+  "act": "demon_action.png",
+  "aw": 76,
+  "ah": 68
+ },
+ "โกเลมหิน": {
+  "ss": 2,
+  "walk": "stone_golem_walk.png",
+  "cw": 62,
+  "ch": 64,
+  "act": "stone_golem_action.png",
+  "aw": 79,
+  "ah": 67
+ },
+ "วิญญาณไม้": {
+  "ss": 2,
+  "walk": "tree_spirit_walk.png",
+  "cw": 49,
+  "ch": 60,
+  "act": "tree_spirit_action.png",
+  "aw": 66,
+  "ah": 60
+ },
+ "กระทิงผี": {
+  "ss": 2,
+  "act": "ghost_bull_action.png",
+  "aw": 67,
+  "ah": 54
+ },
+ "boss:มังกรแห่งหุบเขาหมอก": {
+  "ss": 2,
+  "walk": "boss_misty_valley_dragon_walk.png",
+  "cw": 101,
+  "ch": 102
+ },
+ "boss:ราชาปีศาจภูเขา": {
+  "ss": 2,
+  "walk": "boss_mountain_demon_king_walk_v2.png",
+  "cw": 110,
+  "ch": 105
+ },
+ "boss:วิญญาณหมาป่าศักดิ์สิทธิ์": {
+  "ss": 2,
+  "walk": "boss_sacred_wolf_spirit_walk_v2.png",
+  "cw": 109,
+  "ch": 102
+ }
+}

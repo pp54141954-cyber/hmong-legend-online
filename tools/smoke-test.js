@@ -95,6 +95,13 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   await page.screenshot({ path: 'tools/last-target.png' });
   await page.evaluate(() => { const m = window.__p; m.hp = m.c.hp; m.state = 'return'; const s = HL.ZONES.village.start; HL.player.x = s[0]; HL.player.y = s[1]; HL.PS.hp = HL.PS.maxHp; });
 
+  // ภาพมอนสเตอร์ในฉาก (V2-R10): ภาพเดิน/ท่าของทั้ง 14 ชนิดโหลดได้
+  const spr = await page.evaluate(() => Promise.all(Object.keys(HL.CFG.monsters).map(ty => { const S = HL.monSpr(ty); if (!S) return [ty, 'none'];
+    const w = im => !im ? Promise.resolve(-1) : im.complete ? Promise.resolve(im.naturalWidth) : new Promise(r => { im.onload = () => r(im.naturalWidth); im.onerror = () => r(0); });
+    return Promise.all([w(S.walk), w(S.act)]).then(([a, b]) => [ty, a, b]); })));
+  const bad = spr.filter(x => x[1] === 'none' || x[1] === 0 || x[2] === 0 || (x[1] === -1 && x[2] === -1));
+  rec('ภาพมอนสเตอร์ในฉากโหลดได้ครบ 14 ชนิด (เดิน 13 + ท่า 13)', bad.length === 0 && spr.filter(x => x[1] > 0).length === 13 && spr.filter(x => x[2] > 0).length === 13, bad.map(x => x[0]).join(',') || 'กระทิงผีมีเฉพาะท่า');
+
   // มอนสเตอร์เกิดใหม่
   const resp = await page.evaluate(() => window.__t.c.respawn);
   await page.waitForTimeout(resp * 1000 + 800);
