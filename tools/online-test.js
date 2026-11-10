@@ -97,6 +97,8 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   rec('เครื่อง A เห็นตัวเลขของดรอป', await until(async () => (await A.page.evaluate(() => HLNET.stats.loot || 0)) >= 2));
   await A.page.click('#bagb');
   rec('ปุ่ม 🎒 เปิดกระเป๋า เห็นของที่ได้', await until(async () => { const t = await A.page.textContent('#bag'); return t.includes('ขนไก่ฟ้า') && t.includes('ยาสมุนไพรเล็ก'); }));
+  const icons = await A.page.evaluate(() => [...document.querySelectorAll('#bag img.ic')].map(i => i.complete && i.naturalWidth === 32));
+  rec('ไอคอนไอเทมในกระเป๋าแสดงครบ (V2-R5)', icons.length >= 2 && icons.every(Boolean), icons.length + ' รูป');
   srv.sim.addItem(SA(), 'sword_iron', 1); // ฉาก: ให้ดาบเหล็ก 1 เล่ม
   await A.page.waitForSelector('#bag button[aria-label="ใส่ ดาบเหล็กตีมือ"]', { timeout: 3000 });
   const atkBase = SA().atk;
@@ -109,6 +111,9 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   const dInv = (await st(A.page)).stats.denied;
   await A.page.evaluate(() => HLNET.send({ t: 'inv', op: 'equip', slot: 99 }));
   rec('คำสั่งกระเป๋าปลอม (ช่อง 99) ถูกปฏิเสธ', await until(async () => (await st(A.page)).stats.denied > dInv));
+  await A.page.bringToFront(); // หน้าต่างที่ไม่อยู่ด้านหน้า เบราว์เซอร์อาจหยุดรอบวาด (requestAnimationFrame)
+  const hudOk = await until(async () => (await A.page.textContent('#hpt')).startsWith(String(Math.ceil(SA().hp)) + ' /'), 3000);
+  rec('แถบ HP บนจอตรงกับเซิร์ฟเวอร์หลังใช้ยา', hudOk, 'จอ=' + (await A.page.textContent('#hpt')) + ' เซิร์ฟเวอร์=' + Math.ceil(SA().hp));
   await A.page.screenshot({ path: 'tools/last-bag.png' });
   await A.page.click('#bag h3 button');
 
