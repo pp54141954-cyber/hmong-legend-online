@@ -119,6 +119,33 @@
   "aw": 67,
   "ah": 54
  },
+ "boss:วิญญาณแห่งป่า": {
+  "ss": 2,
+  "walk": "boss_forest_spirit_walk.png",
+  "cw": 68,
+  "ch": 97,
+  "act": "boss_forest_spirit_action.png",
+  "aw": 98,
+  "ah": 90
+ },
+ "boss:เทพหมาป่าภูเขา": {
+  "ss": 2,
+  "walk": "boss_mountain_wolf_god_walk.png",
+  "cw": 99,
+  "ch": 103,
+  "act": "boss_mountain_wolf_god_action.png",
+  "aw": 102,
+  "ah": 87
+ },
+ "boss:มังกรภูเขาดำ": {
+  "ss": 2,
+  "walk": "boss_black_mountain_dragon_walk.png",
+  "cw": 107,
+  "ch": 107,
+  "act": "boss_black_mountain_dragon_action.png",
+  "aw": 110,
+  "ah": 103
+ },
  "boss:มังกรแห่งหุบเขาหมอก": {
   "ss": 2,
   "walk": "boss_misty_valley_dragon_walk.png",

@@ -40,6 +40,9 @@ SHEETS = {
     # กระทิงผี: ยังไม่มีท่าเดิน 4 ทิศ — ใช้แถวยืน/โจมตีจาก action เป็นด้านข้าง (หน้า/หลังใช้ภาพด้านข้าง) จนกว่าจะได้ภาพเดิน
     'กระทิงผี':     dict(walk=None, act='ghost_bull_action', h=46),
     # บอส (ยังไม่มีในเกม — สร้างไฟล์ไว้ก่อน)
+    'boss:วิญญาณแห่งป่า':  dict(walk='boss_forest_spirit_walk', act='boss_forest_spirit_action', h=88, amin=200),
+    'boss:เทพหมาป่าภูเขา': dict(walk='boss_mountain_wolf_god_walk', act='boss_mountain_wolf_god_action', h=84, amin=225),
+    'boss:มังกรภูเขาดำ':   dict(walk='boss_black_mountain_dragon_walk', act='boss_black_mountain_dragon_action', h=96, amin=170),
     'boss:มังกรแห่งหุบเขาหมอก':    dict(walk='boss_misty_valley_dragon_walk', h=96),
     'boss:ราชาปีศาจภูเขา':         dict(walk='boss_mountain_demon_king_walk_v2', h=90),
     'boss:วิญญาณหมาป่าศักดิ์สิทธิ์': dict(walk='boss_sacred_wolf_spirit_walk_v2', h=80),
@@ -57,6 +60,8 @@ def is_bg_dark(p):
 def is_bg_light(p):
     r, g, b = p[:3]
     return min(r, g, b) >= 228 and max(r, g, b) - min(r, g, b) <= 24
+
+AMIN = 128
 
 def clean_alpha(im):
     im = im.convert('RGBA'); px = im.load(); w, h = im.size
@@ -78,7 +83,7 @@ def clean_alpha(im):
                 if 0 <= nx < w and 0 <= ny < h and not seen[ny * w + nx] and isbg(px[nx, ny]):
                     seen[ny * w + nx] = 1; q.append((nx, ny))
     # ตัดพิกเซลจางทั้งหมด (ฝุ่น/ออร่าจางจากการสร้างภาพ)
-    a = im.getchannel('A').point(lambda v: 255 if v >= 128 else 0)
+    a = im.getchannel('A').point(lambda v: 255 if v >= AMIN else 0)
     im.putalpha(a)
     return im
 
@@ -143,6 +148,8 @@ def main():
     for key, s in SHEETS.items():
         if only and key not in only:
             continue
+        global AMIN
+        AMIN = s.get('amin', 128)
         e = {'ss': SS}
         if s.get('walk'):
             walk, cw, ch = pack(cells(s['walk']), s['h'], ref_rows=(2, 3))
