@@ -12,7 +12,13 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
 (async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hl-'));
   const dbFile = path.join(dir, 'test.db');
-  let srv = createServer({ dbFile, quiet: true, saveEverySec: 2 });
+  // ผู้เล่นใหม่บนเซิร์ฟเวอร์ปกติเริ่มที่หมู่บ้านใหม่
+  { const s0 = createServer({ dbFile: dbFile + '.home', quiet: true }), p0 = await s0.listen(0);
+    const r = await fetch('http://127.0.0.1:' + p0 + '/api/register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Home_Test', pass: 'secret123' }) });
+    const tok = (await r.json()).token, acc = s0.db.session(tok).account_id, ch = s0.db.character(acc);
+    rec('สมัครใหม่บนเซิร์ฟเวอร์ปกติ → เริ่มที่หมู่บ้านแผนที่ใหม่', ch.zone === 'village2', ch.zone); await s0.close(); }
+  // ทดสอบที่เหลือเริ่มที่หมู่บ้านเดิม (มีบ้าน/มอนสเตอร์ที่ฉากทดสอบใช้)
+  let srv = createServer({ dbFile, quiet: true, saveEverySec: 2, startZone: 'village' });
   let port = await srv.listen(0);
   let url = 'http://127.0.0.1:' + port + '/';
   const browser = await chromium.launch();
@@ -199,8 +205,9 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   SA().hp = 1;
   const died = await until(async () => (await A.page.evaluate(() => HL.PS.dead)) && SA().dead, 5000);
   rec('HP หมดแล้วตาย (เซิร์ฟเวอร์ตัดสิน)', died);
-  const resp = await until(async () => { const s = await st(A.page); return !SA().dead && s.zone === 'village' && SA().c.zone === 'village'; }, 6000);
-  rec('เกิดใหม่ที่หมู่บ้านหลัง ' + W.CFG.player.respawnSec + ' วินาที', resp, 'HP ' + Math.ceil(SA().hp) + '/' + SA().maxHp);
+  const resp = await until(async () => { const s = await st(A.page); return !SA().dead && s.zone === 'village2' && SA().c.zone === 'village2'; }, 6000);
+  await A.page.evaluate(() => { const s = HL.ZONES.village.start; }); // ตายแล้วไปหมู่บ้านใหม่
+  rec('เกิดใหม่ที่หมู่บ้านแผนที่ใหม่หลัง ' + W.CFG.player.respawnSec + ' วินาที', resp, 'HP ' + Math.ceil(SA().hp) + '/' + SA().maxHp);
   await until(async () => (await st(B.page)).others.some(o => o.name === 'Tester_A'));
 
   // 6) ย้ายโซน: B ไม่เห็น A แล้ว
@@ -223,7 +230,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   const saved = await st(A.page), savedBag = JSON.stringify(SA().c.bag), savedEq = JSON.stringify(SA().c.eq), savedSk = JSON.stringify(SA().c.sk);
   await A.ctx.close(); await B.ctx.close();
   await srv.close();
-  srv = createServer({ dbFile, quiet: true }); port = await srv.listen(0); url = 'http://127.0.0.1:' + port + '/';
+  srv = createServer({ dbFile, quiet: true, startZone: 'village' }); port = await srv.listen(0); url = 'http://127.0.0.1:' + port + '/';
   const A2 = await open('Pixel 7');
   await signup(A2.page, 'Tester_A', 'secret123', 'login');
   await until(async () => (await st(A2.page)).joined);

@@ -37,7 +37,9 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   // เดิน 4 ทิศผ่านคีย์บอร์ด (เส้นทาง input ปกติ)
   const pos = () => page.evaluate(() => ({ x: HL.player.x, y: HL.player.y, dir: HL.player.dir, zone: HL.Z.id }));
   const start = await pos();
-  rec('เริ่มในหมู่บ้าน', start.zone === 'village', JSON.stringify(start));
+  rec('เริ่มเกมที่หมู่บ้านแผนที่ใหม่ (village2)', start.zone === 'village2', JSON.stringify(start));
+  // ทดสอบเดิม (เดิน ต่อสู้ สกิล) ใช้หมู่บ้านเดิมที่มีมอนสเตอร์อยู่ใกล้
+  await page.evaluate(() => { const s = HL.ZONES.village.start; HL.enterZone('village', s[0], s[1]); });
   const moves = {};
   for (const [key, dir] of [['ArrowRight', 'E'], ['ArrowDown', 'S'], ['ArrowLeft', 'W'], ['ArrowUp', 'N']]) {
     const a = await pos();
@@ -175,6 +177,15 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   await page.evaluate(() => { HL.player.x = 1.5 * HL.T; HL.player.y = 11.5 * HL.T; });
   await page.keyboard.down('ArrowLeft'); await page.waitForTimeout(600); await page.keyboard.up('ArrowLeft');
   rec('เดินออกขอบซ้ายกลับหมู่บ้านแผนที่ใหม่', (await pos()).zone === 'village2');
+  // ทุ่งน้ำตก ↔ ทุ่งมอนสเตอร์เดิม
+  await page.evaluate(() => { const s = HL.ZONES.field2.start; HL.enterZone('field2', s[0], s[1]); HL.player.x = 17.5 * HL.T; HL.player.y = 30.2 * HL.T; });
+  await page.waitForTimeout(1100);
+  await page.keyboard.down('ArrowDown'); await page.waitForTimeout(700); await page.keyboard.up('ArrowDown');
+  const toF = (await pos()).zone;
+  await page.waitForTimeout(1100);
+  await page.evaluate(() => { HL.player.x = 1.5 * HL.T; HL.player.y = 14.5 * HL.T; });
+  await page.keyboard.down('ArrowLeft'); await page.waitForTimeout(700); await page.keyboard.up('ArrowLeft');
+  rec('ทุ่งน้ำตก → บันไดล่าง → ทุ่งเดิม และทุ่งเดิม → ขอบซ้าย → ทุ่งน้ำตก', toF === 'field' && (await pos()).zone === 'field2', toF + ' → ' + (await pos()).zone);
   await page.evaluate(() => { const s = HL.ZONES.village.start; HL.enterZone('village', s[0], s[1]); });
 
   // ย้ายโซนผ่านปุ่มทดสอบ

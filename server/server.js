@@ -32,7 +32,8 @@ const ENTRY = {};
 for (const [id, D] of Object.entries(WORLD.ZONES)) (ENTRY[id] ||= []).push([D.start[0], D.start[1]]);
 for (const D of Object.values(WORLD.ZONES)) for (const e of D.exits || []) (ENTRY[e.to] ||= []).push([(e.tx + .5) * T, (e.ty + .5) * T]);
 ENTRY.field.push([WORLD.ZONES.field.start[0] + 2 * T, WORLD.ZONES.field.start[1]]);
-const START = { zone: 'village', x: ENTRY.village[0][0], y: ENTRY.village[0][1] };
+const HOME = WORLD.CFG.player.home;
+const START = { zone: HOME, x: WORLD.ZONES[HOME].start[0], y: WORLD.ZONES[HOME].start[1] };
 const nearEntry = (zone, x, y) => (ENTRY[zone] || []).some(([ex, ey]) => Math.hypot(ex - x, ey - y) <= 3 * T);
 
 function createServer(opts = {}) {
@@ -63,7 +64,7 @@ function createServer(opts = {}) {
         const b = await readBody(req);
         if (!validName(b.name)) return json(res, 400, { error: 'ชื่อต้องยาว 3–16 ตัว ใช้ตัวอักษร ตัวเลข หรือ _' });
         if (!validPass(b.pass)) return json(res, 400, { error: 'รหัสผ่านต้องยาว 6–64 ตัว' });
-        const r = url.pathname === '/api/register' ? db.register(b.name, b.pass, START) : db.login(b.name, b.pass);
+        const r = url.pathname === '/api/register' ? db.register(b.name, b.pass, conf.startZone ? { zone: conf.startZone, x: WORLD.ZONES[conf.startZone].start[0], y: WORLD.ZONES[conf.startZone].start[1] } : START) : db.login(b.name, b.pass);
         if (r.error) return json(res, url.pathname === '/api/register' ? 409 : 401, r);
         log('auth', url.pathname, b.name);
         return json(res, 200, { token: db.newSession(r.id, conf.sessionTtlMs), name: b.name });

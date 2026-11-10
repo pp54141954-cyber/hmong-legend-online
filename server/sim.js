@@ -276,7 +276,7 @@ function createSim({ rand = Math.random } = {}) {
   function step(dt, now) {
     for (const p of players) {
       p.buffT = Math.max(0, p.buffT - dt); p.guardT = Math.max(0, p.guardT - dt);
-      if (p.dead) { p.deadT -= dt; if (p.deadT <= 0) { const s = ZONES.village.start; p.dead = false; p.hp = p.maxHp; p.c.zone = 'village'; p.c.x = s[0]; p.c.y = s[1]; p.c.dir = 'S'; p.personal.push({ k: 'respawn', zone: 'village', x: s[0], y: s[1] }); p.dirty = true; } }
+      if (p.dead) { p.deadT -= dt; if (p.deadT <= 0) { const h = CFG.player.home, s = ZONES[h].start; p.dead = false; p.hp = p.maxHp; p.c.zone = h; p.c.x = s[0]; p.c.y = s[1]; p.c.dir = 'S'; p.personal.push({ k: 'respawn', zone: h, x: s[0], y: s[1] }); p.dirty = true; } }
       else if (zones[p.c.zone].inSafe(p.c.x, p.c.y) && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + CFG.player.regenSafe * dt);
     }
     for (const z of Object.values(zones)) {
