@@ -149,19 +149,28 @@
  "boss:มังกรแห่งหุบเขาหมอก": {
   "ss": 2,
   "walk": "boss_misty_valley_dragon_walk.png",
-  "cw": 101,
-  "ch": 102
+  "cw": 102,
+  "ch": 102,
+  "act": "boss_misty_valley_dragon_action.png",
+  "aw": 105,
+  "ah": 102
  },
  "boss:ราชาปีศาจภูเขา": {
   "ss": 2,
   "walk": "boss_mountain_demon_king_walk_v2.png",
   "cw": 110,
-  "ch": 105
+  "ch": 105,
+  "act": "boss_mountain_demon_king_action.png",
+  "aw": 97,
+  "ah": 93
  },
  "boss:วิญญาณหมาป่าศักดิ์สิทธิ์": {
   "ss": 2,
   "walk": "boss_sacred_wolf_spirit_walk_v2.png",
   "cw": 109,
-  "ch": 102
+  "ch": 102,
+  "act": "boss_sacred_wolf_spirit_action.png",
+  "aw": 89,
+  "ah": 83
  }
 }

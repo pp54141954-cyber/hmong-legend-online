@@ -191,7 +191,7 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   const bossSpr = await page.evaluate(() => Promise.all(Object.keys(HL.CFG.monsters).filter(t => HL.CFG.monsters[t].boss).map(ty => { const S = HL.monSpr(ty); if (!S) return [ty, 0, 0];
     const w = im => !im ? Promise.resolve(0) : im.complete ? Promise.resolve(im.naturalWidth) : new Promise(r => { im.onload = () => r(im.naturalWidth); im.onerror = () => r(0); });
     return Promise.all([w(S.walk), w(S.act)]).then(([a, b]) => [ty, a, b]); })));
-  rec('ภาพบอสในฉาก: เดิน 6/6 ตัว, ท่าโจมตี 3 ตัว (ป่า หมาป่าเทพ มังกรดำ)', bossSpr.filter(b => b[1] > 0).length === 6 && ['วิญญาณแห่งป่า', 'เทพหมาป่าภูเขา', 'มังกรภูเขาดำ'].every(n => bossSpr.find(b => b[0] === n)[2] > 0), JSON.stringify(bossSpr.map(b => b[0].slice(0, 6) + ':' + (b[1] > 0 ? 'W' : '-') + (b[2] > 0 ? 'A' : '-'))));
+  rec('ภาพบอสในฉาก: เดิน 6/6 ตัว, ท่าโจมตี 6/6 ตัว', bossSpr.filter(b => b[1] > 0).length === 6 && bossSpr.filter(b => b[2] > 0).length === 6, JSON.stringify(bossSpr.map(b => b[0].slice(0, 6) + ':' + (b[1] > 0 ? 'W' : '-') + (b[2] > 0 ? 'A' : '-'))));
   await setT(T_DAY);
   await page.evaluate(() => { HL.setClock(0); HL.PS.hp = HL.PS.maxHp; HL.PS.dead = false; const s = HL.ZONES.village.start; HL.enterZone('village', s[0], s[1]); });
 

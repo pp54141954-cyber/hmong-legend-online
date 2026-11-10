@@ -43,9 +43,9 @@ SHEETS = {
     'boss:วิญญาณแห่งป่า':  dict(walk='boss_forest_spirit_walk', act='boss_forest_spirit_action', h=88, amin=200),
     'boss:เทพหมาป่าภูเขา': dict(walk='boss_mountain_wolf_god_walk', act='boss_mountain_wolf_god_action', h=84, amin=225),
     'boss:มังกรภูเขาดำ':   dict(walk='boss_black_mountain_dragon_walk', act='boss_black_mountain_dragon_action', h=96, amin=170),
-    'boss:มังกรแห่งหุบเขาหมอก':    dict(walk='boss_misty_valley_dragon_walk', h=96),
-    'boss:ราชาปีศาจภูเขา':         dict(walk='boss_mountain_demon_king_walk_v2', h=90),
-    'boss:วิญญาณหมาป่าศักดิ์สิทธิ์': dict(walk='boss_sacred_wolf_spirit_walk_v2', h=80),
+    'boss:มังกรแห่งหุบเขาหมอก':    dict(walk='boss_misty_valley_dragon_walk', act='boss_misty_valley_dragon_action', h=96, amin=200),
+    'boss:ราชาปีศาจภูเขา':         dict(walk='boss_mountain_demon_king_walk_v2', act='boss_mountain_demon_king_action', h=90, amin=170),
+    'boss:วิญญาณหมาป่าศักดิ์สิทธิ์': dict(walk='boss_sacred_wolf_spirit_walk_v2', act='boss_sacred_wolf_spirit_action', h=80, amin=200),
 }
 # ลำดับแถวท่าโจมตีมาตรฐาน: 0 โจมตี 4 เฟรม / 1 รับดาเมจ 2 เฟรม / 2 ตาย 4 เฟรม / 3 ยืน 4 เฟรม
 # ภาพปีศาจเรียงต่าง: แถว 1 ยืน/ย่าง, แถว 2 โจมตี, แถว 3 = รับดาเมจ 1 + ตาย 3, แถว 4 ยืน
