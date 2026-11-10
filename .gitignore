@@ -2,3 +2,5 @@
 zig-out/
 zig-pkg/
 *.o
+tools/last-run.*
+node_modules/
