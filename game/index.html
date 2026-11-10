@@ -904,10 +904,12 @@ function connect(){if(!token)return;stopped=false;NET.state='connecting';status(
       if(!NET.joined){const s=m.state;NET.auth=!!m.auth;HL.PS.lv=s.lv;HL.PS.exp=s.exp;HL.PS.job=s.job;HL.PS.jexp=s.jexp;HL.recalc();HL.PS.hp=s.hp??HL.PS.maxHp;HL.enterZone(s.zone,s.x,s.y);HL.player.dir=s.dir;NET.joined=true;HL.say('ยินดีต้อนรับ '+m.name)}
       else{NET.stats.reconnects++;HL.say('เชื่อมต่อใหม่แล้ว')}
       lastSent='';NET.name=m.name;NET.id=m.id;status('ออนไลน์ · '+m.name)}
-    else if(m.t==='snap'){NET.stats.snaps++;if(m.tm)NET.wt=m.tm;const seen=new Set();
-      for(const p of m.players){seen.add(p.id);let o=byId.get(p.id);if(!o){o={id:p.id,x:p.x,y:p.y,anim:0};byId.set(p.id,o)}Object.assign(o,{tx:p.x,ty:p.y,dir:p.dir,moving:p.moving,name:p.name,lv:p.lv})}
+    else if(m.t==='snap'){NET.stats.snaps++;NET.stats.bytes=(NET.stats.bytes||0)+ev.data.length;if(m.tm)NET.wt=m.tm;const seen=new Set();
+      if(m.mf){NET.pnames={};byId.clear()}if(m.pn)Object.assign(NET.pnames||(NET.pnames={}),m.pn);
+      /* แถวผู้เล่น: [id,x,y,ทิศ,เดิน,lv,ตาย] (V2-R20) */
+      for(const r of m.ps||[]){const id=r[0];seen.add(id);let o=byId.get(id);if(!o){o={id,x:r[1],y:r[2],anim:0};byId.set(id,o)}Object.assign(o,{tx:r[1],ty:r[2],dir:'NSEW'[r[3]],moving:!!r[4],name:(NET.pnames||{})[id]||'?',lv:r[5]})}
       for(const id of [...byId.keys()])if(!seen.has(id))byId.delete(id);NET.others=[...byId.values()];status('ออนไลน์ · '+NET.name+' · เห็น '+NET.others.length+' คน');
-      if(NET.auth&&m.mons)applyWorld(m)}
+      if(NET.auth)applyWorld(m)}
     else if(m.t==='deny'){NET.stats.denied++;if(m.r==='debug-off')HL.say('ปุ่มทดสอบปิดอยู่บนเซิร์ฟเวอร์นี้');else if(m.k==='inv')HL.say(DENY[m.r]||'ทำไม่ได้');else if(m.k==='skill')HL.say(DENY_SK[m.r]||'อัปสกิลไม่ได้')}
     else if(m.t==='fix'){NET.stats.fixes++;if(HL.Z.id!==m.zone)HL.enterZone(m.zone,m.x,m.y);else{HL.player.x=m.x;HL.player.y=m.y}lastSent=''}
     else if(m.t==='err'){if(m.code==='auth'){token=null;store.set(null);stopped=true;$('net').hidden=false;$('neterr').textContent=m.msg}
@@ -918,18 +920,19 @@ function connect(){if(!token)return;stopped=false;NET.state='connecting';status(
 function sendMv(force){const ws=NET.ws;if(!ws||ws.readyState!==1||NET.state!=='online'||HL.PS.dead)return;const p=HL.player,s=JSON.stringify({t:'mv',zone:HL.Z.id,x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,dir:p.dir,moving:HL.moving});
   if(s!==lastSent||force){ws.send(s);lastSent=s;beat=1}}
 // โลกจากเซิร์ฟเวอร์: มอนสเตอร์ HP ของเรา และเหตุการณ์ (ดาเมจ ฆ่า รางวัล โดนตี ตาย เกิดใหม่)
-function applyWorld(m){const CFG=HL.CFG,P=HL.PS,seen=new Set();
-  for(const s of m.mons){seen.add(s.id);let o=monById.get(s.id);const c=CFG.monsters[s.ty];if(!c)continue;
+const MTYPES=Object.keys(HL.CFG.monsters),MST=['idle','chase','return','dead'];
+/* มอนสเตอร์แบบย่อ (V2-R20): md = แถวที่เปลี่ยน [id,ชนิด,x,y,hp,สถานะ,ทิศ,รอย], mr = ออกนอกระยะ, mf = เริ่มใหม่ทั้งหมด */
+function applyWorld(m){const CFG=HL.CFG,P=HL.PS;if(m.mf)monById.clear();for(const id of m.mr||[])monById.delete(id);
+  for(const r of m.md||[]){const s={id:r[0],ty:MTYPES[r[1]],x:r[2],y:r[3],hp:r[4],st:MST[r[5]],d:'NSEW'[r[6]],mk:r[7]};let o=monById.get(s.id);const c=CFG.monsters[s.ty];if(!c)continue;
     if(!o){o={id:s.id,type:s.ty,c,x:s.x,y:s.y,hurt:0,markT:0};monById.set(s.id,o)}
     if(o.state==='dead'&&s.st!=='dead'){o.x=s.x;o.y=s.y;o.lx=undefined}
     if(o.state&&o.state!=='dead'&&s.st==='dead')o.dieT0=HL.tNow;
     Object.assign(o,{tx:s.x,ty:s.y,hp:s.hp,state:s.st,dir:s.d});o.markT=s.mk?1:0}
-  for(const id of [...monById.keys()])if(!seen.has(id))monById.delete(id);
   HL.setMons([...monById.values()]);
-  for(const e of m.ev){const o=monById.get(e.id);if(!o)continue;
+  for(const e of m.ev||[]){const o=monById.get(e.id);if(!o)continue;
     if(e.k==='dmg'){NET.stats.dmgEv++;o.hurt=.25;HL.addNum(o.x,o.y-o.c.size*.6-18,e.dmg,e.crit?'#ffd34a':'#ffffff');if(e.by===NET.id)HL.setTarget(o)}}
   const me=m.me;if(me){NET.me=me;let bagCh=false,skCh=false;if(me.bag){NET.bag=me.bag;NET.eq=me.eq;bagCh=true}if(me.sk){NET.sk=me.sk;NET.pts=me.pts;NET.bon=me.bon||{};skCh=true}const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
-    for(const e of me.ev){const pl=HL.player;
+    for(const e of me.ev||[]){const pl=HL.player;
       if(e.k==='reward'){const o=monById.get(e.id);HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-40,'+'+e.exp+' EXP','#8fe38f')}
       else if(e.k==='hurt'){const mo=monById.get(e.by);if(mo){mo.atkT0=HL.tNow;mo.dir=pl.x<mo.x?'W':'E'}if(e.guard)HL.addNum(pl.x,pl.y-66,'ป้องกัน','#9fd6ff');HL.addNum(pl.x,pl.y-52,e.dmg,'#ff6b6b');P.hurt=.4}
       else if(e.k==='lv')HL.say('เลเวลอัป! Lv '+e.lv);

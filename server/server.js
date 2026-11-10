@@ -67,6 +67,14 @@ function createServer(opts = {}) {
         res.writeHead(200, { 'content-type': 'image/webp', 'cache-control': 'public, max-age=86400' });
         return fs.createReadStream(f).pipe(res);
       }
+      if (req.method === 'GET' && url.pathname === '/api/stats' && (conf.stats || process.env.STATS === '1')) {
+        const q = (a, p) => { const b = [...a].sort((x, y) => x - y); return b.length ? +b[Math.min(b.length - 1, Math.floor(b.length * p))].toFixed(2) : 0; };
+        const sec = (Date.now() - ST.since) / 1000, r = { online: online.size, sec: +sec.toFixed(1), simP50: q(ST.simMs, .5), simP99: q(ST.simMs, .99), simMax: q(ST.simMs, 1),
+          tickP50: q(ST.tickMs, .5), tickP99: q(ST.tickMs, .99), tickMax: q(ST.tickMs, 1), kbPerSec: +(ST.bytes / 1024 / sec).toFixed(1), msgPerSec: +(ST.msgs / sec).toFixed(0),
+          rssMB: +(process.memoryUsage().rss / 1048576).toFixed(0), cpuSec: +((process.cpuUsage().user + process.cpuUsage().system) / 1e6).toFixed(2) };
+        if (url.searchParams.get('reset')) { ST.simMs = []; ST.tickMs = []; ST.bytes = 0; ST.msgs = 0; ST.since = Date.now(); }
+        return json(res, 200, r);
+      }
       if (req.method === 'GET' && url.pathname === '/api/hello') return json(res, 200, { game: 'hmong-legend', online: online.size });
       if (req.method === 'POST' && (url.pathname === '/api/register' || url.pathname === '/api/login')) {
         const b = await readBody(req);
@@ -81,8 +89,10 @@ function createServer(opts = {}) {
     } catch (e) { json(res, 400, { error: 'bad request' }); }
   });
 
-  const wss = new WebSocketServer({ server, path: '/ws', maxPayload: conf.maxMsgBytes });
-  const send = (ws, o) => { if (ws.readyState === 1) ws.send(JSON.stringify(o)); };
+  // บีบอัดข้อความ (permessage-deflate) ลดข้อมูลผ่านเน็ตมือถือ — เบราว์เซอร์ทุกตัวรองรับ; ปิดได้ด้วย WS_DEFLATE=0 (V2-R20)
+  const deflate = process.env.WS_DEFLATE === '0' ? false : { threshold: 256, zlibDeflateOptions: { level: 3, memLevel: 7 }, serverNoContextTakeover: false, clientNoContextTakeover: true, serverMaxWindowBits: 12 };
+  const wss = new WebSocketServer({ server, path: '/ws', maxPayload: conf.maxMsgBytes, perMessageDeflate: deflate });
+  const send = (ws, o) => { if (ws.readyState === 1) { const s = JSON.stringify(o); ST.bytes += s.length; ST.msgs++; ws.send(s); } };
   const flush = p => { try { db.save(p.c); p.dirty = false; } catch (e) { log('save error', e.message); } };
 
   wss.on('connection', ws => {
@@ -99,7 +109,7 @@ function createServer(opts = {}) {
         const old = online.get(s.account_id);
         if (old) { flush(old); send(old.ws, { t: 'err', code: 'replaced', msg: 'บัญชีนี้เข้าเกมจากที่อื่น' }); old.ws.close(); p = old; p.ws = ws; p.allow = conf.burst; p.lastT = now; }
         else { p = { ws, c: db.character(s.account_id), id: s.account_id, moving: false, allow: conf.burst, lastT: now, dirty: false }; sim.addPlayer(p); online.set(p.id, p); }
-        p.bagDirty = true; p.skDirty = true; // ส่งกระเป๋าและสกิลเต็มชุดใน snapshot แรกหลังเข้าเกม/ต่อใหม่
+        p.bagDirty = true; p.skDirty = true; p.netZone = null; // เข้าเกม/ต่อใหม่: ส่ง snapshot เต็ม // ส่งกระเป๋าและสกิลเต็มชุดใน snapshot แรกหลังเข้าเกม/ต่อใหม่
         const c = p.c;
         log('join', c.name, c.zone, Math.round(c.x), Math.round(c.y));
         return send(ws, { t: 'welcome', id: p.id, name: c.name, auth: true, state: { zone: c.zone, x: c.x, y: c.y, dir: c.dir, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, hp: p.hp, maxHp: p.maxHp } });
@@ -145,26 +155,51 @@ function createServer(opts = {}) {
   });
 
   let lastSim = Date.now();
-  const simT = setInterval(() => { const n = Date.now(); sim.step(Math.min(.1, (n - lastSim) / 1000), n / 1000); lastSim = n; }, 1000 / conf.simHz);
+  // ตัววัดประสิทธิภาพ (V2-R20): เวลาคิดโลก/ส่ง snapshot ต่อรอบ และปริมาณข้อมูลที่ส่ง — ดูได้ที่ /api/stats เมื่อ STATS=1
+  const ST = { simMs: [], tickMs: [], bytes: 0, msgs: 0, since: Date.now() };
+  const keep = (a, v) => { a.push(v); if (a.length > 2000) a.shift(); };
+  const simT = setInterval(() => { const n = Date.now(), t0 = performance.now(); sim.step(Math.min(.1, (n - lastSim) / 1000), n / 1000); keep(ST.simMs, performance.now() - t0); lastSim = n; }, 1000 / conf.simHz);
   const R = v => Math.round(v);
-  const tick = setInterval(() => {
-    const byZone = {};
-    for (const p of online.values()) (byZone[p.c.zone] ||= []).push({ id: p.id, name: p.c.name, x: R(p.c.x), y: R(p.c.y), dir: p.c.dir, moving: p.moving, lv: p.c.lv, dead: p.dead });
-    const zs = {};
+  // snapshot แบบย่อ (V2-R20): แถวตัวเลขแทน object, ส่งเฉพาะสิ่งที่อยู่ในระยะมองเห็น (AOI), มอนสเตอร์ส่งเฉพาะที่เปลี่ยน
+  const TI = Object.fromEntries(Object.keys(WORLD.CFG.monsters).map((k, i) => [k, i]));
+  const STI = { idle: 0, chase: 1, return: 2, dead: 3 }, DI = { N: 0, S: 1, E: 2, W: 3 };
+  const AOI = conf.aoi || 820; let tickN = 0;
+  const tick = setInterval(() => { const t0 = performance.now(); tickN++;
+    const pz = {}, mz = {}, ez = {};
+    for (const p of online.values()) (pz[p.c.zone] ||= []).push([p.id, R(p.c.x), R(p.c.y), DI[p.c.dir] ?? 1, p.moving ? 1 : 0, p.c.lv, p.dead ? 1 : 0]);
     for (const [id, z] of Object.entries(sim.zones)) {
-      zs[id] = { mons: z.mons.map(m => ({ id: m.id, ty: m.type, x: R(m.x), y: R(m.y), hp: Math.max(0, R(m.hp)), st: m.state, d: m.dir, mk: m.markT > 0 ? 1 : 0 })), ev: z.events };
-      z.events = [];
+      mz[id] = z.mons.map(m => ({ m, row: [m.id, TI[m.type], R(m.x), R(m.y), Math.max(0, R(m.hp)), STI[m.state] ?? 0, DI[m.dir] ?? 1, m.markT > 0 ? 1 : 0] }));
+      ez[id] = z.events; z.events = [];
     }
+    const W = sim.WT, tm = { night: W.night, blood: W.blood, world: W.world, atk: W.atk, exp: W.exp, name: W.name, left: W.left, worldLeft: W.worldLeft };
     for (const p of online.values()) {
-      const z = zs[p.c.zone], c = p.c;
-      const W = sim.WT;
-      send(p.ws, { t: 'snap', tm: { night: W.night, blood: W.blood, world: W.world, atk: W.atk, exp: W.exp, name: W.name, left: W.left, worldLeft: W.worldLeft }, players: (byZone[c.zone] || []).filter(o => o.id !== p.id), mons: z.mons, ev: z.ev,
-        me: { zone: c.zone, x: R(c.x), y: R(c.y), hp: Math.ceil(p.hp), maxHp: p.maxHp, atk: p.atk, def: p.def, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, dead: p.dead, buffT: p.buffT, guardT: p.guardT, ev: p.personal,
-          ...(p.bagDirty ? { bag: c.bag, eq: c.eq } : {}),
-          ...(p.skDirty ? { sk: c.sk, pts: sim.freePoints(p), bon: p.bon } : {}) } });
-      p.personal = []; p.bagDirty = false; p.skDirty = false;
+      const c = p.c, near = (x, y) => Math.abs(x - c.x) < AOI && Math.abs(y - c.y) < AOI;
+      if (p.netZone !== c.zone) { p.netZone = c.zone; p.seenM = new Map(); p.seenP = new Set(); p.full = true; }
+      const out = { t: 'snap' };
+      if (p.full) out.mf = 1;
+      if (p.full || tickN % 10 === 0) out.tm = tm;
+      // ผู้เล่นอื่นในระยะ + ชื่อเฉพาะคนที่เครื่องนี้ยังไม่รู้จัก
+      const ps = (pz[c.zone] || []).filter(r => r[0] !== p.id && near(r[1], r[2]));
+      const pn = {}; for (const r of ps) if (!p.seenP.has(r[0])) { p.seenP.add(r[0]); pn[r[0]] = online.get(r[0]) ? online.get(r[0]).c.name : '?'; }
+      out.ps = ps; if (Object.keys(pn).length) out.pn = pn;
+      // มอนสเตอร์ในระยะ (หรือกำลังไล่เรา): ส่งเฉพาะแถวที่เปลี่ยน, ส่งรายการที่ออกนอกระยะ
+      const md = [], cur = new Set();
+      for (const { m, row } of mz[c.zone] || []) {
+        if (!near(m.x, m.y) && m.target !== p) continue;
+        cur.add(row[0]); const k = row.join(',');
+        if (p.seenM.get(row[0]) !== k) { p.seenM.set(row[0], k); md.push(row); }
+      }
+      const mr = []; for (const id of p.seenM.keys()) if (!cur.has(id)) { mr.push(id); p.seenM.delete(id); }
+      if (md.length) out.md = md; if (mr.length) out.mr = mr;
+      const ev = (ez[c.zone] || []).filter(e => cur.has(e.id) || e.by === p.id); if (ev.length) out.ev = ev;
+      out.me = { zone: c.zone, x: R(c.x), y: R(c.y), hp: Math.ceil(p.hp), maxHp: p.maxHp, atk: p.atk, def: p.def, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, dead: p.dead,
+        buffT: +p.buffT.toFixed(1), guardT: +p.guardT.toFixed(1), ...(p.personal.length ? { ev: p.personal } : {}),
+        ...(p.bagDirty ? { bag: c.bag, eq: c.eq } : {}),
+        ...(p.skDirty ? { sk: c.sk, pts: sim.freePoints(p), bon: p.bon } : {}) };
+      send(p.ws, out);
+      p.personal = []; p.bagDirty = false; p.skDirty = false; p.full = false;
     }
-  }, 1000 / conf.tickHz);
+  keep(ST.tickMs, performance.now() - t0); }, 1000 / conf.tickHz);
   const saver = setInterval(() => { for (const p of online.values()) if (p.dirty) flush(p); }, conf.saveEverySec * 1000);
 
   return {

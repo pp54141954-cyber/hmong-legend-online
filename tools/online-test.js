@@ -82,8 +82,10 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   // 5.2 สองเครื่องเห็นมอนสเตอร์ชุดเดียวกัน
   await sleep(400);
   const ma = await A.page.evaluate(() => HL.mons.map(m => [m.id, m.tx, m.ty])), mb = await B.page.evaluate(() => HL.mons.map(m => [m.id, m.tx, m.ty]));
-  const sameMons = ma.length > 0 && ma.length === mb.length && ma.every(([id, x, y]) => { const o = mb.find(q => q[0] === id); return o && Math.hypot(o[1] - x, o[2] - y) < 30; });
-  rec('A และ B เห็นมอนสเตอร์ชุดเดียวกัน', sameMons, ma.length + ' ตัว ' + JSON.stringify(ma.slice(0, 2)));
+  // V2-R20: แต่ละเครื่องได้เฉพาะมอนสเตอร์ในระยะมองเห็น — มอนสเตอร์ที่เห็นร่วมกันต้องเป็นตัวเดียวกันและอยู่ตำแหน่งเดียวกัน
+  const both = ma.filter(([id]) => mb.some(q => q[0] === id));
+  const sameMons = both.length >= 3 && both.every(([id, x, y]) => { const o = mb.find(q => q[0] === id); return Math.hypot(o[1] - x, o[2] - y) < 30; });
+  rec('A และ B เห็นมอนสเตอร์ชุดเดียวกัน (ตัวที่อยู่ในระยะของทั้งคู่)', sameMons, 'ร่วม ' + both.length + ' ตัว · A ' + ma.length + ' · B ' + mb.length);
   // 5.3 ฆ่ามอนสเตอร์ด้วยปุ่ม ⚔ → เซิร์ฟเวอร์ให้ EXP (ฉาก: วางไก่ฟ้าของเซิร์ฟเวอร์ไว้หน้าตัวละคร)
   const zv = srv.sim.zones.village, chick = zv.mons.find(m => m.type === 'ไก่ฟ้า' && m.state !== 'dead');
   const pa = SA(); Object.assign(chick, { x: pa.c.x + 20, y: pa.c.y, hx: pa.c.x + 20, hy: pa.c.y, wx: pa.c.x + 20, wy: pa.c.y, t: 99, hp: 1, state: 'idle' });

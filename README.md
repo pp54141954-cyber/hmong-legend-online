@@ -59,6 +59,7 @@ node tools/smoke-test.js            # ทดสอบ game/index.html บนห�
 ```sh
 (cd server && npm install)
 node tools/online-test.js           # เซิร์ฟเวอร์จริง + 2 หน้าต่าง: สมัคร เห็นกัน มอนสเตอร์ร่วม ต่อสู้/รางวัลที่เซิร์ฟเวอร์ กันโกง ตาย/เกิด บันทึก
+node tools/load-test.js 50 30 field2   # ทดสอบโหลด 50 คนในโซนเดียว 30 วินาที (ผลใน docs/LOAD_TEST.md)
 node tools/sim-test.js              # ตรรกะเซิร์ฟเวอร์ล้วน ไม่ใช้เบราว์เซอร์
 node tools/extract-shared.js        # รันทุกครั้งที่แก้แมพ/CFG/สูตรต่อสู้ใน game/index.html
 ```
