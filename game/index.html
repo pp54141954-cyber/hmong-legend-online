@@ -439,6 +439,11 @@ function drawPlayer(){if(PS.dead)return;if(PS.hurt>0&&Math.floor(PS.hurt*20)%2)r
   if(moving)ctx.drawImage(SPR,(Math.floor(anim/0.14)%4)*CWc,row*CHc,CWc,CHc,px,py,dw,dh);
   else if(player.dir==='S')ctx.drawImage(IDL,(Math.floor(anim/0.2)%5)*CWc,0,CWc,CHc,px,py,dw,dh);
   else ctx.drawImage(SPR,0,row*CHc,CWc,CHc,px,py,dw,dh)}
+/* ผู้เล่นออนไลน์คนอื่น: ใช้ภาพเดิน 4 ทิศชุดเดียวกับตัวหลัก (ไม่ออกแบบใหม่) + ชื่อบนหัว */
+function drawOther(o){const row={S:0,N:1,W:2,E:3}[o.dir]??0,dw=CWc*SCALE,dh=CHc*SCALE,px=o.x-dw/2,py=o.y-(CHc-4)*SCALE;
+  ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(o.x,o.y+1,11,4,0,0,7);ctx.fill();
+  ctx.imageSmoothingEnabled=true;ctx.drawImage(SPR,(o.moving?Math.floor(o.anim/0.14)%4:0)*CWc,row*CHc,CWc,CHc,px,py,dw,dh);
+  ctx.textAlign='center';ctx.font='bold 11px sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';const s=o.name+' Lv'+o.lv;ctx.strokeText(s,o.x,py-2);ctx.fillStyle='#bfe8ff';ctx.fillText(s,o.x,py-2)}
 /* ภาพมอนสเตอร์ในฉาก: วาดด้วยโค้ดตามแบบออกแบบ V7 (สี เขา งา ลาย ดวงตา) */
 function drawMon(m){const c=m.c,x=m.x,y=m.y,s=c.size,f=m.dir==='W'?-1:1,K=ctx;
   K.fillStyle='rgba(0,0,0,.3)';K.beginPath();K.ellipse(x,y+1,s*1.1,s*.35,0,0,7);K.fill();
@@ -565,8 +570,9 @@ function draw(){
   const sx0=Math.max(0,Math.floor(cx/T)),sx1=Math.min(COLS,Math.ceil((cx+vw)/T)),sy0=Math.max(0,Math.floor(cy/T)),sy1=Math.min(ROWS,Math.ceil((cy+vh)/T));
   ctx.fillStyle='rgba(255,255,255,.18)';for(let y=sy0;y<sy1;y++)for(let x=sx0;x<sx1;x++)if(Z.g[y][x]===WA&&!Z.fallSet.has(x+','+y)){const s=Math.sin(tNow*2+x*1.3+y*.7);ctx.fillRect(x*T+6+s*4,y*T+10+((x+y)%3)*6,10,2)}
   const list=Z.objs.filter(ob=>ob.x*T<cx+vw+160&&ob.x*T>cx-200&&ob.base>cy-20&&ob.base<cy+vh+200).map(ob=>({b:ob.base,ob}));
-  list.push({b:player.y,p:1});for(const m of mons)if(m.state!=='dead')list.push({b:m.y,m});list.sort((a,b)=>a.b-b.b);
-  for(const it of list){if(it.p)drawPlayer();else if(it.m)drawMon(it.m);else drawObj(it.ob,tNow)}
+  list.push({b:player.y,p:1});for(const m of mons)if(m.state!=='dead')list.push({b:m.y,m});
+  if(window.HLNET)for(const o of HLNET.others)list.push({b:o.y,o});list.sort((a,b)=>a.b-b.b);
+  for(const it of list){if(it.p)drawPlayer();else if(it.m)drawMon(it.m);else if(it.o)drawOther(it.o);else drawObj(it.ob,tNow)}
   drawFx();
   if(debug){for(let y=sy0;y<sy1;y++)for(let x=sx0;x<sx1;x++)if(tileBlocked(x,y)){ctx.fillStyle='rgba(255,40,40,.35)';ctx.fillRect(x*T,y*T,T,T)}
     ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1;ctx.strokeRect(player.x-HW,player.y-HH,HW*2,HH*2)}
@@ -615,9 +621,80 @@ enterZone('village',ZONES.village.start[0],ZONES.village.start[1]);
 let last=performance.now();
 function loop(n){const dt=Math.min((n-last)/1000,.05);last=n;update(dt);draw();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
-window.HL={parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
+window.HL={say,recalc,get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
 })();
 
+</script>
+<!-- ================= ส่วนออนไลน์ (Phase 5) =================
+     ทำงานเฉพาะเมื่อเปิดเกมจากเซิร์ฟเวอร์ Hmong Legend (/api/hello ตอบกลับ)
+     ถ้าเปิดไฟล์ตรงหรือเปิดใน artifact จะเล่นออฟไลน์เหมือนเดิม -->
+<style>
+#net{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(10,14,10,.82);padding:16px}
+#net[hidden]{display:none}
+#net form{width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px;background:#1b241c;color:#f4efe2;border:1.5px solid #ffb34766;border-radius:14px;padding:18px}
+#net h2{margin:0 0 4px;font-size:18px}#net label{display:flex;flex-direction:column;gap:4px;font-size:13px}
+#net input{font:inherit;font-size:16px;padding:8px 10px;border-radius:8px;border:1px solid #ffffff40;background:#0e140f;color:#f4efe2}
+#net .row{display:flex;gap:8px}#net .row button{flex:1;color:#f4efe2;font-size:15px;padding:9px}#net .row button.main{background:#b4531a;border-color:#b4531a}
+#neterr{min-height:18px;font-size:13px;color:#ff9a8a}
+#netst{position:absolute;left:8px;top:calc(64px + env(safe-area-inset-top,0px));z-index:4;font-size:11px;padding:3px 8px;border-radius:10px;background:rgba(18,22,18,.74);color:#f4efe2;display:none}
+</style>
+<div id="net" hidden><form id="netf" autocomplete="on">
+<h2>Hmong Legend ออนไลน์</h2>
+<label>ชื่อตัวละคร<input id="netn" name="username" autocomplete="username" minlength="3" maxlength="16" required></label>
+<label>รหัสผ่าน<input id="netp" name="password" type="password" autocomplete="current-password" minlength="6" maxlength="64" required></label>
+<div id="neterr" role="alert"></div>
+<div class="row"><button type="submit" class="main" id="netlogin">เข้าสู่ระบบ</button><button type="button" id="netreg">สมัครใหม่</button></div>
+</form></div>
+<div id="netst" aria-live="polite"></div>
+<script>
+(function(){
+const $=id=>document.getElementById(id),HL=window.HL;
+const store={get(){try{return localStorage.getItem('hl_token')}catch(e){return null}},set(v){try{v?localStorage.setItem('hl_token',v):localStorage.removeItem('hl_token')}catch(e){}}};
+const NET=window.HLNET={others:[],ws:null,state:'offline',joined:false,stats:{snaps:0,fixes:0,reconnects:0},connect};
+const byId=new Map();let token=null,retry=0,lastSent='',lastProg='',sendT=0,stopped=false;
+const status=s=>{const el=$('netst');el.style.display='block';el.textContent=s};
+
+async function hello(){if(!/^https?:$/.test(location.protocol))return false;
+  try{const c=new AbortController(),t=setTimeout(()=>c.abort(),2500);const r=await fetch('/api/hello',{signal:c.signal,cache:'no-store'});clearTimeout(t);const j=await r.json();return j.game==='hmong-legend'}catch(e){return false}}
+async function auth(kind){const name=$('netn').value.trim(),pass=$('netp').value;$('neterr').textContent='';
+  try{const r=await fetch('/api/'+kind,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name,pass})});const j=await r.json();
+    if(!r.ok){$('neterr').textContent=j.error||'ไม่สำเร็จ';return}token=j.token;store.set(token);$('net').hidden=true;connect()}
+  catch(e){$('neterr').textContent='ติดต่อเซิร์ฟเวอร์ไม่ได้'}}
+$('netf').addEventListener('submit',e=>{e.preventDefault();auth('login')});
+$('netreg').addEventListener('click',()=>{if($('netf').reportValidity())auth('register')});
+// กันไม่ให้ปุ่มบนฟอร์มส่งคีย์ไปเดินตัวละคร
+$('net').addEventListener('keydown',e=>e.stopPropagation());
+
+function connect(){if(!token)return;stopped=false;NET.state='connecting';status(NET.joined?'กำลังเชื่อมต่อใหม่…':'กำลังเชื่อมต่อ…');
+  const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');NET.ws=ws;
+  ws.onopen=()=>ws.send(JSON.stringify({t:'hello',token}));
+  ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+    if(m.t==='welcome'){retry=0;NET.state='online';
+      if(!NET.joined){const s=m.state;HL.PS.lv=s.lv;HL.PS.exp=s.exp;HL.PS.job=s.job;HL.PS.jexp=s.jexp;HL.recalc();HL.PS.hp=HL.PS.maxHp;HL.enterZone(s.zone,s.x,s.y);HL.player.dir=s.dir;NET.joined=true;HL.say('ยินดีต้อนรับ '+m.name)}
+      else{NET.stats.reconnects++;HL.say('เชื่อมต่อใหม่แล้ว')}
+      lastSent='';lastProg='';NET.name=m.name;status('ออนไลน์ · '+m.name)}
+    else if(m.t==='snap'){NET.stats.snaps++;const seen=new Set();
+      for(const p of m.players){seen.add(p.id);let o=byId.get(p.id);if(!o){o={id:p.id,x:p.x,y:p.y,anim:0};byId.set(p.id,o)}Object.assign(o,{tx:p.x,ty:p.y,dir:p.dir,moving:p.moving,name:p.name,lv:p.lv})}
+      for(const id of [...byId.keys()])if(!seen.has(id))byId.delete(id);NET.others=[...byId.values()];status('ออนไลน์ · '+NET.name+' · เห็น '+NET.others.length+' คน')}
+    else if(m.t==='fix'){NET.stats.fixes++;if(HL.Z.id!==m.zone)HL.enterZone(m.zone,m.x,m.y);else{HL.player.x=m.x;HL.player.y=m.y}lastSent=''}
+    else if(m.t==='err'){if(m.code==='auth'){token=null;store.set(null);stopped=true;$('net').hidden=false;$('neterr').textContent=m.msg}
+      else if(m.code==='replaced'){stopped=true;status(m.msg)}}};
+  ws.onclose=()=>{if(NET.ws!==ws)return;NET.state='offline';byId.clear();NET.others=[];if(stopped)return;
+    const wait=Math.min(8000,1000*2**retry++);status('หลุดการเชื่อมต่อ · ลองใหม่ใน '+Math.round(wait/1000)+' วินาที');setTimeout(connect,wait)}}
+
+// ส่งตำแหน่ง 10 ครั้ง/วินาทีเมื่อมีการเปลี่ยน + ทุก 1 วินาทีเป็นสัญญาณยังอยู่, ส่งความคืบหน้าเมื่อเปลี่ยน
+let last=performance.now(),beat=0;
+function loop(n){const dt=Math.min(.1,(n-last)/1000);last=n;
+  for(const o of NET.others){const k=Math.min(1,dt*12);o.x+=(o.tx-o.x)*k;o.y+=(o.ty-o.y)*k;o.anim+=dt}
+  const ws=NET.ws;if(ws&&ws.readyState===1&&NET.state==='online'){sendT-=dt;beat-=dt;
+    if(sendT<=0){sendT=.1;const p=HL.player,s=JSON.stringify({t:'mv',zone:HL.Z.id,x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,dir:p.dir,moving:HL.moving});
+      if(s!==lastSent||beat<=0){ws.send(s);lastSent=s;beat=1}}
+    const P=HL.PS,g=JSON.stringify({t:'prog',lv:P.lv,exp:P.exp,job:P.job,jexp:P.jexp});if(g!==lastProg){ws.send(g);lastProg=g}}
+  requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+
+hello().then(ok=>{if(!ok)return;NET.state='ready';token=store.get();if(token)connect();else $('net').hidden=false});
+})();
 </script>
 </body>
 </html>

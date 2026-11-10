@@ -4,3 +4,6 @@ zig-pkg/
 *.o
 tools/last-run.*
 node_modules/
+tools/last-online.*
+server/data/
+server/node_modules/
