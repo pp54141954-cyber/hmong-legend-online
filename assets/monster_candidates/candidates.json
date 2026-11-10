@@ -1,0 +1,536 @@
+{
+ "หมูป่า": [
+  {
+   "id": "boar_a",
+   "label": "hog_new + สีหมูป่า + เขี้ยว",
+   "source": "animals/hog_new.png",
+   "flipped": true,
+   "extra": "เปลี่ยนสีชมพูเป็นน้ำตาลเข้ม เติมเขี้ยวงาช้าง",
+   "size": [
+    32,
+    28
+   ]
+  },
+  {
+   "id": "boar_b",
+   "label": "hell_hog_new",
+   "source": "animals/hell_hog_new.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    32,
+    31
+   ]
+  },
+  {
+   "id": "boar_c",
+   "label": "hog_new (เดิม)",
+   "source": "animals/hog_new.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    32,
+    28
+   ]
+  }
+ ],
+ "กระต่ายมีเขา": [
+  {
+   "id": "rabbit_a",
+   "label": "quokka_new + ขนขาว + เขา",
+   "source": "animals/quokka_new.png",
+   "flipped": true,
+   "extra": "เปลี่ยนเป็นขนขาว เติมเขาเดี่ยวสีน้ำตาล",
+   "size": [
+    27,
+    30
+   ]
+  },
+  {
+   "id": "rabbit_b",
+   "label": "quokka_new (เดิม)",
+   "source": "animals/quokka_new.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    27,
+    25
+   ]
+  }
+ ],
+ "หมาป่า": [
+  {
+   "id": "wolf_a",
+   "label": "wolf",
+   "source": "animals/wolf.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    30,
+    32
+   ]
+  },
+  {
+   "id": "wolf_b",
+   "label": "warg",
+   "source": "animals/warg.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    33,
+    33
+   ]
+  },
+  {
+   "id": "wolf_c",
+   "label": "jackal_new",
+   "source": "animals/jackal_new.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    30,
+    24
+   ]
+  },
+  {
+   "id": "wolf_d",
+   "label": "hound",
+   "source": "animals/hound.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    30,
+    31
+   ]
+  }
+ ],
+ "ไก่ฟ้า": [
+  {
+   "id": "pheasant_a",
+   "label": "raven + สีไก่ฟ้า",
+   "source": "raven.png",
+   "flipped": true,
+   "extra": "ตัวสีทองแดง-แดง หัวเขียว (ชุดนี้ไม่มีไก่ฟ้า ใช้นกกาแทน)",
+   "size": [
+    31,
+    32
+   ]
+  },
+  {
+   "id": "pheasant_b",
+   "label": "raven (เดิม)",
+   "source": "raven.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    31,
+    32
+   ]
+  },
+  {
+   "id": "pheasant_c",
+   "label": "phoenix",
+   "source": "phoenix.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    34,
+    34
+   ]
+  }
+ ],
+ "ก็อบลิน": [
+  {
+   "id": "goblin_a",
+   "label": "goblin_new + ผิวเขียว",
+   "source": "goblin_new.png",
+   "flipped": false,
+   "extra": "ผิว/ชุดสีแดง → เขียวแบบก็อบลินในเกม",
+   "size": [
+    25,
+    26
+   ]
+  },
+  {
+   "id": "goblin_b",
+   "label": "goblin_new (เดิม)",
+   "source": "goblin_new.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    25,
+    26
+   ]
+  },
+  {
+   "id": "goblin_c",
+   "label": "hobgoblin_new",
+   "source": "hobgoblin_new.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    27,
+    31
+   ]
+  },
+  {
+   "id": "goblin_d",
+   "label": "kobold_new",
+   "source": "kobold_new.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    25,
+    28
+   ]
+  }
+ ],
+ "เสือ": [
+  {
+   "id": "tiger_a",
+   "label": "cat_9 + สีเสือ + ลาย",
+   "source": "player/felids/cat_9.png",
+   "flipped": true,
+   "extra": "สีส้มเข้มขึ้น เติมลายดำ (ชุดนี้ไม่มีเสือ ใช้แมวส้มแทน)",
+   "size": [
+    29,
+    29
+   ]
+  },
+  {
+   "id": "tiger_b",
+   "label": "cat_9 (เดิม)",
+   "source": "player/felids/cat_9.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    29,
+    29
+   ]
+  },
+  {
+   "id": "tiger_c",
+   "label": "manticore",
+   "source": "manticore.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    33,
+    32
+   ]
+  }
+ ],
+ "หมีเขา": [
+  {
+   "id": "bear_a",
+   "label": "grizzly_bear + สีน้ำตาล + เขา",
+   "source": "animals/grizzly_bear.png",
+   "flipped": true,
+   "extra": "สีเทา → น้ำตาล เติมเขาคู่สีกระดูก",
+   "size": [
+    32,
+    29
+   ]
+  },
+  {
+   "id": "bear_b",
+   "label": "bear",
+   "source": "animals/bear.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    27,
+    22
+   ]
+  },
+  {
+   "id": "bear_c",
+   "label": "black_bear_new",
+   "source": "animals/black_bear_new.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    27,
+    22
+   ]
+  }
+ ],
+ "โกเลมหิน": [
+  {
+   "id": "golem_a",
+   "label": "stone_golem",
+   "source": "nonliving/stone_golem.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    32,
+    32
+   ]
+  },
+  {
+   "id": "golem_b",
+   "label": "earth_elemental",
+   "source": "nonliving/earth_elemental.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    33,
+    31
+   ]
+  },
+  {
+   "id": "golem_c",
+   "label": "clay_golem",
+   "source": "nonliving/clay_golem.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    33,
+    33
+   ]
+  },
+  {
+   "id": "golem_d",
+   "label": "gargoyle",
+   "source": "nonliving/gargoyle.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    32,
+    33
+   ]
+  }
+ ],
+ "กระทิงผี": [
+  {
+   "id": "ghostbull_a",
+   "label": "death_yak + สีม่วงผี + แสงแดง",
+   "source": "animals/death_yak_new.png",
+   "flipped": true,
+   "extra": "ขนเทา → ม่วงเข้ม คงตาแดง เติมแสงเรืองแดงแบบในเกม",
+   "size": [
+    37,
+    32
+   ]
+  },
+  {
+   "id": "ghostbull_b",
+   "label": "death_yak_new (เดิม)",
+   "source": "animals/death_yak_new.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    31,
+    26
+   ]
+  },
+  {
+   "id": "ghostbull_c",
+   "label": "catoblepas",
+   "source": "animals/catoblepas.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    32,
+    31
+   ]
+  }
+ ],
+ "ลิงป่า": [
+  {
+   "id": "monkey_a",
+   "label": "rock_troll + สีลิง",
+   "source": "rock_troll.png",
+   "flipped": false,
+   "extra": "สีแดงอิฐ → น้ำตาลลิง (ชุดนี้ไม่มีลิง)",
+   "size": [
+    33,
+    33
+   ]
+  },
+  {
+   "id": "monkey_b",
+   "label": "rock_troll (เดิม)",
+   "source": "rock_troll.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    33,
+    33
+   ]
+  },
+  {
+   "id": "monkey_c",
+   "label": "faun",
+   "source": "faun.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    23,
+    31
+   ]
+  }
+ ],
+ "กวางภูเขา": [
+  {
+   "id": "deer_a",
+   "label": "apis + สีกวาง + เขากวาง",
+   "source": "holy/apis.png",
+   "flipped": true,
+   "extra": "ลบจานสุริยะ เปลี่ยนเป็นสีน้ำตาลกวาง เติมเขากวาง (ชุดนี้ไม่มีกวาง)",
+   "size": [
+    27,
+    36
+   ]
+  },
+  {
+   "id": "deer_b",
+   "label": "apis ลบจานสุริยะ",
+   "source": "holy/apis.png",
+   "flipped": true,
+   "extra": "ลบจานสุริยะบนหัว",
+   "size": [
+    27,
+    32
+   ]
+  },
+  {
+   "id": "deer_c",
+   "label": "yak_new",
+   "source": "animals/yak_new.png",
+   "flipped": true,
+   "extra": "-",
+   "size": [
+    30,
+    22
+   ]
+  }
+ ],
+ "นักรบเผ่าป่า": [
+  {
+   "id": "tribal_a",
+   "label": "human_slave + ขนนก + หอก",
+   "source": "human_slave.png",
+   "flipped": false,
+   "extra": "ผ้านุ่งส้ม → น้ำตาล เติมขนนกแดง/ขาว และหอก",
+   "size": [
+    17,
+    31
+   ]
+  },
+  {
+   "id": "tribal_b",
+   "label": "slave_freed",
+   "source": "slave_freed.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    26,
+    31
+   ]
+  },
+  {
+   "id": "tribal_c",
+   "label": "orc_warrior_new",
+   "source": "orc_warrior_new.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    25,
+    32
+   ]
+  }
+ ],
+ "ปีศาจ": [
+  {
+   "id": "demon_a",
+   "label": "red_devil_new",
+   "source": "demons/red_devil_new.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    27,
+    29
+   ]
+  },
+  {
+   "id": "demon_b",
+   "label": "fiend",
+   "source": "demons/fiend.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    32,
+    32
+   ]
+  },
+  {
+   "id": "demon_c",
+   "label": "hairy_devil",
+   "source": "demons/hairy_devil.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    23,
+    22
+   ]
+  },
+  {
+   "id": "demon_d",
+   "label": "imp",
+   "source": "demons/imp.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    20,
+    24
+   ]
+  }
+ ],
+ "วิญญาณไม้": [
+  {
+   "id": "treespirit_a",
+   "label": "treant",
+   "source": "fungi_plants/treant.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    31,
+    32
+   ]
+  },
+  {
+   "id": "treespirit_b",
+   "label": "leshy",
+   "source": "unique/leshy.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    29,
+    31
+   ]
+  },
+  {
+   "id": "treespirit_c",
+   "label": "tree_form",
+   "source": "player/transform/tree_form.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    29,
+    31
+   ]
+  },
+  {
+   "id": "treespirit_d",
+   "label": "dryad",
+   "source": "dryad.png",
+   "flipped": false,
+   "extra": "-",
+   "size": [
+    27,
+    29
+   ]
+  }
+ ]
+}
