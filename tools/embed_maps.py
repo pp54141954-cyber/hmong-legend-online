@@ -6,7 +6,7 @@
 import base64, io, json, os, re
 from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MAP_SRC = {'village2': 'assets/design_refs/09_village_walkpath_model.jpg', 'field2': 'assets/design_refs/11_field_walkpath_model.png'}
+MAP_SRC = {z: 'assets/maps_src/' + z + '.png' for z in ('village2', 'field2', 'bamboo', 'rainforest', 'mine', 'peak')}
 game = os.path.join(ROOT, 'game/index.html')
 s = open(game, encoding='utf-8').read()
 masks, art = {}, {}

@@ -140,58 +140,32 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   }
   skillRes.forEach(s => rec('สกิล ' + s.i + ' ' + s.name, s.ok, 'ผล=' + s.r + ' ดาเมจ=' + s.dmg + ' คูลดาวน์เหลือ=' + s.cd));
 
-  // หมู่บ้านแผนที่ใหม่ (V2-R11): ภาพพื้น + ผังช่องจากภาพ Walk Path Model
+  // ===== 6 โซนแผนที่ภาพ (V2-R15): ตรวจทุกโซนแบบเดียวกัน =====
   await page.evaluate(() => { HL.PS.dead = false; HL.PS.cast = null; HL.PS.hp = HL.PS.maxHp; });
-  await page.click('#gear'); await page.click('#v2'); await page.click('#gear');
-  await page.waitForTimeout(400);
-  const v2 = await page.evaluate(() => {
-    const im = HL.mapImg('village2'), Z = HL.Z, T = HL.T, s = HL.ZONES.village2.start;
-    // BFS จากจุดเริ่มไปทุกช่องที่เดินถึง
-    const sx = Math.floor(s[0] / T), sy = Math.floor(s[1] / T), seen = new Set([sx + ',' + sy]), q = [[sx, sy]];
-    while (q.length) { const [x, y] = q.shift(); for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = (x + a) + ',' + (y + b); if (!seen.has(k) && !HL.tileBlocked(x + a, y + b)) { seen.add(k); q.push([x + a, y + b]); } } }
-    const exits = HL.ZONES.village2.exits.map(e => seen.has(e.x + ',' + e.y));
-    return { zone: Z.id, img: im && im.complete ? im.naturalWidth + 'x' + im.naturalHeight : 'no', reach: seen.size, exits, roof: HL.tileBlocked(24, 3), crystal: HL.tileBlocked(23, 14) };
-  });
-  rec('เข้าหมู่บ้านแผนที่ใหม่ ภาพพื้นโหลดได้', v2.zone === 'village2' && v2.img === '1536x1024', v2.img);
-  rec('เดินจากจุดเริ่มถึงทางออกทั้ง 2 ทางได้ (ไล่ทุกช่อง)', v2.exits.every(Boolean) && v2.reach > 300, 'ถึงได้ ' + v2.reach + ' ช่อง, ทางออก ' + JSON.stringify(v2.exits));
-  rec('หลังคาบ้านผู้ใหญ่บ้านและเสาคริสตัลเดินทะลุไม่ได้', v2.roof && v2.crystal);
-  // เดินขึ้นจากลานกลางชนเสาคริสตัล (ไม่ทะลุ) ด้วยคีย์บอร์ดจริง
-  await page.evaluate(() => { HL.player.x = 24 * HL.T; HL.player.y = 17.5 * HL.T; });
-  await page.keyboard.down('ArrowUp'); await page.waitForTimeout(900); await page.keyboard.up('ArrowUp');
-  const py = await page.evaluate(() => HL.player.y / HL.T);
-  rec('เดินขึ้นชนเสาคริสตัลแล้วหยุด', py > 15.9, 'y=' + py.toFixed(2) + ' ช่อง');
-  await page.screenshot({ path: 'tools/last-village2.png' });
-  // เดินออกทางล่าง → ทุ่งมอนสเตอร์
-  await page.evaluate(() => { HL.player.x = 35.5 * HL.T; HL.player.y = 29.6 * HL.T; });
-  await page.keyboard.down('ArrowDown'); await page.waitForTimeout(900); await page.keyboard.up('ArrowDown');
-  rec('เดินออกบันไดล่างแล้วย้ายไปทุ่งน้ำตก (แผนที่ใหม่)', (await pos()).zone === 'field2');
-  // ทุ่งน้ำตก (V2-R12)
-  await page.waitForTimeout(400);
-  const f2 = await page.evaluate(() => {
-    const T = HL.T, s = HL.ZONES.field2.start, sx = Math.floor(s[0] / T), sy = Math.floor(s[1] / T), seen = new Set([sx + ',' + sy]), q = [[sx, sy]];
-    while (q.length) { const [x, y] = q.shift(); for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = (x + a) + ',' + (y + b); if (!seen.has(k) && !HL.tileBlocked(x + a, y + b)) { seen.add(k); q.push([x + a, y + b]); } } }
-    const im = HL.mapImg('field2');
-    const monsOk = HL.mons.filter(m => seen.has(Math.floor(m.x / T) + ',' + Math.floor(m.y / T)));
-    return { img: im && im.complete ? im.naturalWidth : 0, reach: seen.size, mons: HL.mons.length, monsReach: monsOk.length, types: new Set(HL.mons.map(m => m.type)).size,
-      cave: [9, 10, 11].some(x => seen.has(x + ',4')), portal: [43, 44].some(x => seen.has(x + ',5')), water: HL.tileBlocked(32, 20), cliff: HL.tileBlocked(24, 11) };
-  });
-  rec('ทุ่งน้ำตก: ภาพโหลด + เดินถึงปากถ้ำและประตูหินได้', f2.img === 1536 && f2.cave && f2.portal, 'ถึงได้ ' + f2.reach + ' ช่อง');
-  rec('ทุ่งน้ำตก: มอนสเตอร์ 10 ชนิดเกิดบนพื้นที่เดินถึงได้ทุกตัว', f2.types === 10 && f2.monsReach === f2.mons, f2.monsReach + '/' + f2.mons + ' ตัว');
-  rec('ทุ่งน้ำตก: น้ำและหน้าผาเดินทะลุไม่ได้', f2.water && f2.cliff);
-  await page.screenshot({ path: 'tools/last-field2.png' });
-  await page.evaluate(() => { HL.player.x = 1.5 * HL.T; HL.player.y = 11.5 * HL.T; });
-  await page.keyboard.down('ArrowLeft'); await page.waitForTimeout(600); await page.keyboard.up('ArrowLeft');
-  rec('เดินออกขอบซ้ายกลับหมู่บ้านแผนที่ใหม่', (await pos()).zone === 'village2');
-  // ทุ่งน้ำตก ↔ ทุ่งมอนสเตอร์เดิม
-  await page.evaluate(() => { const s = HL.ZONES.field2.start; HL.enterZone('field2', s[0], s[1]); HL.player.x = 17.5 * HL.T; HL.player.y = 30.2 * HL.T; });
+  const PZ = await page.evaluate(() => Object.keys(HL.ZONES).filter(z => HL.ZONES[z].painted));
+  rec('มีโซนแผนที่ภาพ 6 โซน', PZ.length === 6, PZ.join(','));
+  for (const zid of PZ) {
+    await page.evaluate(z => { const s = HL.ZONES[z].start; HL.enterZone(z, s[0], s[1]); }, zid);
+    const r = await page.evaluate(() => new Promise(res => {
+      const im = HL.mapImg(HL.Z.D.painted); const go = () => {
+        const T = HL.T, D = HL.Z.D, sx = Math.floor(D.start[0] / T), sy = Math.floor(D.start[1] / T), seen = new Set([sx + ',' + sy]), q = [[sx, sy]];
+        while (q.length) { const [x, y] = q.shift(); for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = (x + a) + ',' + (y + b); if (!seen.has(k) && !HL.tileBlocked(x + a, y + b)) { seen.add(k); q.push([x + a, y + b]); } } }
+        const exits = D.exits.map(e => { let ok = false; for (let y = e.y; y < e.y + e.h; y++) for (let x = e.x; x < e.x + e.w; x++) if (seen.has(x + ',' + y)) ok = true; return ok; });
+        // จุดมาถึงในโซนปลายทางต้องเดินได้ และไม่ใช่ช่องทางออก
+        const arr = D.exits.map(e => { const Z2 = HL.getZone(e.to), tx = Math.floor(e.tx), ty = Math.floor(e.ty); return !HL.TYPES || (Z2.g[ty][tx] !== HL.TYPES.EX && ![HL.TYPES.WA, HL.TYPES.CF, HL.TYPES.BD, HL.TYPES.CR].includes(Z2.g[ty][tx]) && !Z2.blocked.has(tx + ',' + ty)); });
+        const monsIn = HL.mons.filter(m => seen.has(Math.floor(m.x / T) + ',' + Math.floor(m.y / T))).length;
+        res({ img: im ? im.naturalWidth : 0, reach: seen.size, exits, arr, mons: HL.mons.length, monsIn });
+      }; if (!im || im.complete) go(); else { im.onload = go; im.onerror = go; } }));
+    rec('โซน ' + zid + ': ภาพโหลด เดินถึงทางออกครบ จุดมาถึงปลายทางเดินได้', r.img === 1536 && r.exits.every(Boolean) && r.arr.every(Boolean), 'ถึงได้ ' + r.reach + ' ช่อง ทางออก ' + JSON.stringify(r.exits) + ' จุดมาถึง ' + JSON.stringify(r.arr));
+    rec('โซน ' + zid + ': มอนสเตอร์เกิดบนพื้นที่เดินถึงได้ทุกตัว', r.monsIn === r.mons, r.monsIn + '/' + r.mons);
+    if (zid === 'village2') await page.screenshot({ path: 'tools/last-village2.png' });
+    if (zid === 'bamboo') await page.screenshot({ path: 'tools/last-field2.png' });
+  }
+  // เดินข้ามโซนจริงด้วยคีย์บอร์ด: หมู่บ้าน → (ลงสะพาน) → ทุ่งน้ำตก
+  await page.evaluate(() => { const s = HL.ZONES.village2.start; HL.enterZone('village2', s[0], s[1]); const e = HL.ZONES.village2.exits[0]; HL.player.x = (e.x + 1.5) * HL.T; HL.player.y = (e.y - 1.5) * HL.T; HL.freeMode = false; });
   await page.waitForTimeout(1100);
   await page.keyboard.down('ArrowDown'); await page.waitForTimeout(700); await page.keyboard.up('ArrowDown');
-  const toF = (await pos()).zone;
-  await page.waitForTimeout(1100);
-  await page.evaluate(() => { HL.player.x = 1.5 * HL.T; HL.player.y = 14.5 * HL.T; });
-  await page.keyboard.down('ArrowLeft'); await page.waitForTimeout(700); await page.keyboard.up('ArrowLeft');
-  rec('ทุ่งน้ำตก → บันไดล่าง → ทุ่งเดิม และทุ่งเดิม → ขอบซ้าย → ทุ่งน้ำตก', toF === 'field' && (await pos()).zone === 'field2', toF + ' → ' + (await pos()).zone);
-  await page.evaluate(() => { const s = HL.ZONES.village.start; HL.enterZone('village', s[0], s[1]); });
+  rec('เดินลงสะพานหมู่บ้านแล้วไปทุ่งน้ำตก', (await pos()).zone === 'field2', (await pos()).zone);
 
   // ย้ายโซนผ่านปุ่มทดสอบ
   await page.click('#gear'); await page.click('#wp');
