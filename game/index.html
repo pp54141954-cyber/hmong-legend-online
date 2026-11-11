@@ -600,6 +600,11 @@ CFG.stats.free=(lv,st)=>CFG.stats.total(lv)-CFG.stats.used(st);
 CFG.stats.bonus=st=>{st=st||{};const v=k=>st[k]||0;return{atk:v('str'),hp:v('vit')*4,def:Math.floor(v('vit')/4),spd:Math.min(.25,v('agi')*.004),cdr:Math.min(.2,v('agi')*.002),crit:Math.min(.25,v('luk')*.0025)}};
 /* สกิลที่ใช้จริงของอาชีพ: ช่อง 1–2 (เคลื่อนที่/ป้องกัน) และนักดาบใช้ตารางเดิม, อาชีพอื่นช่อง 3–11 ทับด้วย classSkills */
 CFG.skillFor=(cls,i)=>{const b=CFG.skills[i-1];if(!b)return null;const o=i>=3&&CFG.classSkills[cls]&&CFG.classSkills[cls][i-3];return o?Object.assign({},b,{mult:undefined,range:undefined,width:undefined,speed:undefined,radius:undefined,dist:undefined,fxk:undefined,color:undefined},o):b};
+/* สกิลพื้นที่ (rain/trap/pillar): ตกที่มอนสเตอร์ใกล้สุดในระยะ (เดิมตกตามทิศที่หันเสมอ จึงพลาดตัวที่อยู่ข้าง ๆ) — ใช้ร่วมเกม/เซิร์ฟเวอร์ */
+CFG.aimReach=sk=>sk.dist?sk.dist+(sk.spread||0)*.5+40:0;
+CFG.aimPoint=(sk,ox,oy,dir,DVd,mons,hint)=>{const[ux,uy]=DVd,def=[ox+ux*sk.dist,oy+uy*sk.dist+14],R=CFG.aimReach(sk);if(!R)return def;
+  if(hint&&Number.isFinite(hint[0])&&Number.isFinite(hint[1])&&Math.hypot(hint[0]-ox,hint[1]-oy-14)<=R)return[hint[0],hint[1]];
+  let best=null,bd=R;for(const m of mons){if(m.state==='dead'||m.away)continue;const d=Math.hypot(m.x-ox,m.y-oy-14);if(d<=bd){bd=d;best=[m.x,m.y]}}return best||def};
 CFG.basicFor=cls=>CFG.classBasic[cls]?Object.assign({},CFG.basic,CFG.classBasic[cls]):CFG.basic;
 CFG.applyBalance=function(){const B=CFG.balance;
  for(const[type,m]of Object.entries(CFG.monsters)){const L=B.lv[type];if(!L)continue;
@@ -679,6 +684,7 @@ function doHit(sk,mult,ox,oy,dir){let hits=0;ox=ox??player.x;oy=oy??player.y-14;
   for(const m of mons){if(m.state==='dead')continue;if(!Combat.inShape(sk,sk.range+m.c.size,ox,oy,dir,m.x,m.y-m.c.size*.6))continue;damageMon(m,mult);hits++}return hits}
 const DV={E:[1,0],W:[-1,0],N:[0,-1],S:[0,1]};
 /* ปล่อยผลของสกิลหลังท่าร่าย */
+let lastAim=null;
 function release(sk){const ox=player.x,oy=player.y-14,dir=player.dir,[ux,uy]=DV[dir];if(sk.art)artFx(sk,ox,oy,dir);
   const dashMove=(dist,sgn)=>{for(let k=0;k<dist;k+=4){const nx=player.x+ux*4*sgn,ny=player.y+uy*4*sgn;if(boxBlocked(nx,ny))break;player.x=nx;player.y=ny}};
   if(sk.shape==='move'){dashMove(sk.dist,1);fx.push({k:'trail',x:ox,y:oy,x2:player.x,y2:player.y-14,t:.25});return}
@@ -692,15 +698,15 @@ function release(sk){const ox=player.x,oy=player.y-14,dir=player.dir,[ux,uy]=DV[
     {const x=player.x,y=player.y-14;fx.push({k:'redline',x:x-ux*40,y:y-uy*40,dir,len:120,t:.25});doHit({shape:'line',range:90,width:26},sk.mult,x-ux*40,y-uy*40,dir)}
     pending.push({t:.15,f:()=>{const cx=player.x+ux*40,cy=player.y-14+uy*40;fx.push({k:'xcross',x:cx,y:cy,t:.3});for(const m of mons)if(m.state!=='dead'&&Math.hypot(m.x-cx,m.y-m.c.size*.6-cy)<=66+m.c.size)damageMon(m,sk.mult)}});
     pending.push({t:.3,f:()=>{const x=player.x,y=player.y-14;fx.push({k:'redbeam',x,y,dir,len:190,t:.35});doHit({shape:'line',range:190,width:30},sk.mult,x,y,dir);burst(x+ux*190,y+uy*190,'#ff6a5a',26,220,.5,40);shake(4,.25)}});return}
-  if(sk.shape==='pillar'){/* แบบ A: ปักดาบ รอยแตกวิ่งไปตามพื้น แล้วเสาพลังโผล่ที่ปลายทาง */const tx=ox+ux*sk.dist,ty=oy+uy*sk.dist+14;
+  if(sk.shape==='pillar'){/* แบบ A: ปักดาบ รอยแตกวิ่งไปตามพื้น แล้วเสาพลังโผล่ที่ปลายทาง */const[tx,ty]=CFG.aimPoint(sk,ox,oy,dir,DV[dir],mons);
     fx.push({k:'crack',x:ox,y:oy+14,x2:tx,y2:ty,t:.45});
     pending.push({t:.12,f:()=>{fx.push({k:'pillar',x:tx,y:ty,t:.5,sk});burst(tx,ty,'#9fe0ff',34,220,.6,180);shake(5,.3);for(const m of mons)if(m.state!=='dead'&&Math.hypot(m.x-tx,m.y-ty)<=sk.radius+m.c.size)damageMon(m,sk.mult)}});return}
   if(sk.shape==='heal'){if(!netOn()){const amt=Math.round(PS.maxHp*sk.heal);PS.hp=Math.min(PS.maxHp,PS.hp+amt);addNum(player.x,player.y-60,'+'+amt,'#6aff9a')} /* ออนไลน์: เซิร์ฟเวอร์ฟื้นและส่งตัวเลขมา */
     if(sk.guard){PS.guardT=sk.dur;PS.guardRed=sk.guard}if(sk.buff){PS.buffT=sk.dur;PS.buffBonus=sk.buff}fx.push({k:'cheal',x:player.x,y:player.y,r:sk.radius,col:sk.color,t:.8});burst(player.x,player.y-20,sk.color,26,90,.9,-60);return}
   if(sk.shape==='shot'){const n=sk.n||1;for(let k=0;k<n;k++){const sp=(k-(n-1)/2)*.16,c=Math.cos(sp),s2=Math.sin(sp),vx=ux*c-uy*s2,vy=uy*c+ux*s2;shots.push({x:ox,y:oy,ux:vx,uy:vy,dir,sk,dist:0,hit:new Set()})}return}
-  if(sk.shape==='trap'){const tx=ox+ux*sk.dist,ty=oy+uy*sk.dist+14;fx.push({k:'ctrap',x:tx,y:ty,r:sk.radius,col:sk.color,t:sk.delay+.05,T:sk.delay+.05});
+  if(sk.shape==='trap'){const[tx,ty]=CFG.aimPoint(sk,ox,oy,dir,DV[dir],mons);lastAim=[tx,ty];fx.push({k:'ctrap',x:tx,y:ty,r:sk.radius,col:sk.color,t:sk.delay+.05,T:sk.delay+.05});
     pending.push({t:sk.delay,f:()=>{fx.push({k:'cboom',x:tx,y:ty,r:sk.radius,col:sk.color,t:.45});burst(tx,ty-10,sk.color,30,200,.6,120);shake(3,.2);for(const m of mons)if(m.state!=='dead'&&Math.hypot(m.x-tx,m.y-ty)<=sk.radius+m.c.size)damageMon(m,sk.mult)}});return}
-  if(sk.shape==='rain'){const cx=ox+ux*sk.dist,cy=oy+uy*sk.dist+14;for(let k=0;k<sk.n;k++){const a=k*2.4,r=k?sk.spread*Math.sqrt(k/sk.n):0,tx=cx+Math.cos(a)*r,ty=cy+Math.sin(a)*r*.6;
+  if(sk.shape==='rain'){const[cx,cy]=CFG.aimPoint(sk,ox,oy,dir,DV[dir],mons);lastAim=[cx,cy];for(let k=0;k<sk.n;k++){const a=k*2.4,r=k?sk.spread*Math.sqrt(k/sk.n):0,tx=cx+Math.cos(a)*r,ty=cy+Math.sin(a)*r*.6;
     pending.push({t:.08+k*.09,f:()=>{fx.push({k:'cdrop',x:tx,y:ty,col:sk.color,t:.3});fx.push({k:'cboom',x:tx,y:ty,r:sk.radius,col:sk.color,t:.35});burst(tx,ty-6,sk.color,10,140,.4,80);for(const m of mons)if(m.state!=='dead'&&Math.hypot(m.x-tx,m.y-ty)<=sk.radius+m.c.size)damageMon(m,sk.mult)}})}return}
   if(sk.shape==='line'){fx.push({k:'cline',x:ox,y:oy,dir,len:sk.range,w:sk.width,col:sk.color,t:.25});doHit(sk,sk.mult,ox,oy,dir);return}
   if(sk.shape==='wave')shots.push({x:ox,y:oy,ux,uy,dir,sk,dist:0,hit:new Set()});
@@ -966,7 +972,7 @@ function drawWaveC(s){const c=s.sk.color,R=s.sk.width/2;ctx.save();ctx.translate
   for(let k=2;k>=0;k--){ctx.globalAlpha=k?.25/k:1;ctx.strokeStyle=c;ctx.lineWidth=k?6:9;ctx.beginPath();ctx.arc(-k*18-6,0,R+6,-1.2,1.2);ctx.stroke()}ctx.globalAlpha=1;ctx.strokeStyle='#fff';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(-6,0,R+6,-1.05,1.05);ctx.stroke();ctx.restore()}
 /* ภาพประกอบสกิลตามตารางท่าของเจ้าของ (V2-R37) — วาดด้วยเส้น/รูปทรงเรือง ไม่ใช้ไฟล์ภาพ */
 function artFx(sk,ox,oy,dir){const[ux,uy]=DV[dir],c=sk.color||'#fff',A=(art,x,y,t,extra)=>fx.push(Object.assign({k:'cart',art,x,y,dir,col:c,t,T:t},extra||{}));
-  const at=sk.dist?[ox+ux*sk.dist,oy+uy*sk.dist+14]:[ox+ux*60,oy+uy*60+14],me=[player.x,player.y];
+  const at=sk.dist?CFG.aimPoint(sk,ox,oy,dir,DV[dir],mons):[ox+ux*60,oy+uy*60+14],me=[player.x,player.y];
   switch(sk.art){
    case'rope':case'thorns':case'runes':case'chains':case'sealboom':case'snake':case'lightpillar':case'beast':case'beastbig':case'throw':return A(sk.art,at[0],at[1],(sk.delay||.3)+.9,{r:sk.radius||60});
    case'pins':case'arrowrain':case'warriors':return A(sk.art,at[0],at[1],1.2,{r:sk.spread||70,n:sk.n||5});
@@ -1264,7 +1270,7 @@ enterZone(CFG.player.home,ZONES[CFG.player.home].start[0],ZONES[CFG.player.home]
 let last=performance.now();
 function loop(n){const dt=Math.min((n-last)/1000,.05);last=n;update(dt);draw();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
-window.HL={poseFor:(c,l)=>poseFor(c,l||PS.look),get CLASS_POSE(){return CLASS_POSE},skillFor:i=>CFG.skillFor(curCls(),i),basicNow:()=>CFG.basicFor(curCls()),get shotsN(){return shots.length},CHAR_CAT,lookSets,femReady,get femDraws(){return femHair.n||0},HAIRS,OUTFITS,cleanLook,setLook,sheetsFor,femHair,get SPRcur(){return SPR},preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
+window.HL={DV,poseFor:(c,l)=>poseFor(c,l||PS.look),get CLASS_POSE(){return CLASS_POSE},skillFor:i=>CFG.skillFor(curCls(),i),basicNow:()=>CFG.basicFor(curCls()),get shotsN(){return shots.length},CHAR_CAT,lookSets,femReady,get femDraws(){return femHair.n||0},HAIRS,OUTFITS,cleanLook,setLook,sheetsFor,femHair,get SPRcur(){return SPR},preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
   for(let i=0;i<=11;i++)out.push({src:'icons/sk_'+i+'.png',label:'ไอคอนสกิล'});for(const g of['m','f']){const ls=lookSets({g,hs:0,of:0});if(ls)for(const f of['walk','idle','attack'])for(const[id,pt]of[[ls.h,'h'],[ls.b,'b']])out.push({src:'sprites/pc_'+id+'_'+pt+'_'+f+'.webp',label:'ภาพตัวละคร'})}out.push({src:'icons/sk_p.png',label:'ไอคอนสกิล'});
   for(const t of new Set((ZONES.field2.spawns||[]).map(s=>s.type))){const d=MON_SPR[t];if(!d)continue;if(d.walk)out.push({src:d.walk,label:'ภาพ'+t});if(d.act)out.push({src:d.act,label:'ภาพ'+t})}return out},CLASSES,CLS_ACTIVE,CLS_PATHS,curCls,skName,setClassLocal(c){if(!CLS_ACTIVE[c])return'invalid';if(!inSafe(player.x,player.y))return'not-safe';PS.cls=c;buildSkills();hudT=0;return'ok'},get inSafeNow(){return inSafe(player.x,player.y)},buildSkills,adminLocal,clearWarpCd(){warpCd=0},monShown,warp,openWorld,openAutoCfg,statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
 })();
@@ -1567,7 +1573,7 @@ const DENY_SK={'locked':'ยังไม่ถึง Job ที่ปลดล�
 const DENY={'hp-full':'HP เต็มแล้ว','cooldown':'รอสักครู่ก่อนใช้อีกครั้ง','bag-full':'กระเป๋าเต็ม','dead':'ตายอยู่ ใช้ของไม่ได้','not-usable':'ใช้ของนี้ไม่ได้','not-equip':'ของนี้สวมใส่ไม่ได้','empty':'ช่องนี้ว่าง'};
 function send(o){const ws=NET.ws;if(ws&&ws.readyState===1&&NET.state==='online')ws.send(JSON.stringify(o))}
 // ส่งตำแหน่งล่าสุดก่อน แล้วค่อยส่งคำขอโจมตี/สกิล ให้เซิร์ฟเวอร์คิดจากตำแหน่งเดียวกับที่เห็นบนจอ
-function act(k,dir){sendMv(true);send({t:'act',k,dir})}
+function act(k,dir){sendMv(true);const o={t:'act',k,dir};if(k!=='b'){const sk=HL.skillFor(k);if(sk&&sk.dist){const p=HL.player,a=HL.CFG.aimPoint(sk,p.x,p.y-14,dir,HL.DV[dir],HL.mons);o.ax=Math.round(a[0]);o.ay=Math.round(a[1])}}send(o)}
 const byId=new Map();let token=null,retry=0,lastSent='',sendT=0,stopped=false;
 const status=s=>{const el=$('netst');el.style.display='block';el.textContent=s};
 

@@ -158,7 +158,7 @@ function createServer(opts = {}) {
         // คำขอโจมตี (k='b') หรือสกิล (k=1..11) — เซิร์ฟเวอร์ตรวจคูลดาวน์ Job การตาย แล้วคิดผลเอง
         if ('NSEW'.includes(m.dir) && String(m.dir).length === 1) p.c.dir = m.dir;
         const key = m.k === 'b' ? 'b' : Math.floor(+m.k);
-        const r = sim.act(p, key, now / 1000);
+        const r = sim.act(p, key, now / 1000, Number.isFinite(+m.ax) && Number.isFinite(+m.ay) ? [+m.ax, +m.ay] : null);
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: m.k, r }); }
         return;
       }

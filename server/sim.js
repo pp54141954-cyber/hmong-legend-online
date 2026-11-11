@@ -334,11 +334,11 @@ function createSim({ rand = Math.random } = {}) {
         later(z, .3, () => doHit(p, z, { shape: 'line', range: 190, width: 30 }, sk.mult, ex, ey - 14, dir));
         return;
       }
-      case 'pillar': { const tx = ox + ux * sk.dist, ty = oy + uy * sk.dist + 14; later(z, .12, () => { for (const m of alive(z)) if (Math.hypot(m.x - tx, m.y - ty) <= sk.radius + m.c.size) damageMon(p, z, m, sk.mult); }); return; }
+      case 'pillar': { const [tx, ty] = CFG.aimPoint(sk, ox, oy, dir, DV[dir], alive(z), from.aim); later(z, .12, () => { for (const m of alive(z)) if (Math.hypot(m.x - tx, m.y - ty) <= sk.radius + m.c.size) damageMon(p, z, m, sk.mult); }); return; }
       case 'wave': z.shots.push({ p, x: ox, y: oy, ux, uy, sk, dist: 0, hit: new Set() }); return;
       case 'shot': { const n = sk.n || 1; for (let k = 0; k < n; k++) { const sp = (k - (n - 1) / 2) * .16, c = Math.cos(sp), s2 = Math.sin(sp); z.shots.push({ p, x: ox, y: oy, ux: ux * c - uy * s2, uy: uy * c + ux * s2, sk, dist: 0, hit: new Set() }); } return; }
-      case 'trap': { const tx = ox + ux * sk.dist, ty = oy + uy * sk.dist + 14; later(z, sk.delay, () => { for (const m of alive(z)) if (Math.hypot(m.x - tx, m.y - ty) <= sk.radius + m.c.size) damageMon(p, z, m, sk.mult); }); return; }
-      case 'rain': { const cx = ox + ux * sk.dist, cy = oy + uy * sk.dist + 14;
+      case 'trap': { const [tx, ty] = CFG.aimPoint(sk, ox, oy, dir, DV[dir], alive(z), from.aim); later(z, sk.delay, () => { for (const m of alive(z)) if (Math.hypot(m.x - tx, m.y - ty) <= sk.radius + m.c.size) damageMon(p, z, m, sk.mult); }); return; }
+      case 'rain': { const [cx, cy] = CFG.aimPoint(sk, ox, oy, dir, DV[dir], alive(z), from.aim);
         for (let k = 0; k < sk.n; k++) { const a = k * 2.4, r = k ? sk.spread * Math.sqrt(k / sk.n) : 0, tx = cx + Math.cos(a) * r, ty = cy + Math.sin(a) * r * .6; later(z, .08 + k * .09, () => { for (const m of alive(z)) if (Math.hypot(m.x - tx, m.y - ty) <= sk.radius + m.c.size) damageMon(p, z, m, sk.mult); }); }
         return; }
       case 'heal': { // ฟื้น HP ตัวเอง + สมาชิกปาร์ตี้ในรัศมี (โซนเดียวกัน ยังไม่ตาย)
@@ -357,7 +357,7 @@ function createSim({ rand = Math.random } = {}) {
 
   const LAG = .15; // เผื่อความหน่วงเครือข่ายตอนตรวจคูลดาวน์
   // คำขอโจมตี/ใช้สกิลจากเครื่องผู้เล่น — ตรวจทุกเงื่อนไขก่อน
-  function act(p, key, now) {
+  function act(p, key, now, aim) {
     if (p.dead) return 'dead';
     const sk = key === 'b' ? CFG.basicFor(clsOf(p)) : CFG.skillFor(clsOf(p), key);
     if (!sk) return 'invalid';
@@ -372,7 +372,7 @@ function createSim({ rand = Math.random } = {}) {
     for (const k of ['dur', 'markDur']) if (eff[k]) eff[k] = sk[k] * (1 + B.dur);
     if (eff.radius) eff.radius = sk.radius * (1 + B.radius);
     if (sk.shape === 'circle') eff.range = sk.range * (1 + B.radius);
-    const from = { zone: p.c.zone, x: p.c.x, y: p.c.y, dir: p.c.dir };
+    const from = { zone: p.c.zone, x: p.c.x, y: p.c.y, dir: p.c.dir, aim }; // aim = จุดเล็งจากเครื่องผู้เล่น (ตรวจระยะใน aimPoint)
     later(zoneOf(p), sk.poseT * .6, () => release(p, eff, from));
     return 'ok';
   }

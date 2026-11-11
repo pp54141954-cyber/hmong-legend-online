@@ -143,6 +143,10 @@ for (const [i, name, expectDx] of [[1, 'ท่าเคลื่อนที่'
   h.c.sk['ประคองชีวิต'] = 1; for (const q of [h, f, far]) q.hp = 10; sim.act(h, 3, 100); run(sim, 1, 100);
   rec('ผู้รักษา: ฮีลตัวเอง + เพื่อนปาร์ตี้ในรัศมี (คนที่อยู่ไกลไม่ได้)', h.hp > 10 && f.hp > 10 && far.hp === 10, [h.hp, f.hp, far.hp].join('/'));
   const a = { id: 9, c: { zone: 'field2', x: s0[0], y: s0[1], dir: 'E', lv: 30, exp: 0, job: 30, jexp: 0, starter: 1, cls: 'นักธนู', clsset: 1 } }; sim.addPlayer(a);
+  { const mk = () => { const sim = createSim({ rand: () => .5 }), z = sim.zones.field2; const p = { id: 1, c: { zone: 'field2', x: s0[0], y: s0[1], dir: 'E', lv: 40, exp: 0, job: 30, jexp: 0, starter: 1, cls: 'นักธนู', clsset: 1 } }; sim.addPlayer(p); p.c.sk['ห่าศรอาคม'] = 1;
+      for (const m of z.mons) { m.state = 'dead'; m.respT = 1e9; } const m = z.mons.find(m => !m.c.boss); Object.assign(m, { state: 'idle', hp: 1e6, x: p.c.x - 40, y: p.c.y, hx: p.c.x - 40, hy: p.c.y, respT: 0, atkT: 99 }); return { sim, p, m }; };
+    { const { sim, p, m } = mk(); sim.act(p, 11, 100); run(sim, 2, 100); rec('สกิลพื้นที่ (ห่าศร) ตกที่มอนสเตอร์ใกล้สุด แม้อยู่ข้างหลัง', m.hp < 1e6, Math.round(1e6 - m.hp)); }
+    { const { sim, p, m } = mk(); sim.act(p, 11, 100, [p.c.x + 2000, p.c.y]); run(sim, 2, 100); rec('จุดเล็งที่ส่งมาไกลเกินระยะ → เซิร์ฟเวอร์ไม่เชื่อ ใช้มอนสเตอร์ใกล้สุดแทน', m.hp < 1e6); } }
   rec('นักธนู: ท่าพื้นฐานเป็นยิงธนูระยะไกล (ไม่ใช่ฟันดาบ)', W.CFG.basicFor('นักธนู').shape === 'shot' && W.CFG.basicFor('นักธนู').range >= 200 && W.CFG.basicFor('นักดาบ').shape !== 'shot');
 }
 

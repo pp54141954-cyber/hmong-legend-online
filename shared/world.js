@@ -319,6 +319,11 @@ CFG.stats.free=(lv,st)=>CFG.stats.total(lv)-CFG.stats.used(st);
 CFG.stats.bonus=st=>{st=st||{};const v=k=>st[k]||0;return{atk:v('str'),hp:v('vit')*4,def:Math.floor(v('vit')/4),spd:Math.min(.25,v('agi')*.004),cdr:Math.min(.2,v('agi')*.002),crit:Math.min(.25,v('luk')*.0025)}};
 /* สกิลที่ใช้จริงของอาชีพ: ช่อง 1–2 (เคลื่อนที่/ป้องกัน) และนักดาบใช้ตารางเดิม, อาชีพอื่นช่อง 3–11 ทับด้วย classSkills */
 CFG.skillFor=(cls,i)=>{const b=CFG.skills[i-1];if(!b)return null;const o=i>=3&&CFG.classSkills[cls]&&CFG.classSkills[cls][i-3];return o?Object.assign({},b,{mult:undefined,range:undefined,width:undefined,speed:undefined,radius:undefined,dist:undefined,fxk:undefined,color:undefined},o):b};
+/* สกิลพื้นที่ (rain/trap/pillar): ตกที่มอนสเตอร์ใกล้สุดในระยะ (เดิมตกตามทิศที่หันเสมอ จึงพลาดตัวที่อยู่ข้าง ๆ) — ใช้ร่วมเกม/เซิร์ฟเวอร์ */
+CFG.aimReach=sk=>sk.dist?sk.dist+(sk.spread||0)*.5+40:0;
+CFG.aimPoint=(sk,ox,oy,dir,DVd,mons,hint)=>{const[ux,uy]=DVd,def=[ox+ux*sk.dist,oy+uy*sk.dist+14],R=CFG.aimReach(sk);if(!R)return def;
+  if(hint&&Number.isFinite(hint[0])&&Number.isFinite(hint[1])&&Math.hypot(hint[0]-ox,hint[1]-oy-14)<=R)return[hint[0],hint[1]];
+  let best=null,bd=R;for(const m of mons){if(m.state==='dead'||m.away)continue;const d=Math.hypot(m.x-ox,m.y-oy-14);if(d<=bd){bd=d;best=[m.x,m.y]}}return best||def};
 CFG.basicFor=cls=>CFG.classBasic[cls]?Object.assign({},CFG.basic,CFG.classBasic[cls]):CFG.basic;
 CFG.applyBalance=function(){const B=CFG.balance;
  for(const[type,m]of Object.entries(CFG.monsters)){const L=B.lv[type];if(!L)continue;
