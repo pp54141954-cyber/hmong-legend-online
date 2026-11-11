@@ -434,9 +434,15 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
       const a = c0.getContext('2d').getImageData(0, 0, 96, 124).data, b = c1.getContext('2d').getImageData(0, 0, 96, 124).data; let head = 0, body = 0; for (let i = 0; i < a.length; i += 4) { const y = (i >> 2) / 96 | 0; if (a[i] !== b[i] || a[i + 1] !== b[i + 1]) { if (y < 52) head++; else body++ } }
       return { L, head, body, saved: JSON.parse(localStorage.getItem('hl_look_off') || 'null') } });
     rec('หน้าตาที่เลือกถูกใช้ในเกม: สีผมเปลี่ยนเฉพาะหัว สีชุดเปลี่ยนเฉพาะตัว และจำในเครื่อง', lk.L.g === 'f' && lk.L.hair === 2 && lk.L.outfit === 2 && lk.head > 100 && lk.body > 50 && lk.saved && lk.saved.hair === 2, JSON.stringify(lk));
+    await cp.waitForFunction(() => HL.femReady(), null, { timeout: 10000 });
     const draws = async () => { const a = await cp.evaluate(() => HL.femDraws); await cp.waitForTimeout(500); return (await cp.evaluate(() => HL.femDraws)) - a };
-    const pf = await draws(); await cp.evaluate(() => HL.setLook({ g: 'm', hair: 2, outfit: 2 })); const pm = await draws();
-    rec('ตัวละครหญิงในเกมวาดผมยาว + ดอกไม้ประดับทุกเฟรม (ชายไม่วาด)', pf > 10 && pm === 0, 'หญิง ' + pf + ' ครั้ง / ชาย ' + pm + ' ครั้ง ใน 0.5 วิ');
+    const fem = await cp.evaluate(() => ({ fem: HL.sheetsFor(HL.PS.look).fem, w: HL.sheetsFor(HL.PS.look).SPR.width, h: HL.sheetsFor(HL.PS.look).SPR.height }));
+    rec('ตัวละครหญิงใช้ภาพจริงของเจ้าของ (ขนาดแผ่นเท่าตัวชาย) ไม่ใช้ผมยาวชั่วคราวแล้ว', fem.fem === true && fem.w === 384 && fem.h === 496 && (await draws()) === 0, JSON.stringify(fem));
+    const fh = await cp.evaluate(() => { const px = l => { const c = document.createElement('canvas'); c.width = 384; c.height = 496; const k = c.getContext('2d'); k.drawImage(HL.sheetsFor(l).SPR, 0, 0); return k.getImageData(0, 0, 384, 496).data };
+      const a = px({ g: 'f', hair: 0, outfit: 0 }), b = px({ g: 'f', hair: 4, outfit: 0 }), c = px({ g: 'f', hair: 0, outfit: 2 }); let hairLow = 0, hairCh = 0, outCh = 0, outHead = 0;
+      for (let i = 0; i < a.length; i += 4) { const y = ((i >> 2) / 384 | 0) % 124; if (a[i] !== b[i] || a[i + 2] !== b[i + 2]) { hairCh++; if (y >= 52) hairLow++ } if (a[i] !== c[i] || a[i + 1] !== c[i + 1]) { outCh++; if (y < 40) outHead++ } }
+      return { hairCh, hairLow, outCh, outHead } });
+    rec('หญิง: เปลี่ยนสีผมรวมผมยาวใต้ไหล่ (ไม่ใช่แค่หัว), เปลี่ยนชุดไม่กระทบผม', fh.hairCh > 3000 && fh.hairLow > 500 && fh.outCh > 1000 && fh.outHead < 50, JSON.stringify(fh));
     await cp.evaluate(() => HL.setLook({ g: 'f', hair: 2, outfit: 2 }));
     await cp.evaluate(() => { const s = HL.ZONES.village2.start; HL.enterZone('village2', s[0], s[1]) });
     await cp.click('#skb'); await cp.click('#skp h3 .clsb'); await cp.click('#lkedit'); await cp.waitForSelector('#cstart:not([hidden]) #lkcv');

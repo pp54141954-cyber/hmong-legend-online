@@ -105,3 +105,9 @@
 
 ที่มา: เจ้าของโครงการสร้างด้วย ChatGPT ตาม `docs/prompts/monster_sprites_chatgpt.md` ส่งเมื่อ 2026-11-10
 สร้างภาพในเกม: `python3 tools/build_monster_sprites.py && python3 tools/embed_monster_sprites.py`
+
+## ตัวละครหญิง (V2-R31)
+
+| ไฟล์ | ที่มา | หมายเหตุ |
+| --- | --- | --- |
+| `game/sprites/player_f_walk.webp` / `_idle` / `_attack` | เจ้าของทำด้วย ChatGPT ตามชุดคำสั่ง `docs/prompts/female_character_sprites.md` | ต้นฉบับ `assets/sprites_src/female/`, แปลงด้วย `tools/build_female_sprites.py`, พิกเซลผม alpha=254 |
