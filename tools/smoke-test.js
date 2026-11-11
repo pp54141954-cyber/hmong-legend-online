@@ -195,6 +195,53 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   await setT(T_DAY);
   await page.evaluate(() => { HL.setClock(0); HL.PS.hp = HL.PS.maxHp; HL.PS.dead = false; const s = HL.ZONES.village.start; HL.enterZone('village', s[0], s[1]); });
 
+  // ===== V2-R23: จอย 8 ทิศ, ออโต, มอนสเตอร์เล็กลง/มากขึ้น, ช่องลัด =====
+  await page.evaluate(() => { HL.AUTO.on = false; HL.PS.dead = false; HL.PS.cast = null; HL.PS.hp = HL.PS.maxHp; const s = HL.ZONES.village2.start; HL.enterZone('village2', s[0], s[1]); });
+  await page.waitForTimeout(300);
+  { const p0 = await pos(); await page.keyboard.down('ArrowRight'); await page.keyboard.down('ArrowDown'); await page.waitForTimeout(500); await page.keyboard.up('ArrowRight'); await page.keyboard.up('ArrowDown');
+    const p1 = await pos(); rec('เดินทแยง (ขวา+ลง) ได้ทั้งสองแกน', p1.x - p0.x > 10 && p1.y - p0.y > 10, Math.round(p1.x - p0.x) + ',' + Math.round(p1.y - p0.y)); }
+  { const box = await page.locator('#c').boundingBox(); const hx = box.x + Math.max(86, box.width * .17), hy = box.y + box.height - Math.max(130, box.height * .16);
+    await page.evaluate(() => { const s = HL.ZONES.village2.start; HL.player.x = s[0]; HL.player.y = s[1]; });
+    const p0 = await pos(); await page.mouse.move(hx, hy); await page.mouse.down(); await page.mouse.move(hx + 40, hy - 40, { steps: 4 }); await page.waitForTimeout(500);
+    const j = await page.evaluate(() => HL.inputDir()); await page.mouse.up(); const p1 = await pos();
+    rec('จอยฐานมุมซ้ายล่าง: ลากเฉียงขึ้นขวา → เดินทแยงแบบอนาล็อก', j[0] > .5 && j[1] < -.5 && p1.x > p0.x + 5 && p1.y < p0.y - 5, 'จอย=' + j.map(v => v.toFixed(2)).join(',') + ' ระยะ ' + Math.round(p1.x - p0.x) + ',' + Math.round(p1.y - p0.y)); }
+  { const n = await page.evaluate(() => { const s = HL.ZONES.field2.start; HL.enterZone('field2', s[0], s[1]); return HL.mons.filter(m => !m.c.boss).length; });
+    const want = await page.evaluate(() => HL.ZONES.field2.spawns.reduce((a, s) => a + s.count, 0) * HL.CFG.spawnMul);
+    rec('จำนวนมอนสเตอร์ในทุ่งน้ำตกเพิ่มเป็น ×' + 2 + ' (' + want + ' ตัว)', n === want && want >= 28, n + ' ตัว'); }
+  rec('ภาพมอนสเตอร์เล็กลง (×' + (await page.evaluate(() => HL.MON_SCALE)) + ')', await page.evaluate(() => HL.MON_SCALE < 1));
+  { await page.evaluate(() => { HL.PS.lv = 10; HL.recalc(); HL.PS.hp = HL.PS.maxHp; HL.PS.kills = 0; });
+    const k0 = await page.evaluate(() => ({ kills: HL.PS.kills, exp: HL.PS.exp, lv: HL.PS.lv }));
+    await page.click('#pg');
+    const on = await page.getAttribute('#pg', 'aria-pressed');
+    let k1 = k0; for (let i = 0; i < 40 && k1.kills < 2; i++) { await page.waitForTimeout(500); k1 = await page.evaluate(() => ({ kills: HL.PS.kills, exp: HL.PS.exp, lv: HL.PS.lv, dead: HL.PS.dead })); }
+    rec('ปุ่ม AUTO: เดินหาและฆ่ามอนสเตอร์เองได้ ≥2 ตัวภายใน 20 วิ', on === 'true' && k1.kills >= 2, 'ฆ่า ' + k1.kills + ' ตัว ' + await page.evaluate(() => JSON.stringify({ z: HL.Z && HL.Z.id, p: [HL.player.x | 0, HL.player.y | 0], hp: HL.PS.hp | 0, dead: HL.PS.dead, free: HL.freeMode, on: HL.AUTO.on, tgt: !!HL.AUTO.tgt, cast: !!HL.PS.cast, job: HL.PS.job })));
+    await page.screenshot({ path: 'tools/last-auto.png' });
+    await page.click('#pg'); rec('กด AUTO อีกครั้ง = ปิด', (await page.getAttribute('#pg', 'aria-pressed')) === 'false'); }
+  { const before = await page.evaluate(() => HL.SLOTS.slice());
+    await page.evaluate(() => HL.setSlot(0, 8)); const slots = await page.evaluate(() => HL.SLOTS.slice());
+    const btn = await page.evaluate(() => document.querySelector('#skills .sk').getAttribute('aria-label'));
+    rec('ช่องลัด: จัดสกิล 8 ลงช่อง 1 → ปุ่มแรกเปลี่ยนตาม และไม่ซ้ำช่อง', slots[0] === 8 && new Set(slots).size === 6 && btn === 'ดาบทลายขุนเขา', JSON.stringify(slots));
+    await page.evaluate(b => b.forEach((v, k) => HL.setSlot(k, v)), before); }
+  { const r = await page.evaluate(() => { const s = HL.ZONES.village2.start; HL.enterZone('village2', s[0], s[1]);
+      let open = 0, tot = 0; for (let y = 13; y <= 18; y++) for (let x = 20; x <= 28; x++) { tot++; if (!HL.tileBlocked(x, y)) open++ } return [open, tot] });
+    rec('ลานหินกลางหมู่บ้านเดินได้ทั้งลาน (ช่อง 20–28 × 13–18)', r[0] === r[1], r[0] + '/' + r[1]); }
+  { await page.evaluate(() => { HL.PS.job = 30; });
+    await page.click('#skb'); await page.waitForSelector('#skp:not([hidden]) .skgrid');
+    const g = await page.evaluate(() => ({ ph: [...document.querySelectorAll('#skp .ph b')].map(e => e.textContent), jobs: [...document.querySelectorAll('#skp .lbl.job')].map(e => +e.textContent), nodes: document.querySelectorAll('#skp .nd').length, hot: document.querySelectorAll('#skp .hs').length }));
+    rec('หน้าสกิล: ตาราง 3 สาย × แถว Job + ช่องลัด 6 ช่อง', g.ph.length === 3 && g.jobs.length >= 6 && g.jobs.every((v, i) => !i || v > g.jobs[i - 1]) && g.hot === 6 && g.nodes >= 20, JSON.stringify(g));
+    const before = await page.evaluate(() => HL.SLOTS.slice());
+    await page.click('#skp .hs[data-slot="5"]');
+    const hint = await page.textContent('#skp .hott');
+    await page.click('#skp .nd.act[data-skill="ดาบทลายขุนเขา"]');
+    const after = await page.evaluate(() => ({ s: HL.SLOTS.slice(), lbl: document.querySelector('#skp .hs[data-slot="5"]').getAttribute('aria-label'), btn: [...document.querySelectorAll('#skills .sk')][5].getAttribute('aria-label') }));
+    rec('หน้าสกิล: แตะช่อง 6 แล้วแตะสกิล → ใส่ช่องลัดและปุ่มบนจอเปลี่ยนตาม', hint.includes('ช่อง 6') && after.s[5] === 8 && after.lbl === 'ช่องลัด 6 ดาบทลายขุนเขา' && after.btn === 'ดาบทลายขุนเขา', JSON.stringify(after));
+    await page.screenshot({ path: 'tools/last-skills.png' });
+    const saved = await page.evaluate(() => localStorage.getItem('hl_slots'));
+    rec('ช่องลัดบันทึกในเครื่อง (localStorage)', saved === JSON.stringify(after.s), saved);
+    await page.evaluate(b => b.forEach((v, k) => HL.setSlot(k, v)), before);
+    await page.click('#skp h3 button'); rec('ปิดหน้าสกิลได้', await page.evaluate(() => document.getElementById('skp').hidden)); }
+  await page.evaluate(() => { HL.AUTO.on = false; HL.PS.dead = false; HL.PS.hp = HL.PS.maxHp; const s = HL.ZONES.village.start; HL.enterZone('village', s[0], s[1]); });
+
   // ย้ายโซนผ่านปุ่มทดสอบ
   await page.click('#gear'); await page.click('#wp');
   await page.waitForTimeout(500);

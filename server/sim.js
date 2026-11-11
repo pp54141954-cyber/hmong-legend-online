@@ -40,8 +40,8 @@ function makeZone(id) {
   });
   (G.D.spawns || []).forEach(sp => {
     const c = CFG.monsters[sp.type];
-    for (let i = 0; i < sp.count; i++) {
-      const [hx, hy] = findFree(sp.tx + (i - 1) * 3, sp.ty + (i % 2 ? 2 : -1));
+    for (let i = 0; i < sp.count * (G.D.painted ? CFG.spawnMul : 1); i++) { // V2-R23: จำนวนมากขึ้น วางเป็นวง (ตรงกับเกม)
+      const o = CFG.spawnOff(i), [hx, hy] = findFree(sp.tx + o[0], sp.ty + o[1]);
       mons.push({ id: nid++, type: sp.type, c, x: hx, y: hy, hx, hy, hp: c.hp, state: 'idle', t: Math.random() * 2, atkT: 0, dir: 'S', wx: hx, wy: hy, respT: 0, markT: 0, markBonus: 0, target: null });
     }
   });
