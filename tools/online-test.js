@@ -112,15 +112,20 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   rec('ปุ่ม 🎒 เปิดกระเป๋า เห็นของที่ได้', await until(async () => { const t = await A.page.textContent('#bag'); return t.includes('ขนไก่ฟ้า') && t.includes('ยาสมุนไพรเล็ก'); }));
   const icons = await A.page.evaluate(() => [...document.querySelectorAll('#bag img.ic')].map(i => i.complete && i.naturalWidth > 0));
   rec('ไอคอนไอเทมในกระเป๋าแสดงครบ', icons.length >= 2 && icons.every(Boolean), icons.length + ' รูป');
+  rec('ชุดเริ่มต้น (บัญชีใหม่): ดาบไม้ + เสื้อผ้าฝ้ายสวมอยู่ ยากลางอยู่ในกระเป๋า', SA().c.eq.weapon === 'sword_wood' && SA().c.eq.armor === 'coat_cloth' && (await A.page.textContent('#bag')).includes('ยาสมุนไพรกลาง'), JSON.stringify(SA().c.eq));
+  { await A.page.click('#lvb'); await A.page.waitForSelector('#stp:not([hidden]) .grid');
+    const st = await A.page.evaluate(() => { const g = k => [...document.querySelectorAll('#stp .cell')].find(c => c.querySelector('span').textContent === k).querySelector('b').textContent; return { atk: +g('ATK'), def: +g('DEF'), w: document.querySelector('#stp .eqr').textContent } });
+    rec('หน้าต่างสถานะออนไลน์: ATK/DEF ตรงกับเซิร์ฟเวอร์ และแสดงอุปกรณ์ที่สวม', st.atk === SA().atk && st.def === SA().def && st.w.includes('ดาบไม้ฝึกหัด'), JSON.stringify(st) + ' server ATK ' + SA().atk);
+    await A.page.click('#stp h3 button'); await A.page.click('#bagb'); } // เปิดสถานะจะปิดกระเป๋า → เปิดกลับ
   srv.sim.addItem(SA(), 'sword_iron', 1); // ฉาก: ให้ดาบเหล็ก 1 เล่ม
   await A.page.waitForSelector('#bag button[aria-label="ใส่ ดาบเหล็กตีมือ"]', { timeout: 3000 });
-  const atkBase = SA().atk;
+  const atkBase = SA().atk, oldW = (W.CFG.items[SA().c.eq.weapon] || { atk: 0 }).atk; // V2-R24: มีดาบไม้จากชุดเริ่มต้นอยู่แล้ว
   await A.page.click('#bag button[aria-label="ใส่ ดาบเหล็กตีมือ"]');
-  const equipped = await until(async () => SA().c.eq.weapon === 'sword_iron' && (await A.page.textContent('#bag')).includes('ATK ' + (atkBase + 10)));
-  rec('แตะดาบในกระเป๋า → สวมใส่ ATK +10 (เซิร์ฟเวอร์และจอตรงกัน)', equipped, 'ATK ' + atkBase + '→' + SA().atk);
-  SA().hp = 20;
+  const equipped = await until(async () => SA().c.eq.weapon === 'sword_iron' && (await A.page.textContent('#bag')).includes('ATK ' + (atkBase + 10 - oldW)) && SA().c.bag.some(s => s.id === 'sword_wood' || !oldW));
+  rec('แตะดาบในกระเป๋า → สวมใส่ ATK +10 แทนดาบเดิม, ดาบเดิมกลับเข้ากระเป๋า (เซิร์ฟเวอร์และจอตรงกัน)', equipped, 'ATK ' + atkBase + '→' + SA().atk);
+  SA().hp = 20; const potN = () => SA().c.bag.filter(s => s.id === 'potion_s').reduce((a, s) => a + s.n, 0), pot0 = potN();
   await A.page.click('#bag button[aria-label="ใช้ ยาสมุนไพรเล็ก"]');
-  rec('แตะยา → HP บนเซิร์ฟเวอร์ฟื้น และยาหมด', await until(async () => SA().hp >= 55 && !SA().c.bag.some(s => s.id === 'potion_s')), 'HP 20→' + Math.round(SA().hp));
+  rec('แตะยา → HP บนเซิร์ฟเวอร์ฟื้น และยาลด 1', await until(async () => SA().hp >= 55 && potN() === pot0 - 1), 'HP 20→' + Math.round(SA().hp));
   const dInv = (await st(A.page)).stats.denied;
   await A.page.evaluate(() => HLNET.send({ t: 'inv', op: 'equip', slot: 99 }));
   rec('คำสั่งกระเป๋าปลอม (ช่อง 99) ถูกปฏิเสธ', await until(async () => (await st(A.page)).stats.denied > dInv));

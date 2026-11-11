@@ -97,6 +97,12 @@ function createSim({ rand = Math.random } = {}) {
     p.c.sk = Object.assign({}, p.c.sk || {});
     for (const r of SKROWS) if (r.start && !p.c.sk[r.name]) p.c.sk[r.name] = 1; // สกิลเริ่มต้นได้ระดับ 1 ฟรี
     Object.assign(p, { hp: 0, dead: false, deadT: 0, cd: {}, castUntil: 0, buffT: 0, buffBonus: 0, guardT: 0, guardRed: 0, personal: [], potionAt: 0, bagDirty: true, skDirty: true });
+    if (!p.c.starter && CFG.starter) { // ชุดไอเทมเริ่มต้น: ใส่อุปกรณ์ให้เลย (ช่องที่ว่าง) + ยาเข้ากระเป๋า
+      const got = [];
+      for (const [sl, id] of Object.entries(CFG.starter.eq)) { if (!p.c.eq[sl]) p.c.eq[sl] = id; else addItem(p, id, 1); got.push([id, 1]); }
+      for (const [id, n] of CFG.starter.bag) { addItem(p, id, n); got.push([id, n]); }
+      p.c.starter = 1; p.dirty = true; p.bagDirty = true; p.personal.push({ k: 'starter', items: got });
+    }
     stats(p); p.hp = p.maxHp; players.add(p);
   }
 

@@ -240,6 +240,45 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     rec('ช่องลัดบันทึกในเครื่อง (localStorage)', saved === JSON.stringify(after.s), saved);
     await page.evaluate(b => b.forEach((v, k) => HL.setSlot(k, v)), before);
     await page.click('#skp h3 button'); rec('ปิดหน้าสกิลได้', await page.evaluate(() => document.getElementById('skp').hidden)); }
+  // ===== V2-R24: ป้ายเลเวล, หน้าต่างสถานะ, หน้าต่างอัปเลเวล, สกิลออโต, ทางเดินบนน้ำ =====
+  { const r = await page.evaluate(() => { const s = HL.ZONES.field2.start; HL.enterZone('field2', s[0], s[1]);
+      const ww = [[32, 18, 42, 19], [5, 29, 29, 30], [13, 28, 18, 30]]; let bad = [];
+      for (const [x0, y0, x1, y1] of ww) for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (HL.tileBlocked(x, y)) bad.push(x + ',' + y);
+      const onW = HL.mons.filter(m => ww.some(([x0, y0, x1, y1]) => m.hx / 32 >= x0 && m.hx / 32 < x1 + 1 && m.hy / 32 >= y0 && m.hy / 32 < y1 + 1)).length;
+      const path = HL.bfsPath(Math.floor(s[0] / 32), Math.floor(s[1] / 32), 16, 29, 4000);
+      return { bad, onW, path: !!path } });
+    rec('ทางเดินไม้บนน้ำ (ทุ่งน้ำตก) เดินได้ทุกช่อง และเดินไปถึงจากจุดเริ่ม', r.bad.length === 0 && r.path, JSON.stringify(r));
+    rec('มีมอนสเตอร์เกิดบนทางเดินไม้บนน้ำ', r.onW >= 3, r.onW + ' ตัว'); }
+  { const r = await page.evaluate(() => [HL.monLvCol(0), HL.monLvCol(4), HL.monLvCol(8), HL.monLvCol(-8), HL.mons.every(m => m.c.lv > 0)]);
+    rec('ป้ายเลเวลมอนสเตอร์ทุกตัว + สีตามความยาก (ขาว/เหลือง/แดง/เทา)', r[0] === '#ffffff' && r[1] === '#ffcf5a' && r[2] === '#ff6b6b' && r[3] === '#a8b0b4' && r[4], JSON.stringify(r));
+    await page.screenshot({ path: 'tools/last-walkway.png' }); }
+  { await page.evaluate(() => { HL.PS.lv = 5; HL.recalc(); HL.PS.hp = HL.PS.maxHp; });
+    await page.click('#lvb'); await page.waitForSelector('#stp:not([hidden]) .grid');
+    const t = await page.evaluate(() => ({ cells: [...document.querySelectorAll('#stp .cell span')].map(e => e.textContent), lv: document.querySelector('#stp .hd .lv').textContent, atk: [...document.querySelectorAll('#stp .cell')].find(c => c.textContent.startsWith('ATK')).querySelector('b').textContent, want: HL.PS.atk }));
+    rec('หน้าต่างสถานะ: แตะวงเลเวล → แสดง HP ATK DEF คริ ความเร็ว อุปกรณ์', t.cells.length >= 8 && t.lv === 'Lv5' && +t.atk === t.want && await page.isVisible('#stp .eqr'), JSON.stringify(t));
+    await page.screenshot({ path: 'tools/last-status.png' });
+    await page.click('#stp h3 button'); rec('ปิดหน้าต่างสถานะได้ (ไม่บังจอ)', await page.evaluate(() => document.getElementById('stp').hidden) && !(await page.isVisible('#stp'))); }
+  { const r = await page.evaluate(() => { HL.lvEl.hidden = true; const l0 = HL.PS.lv; HL.gain(HL.CFG.expCurve(HL.PS.lv) + 1, 0);
+      return { l0, l1: HL.PS.lv, shown: !HL.lvEl.hidden, txt: HL.lvEl.textContent } });
+    rec('หน้าต่างอัปเลเวลขึ้นเมื่อเลเวลอัป (บอก HP/ATK ที่เพิ่ม)', r.l1 === r.l0 + 1 && r.shown && r.txt.includes('Lv ' + r.l1) && r.txt.includes('ATK +'), r.txt);
+    await page.screenshot({ path: 'tools/last-lvup.png' });
+    await page.click('#lvup'); rec('แตะหน้าต่างอัปเลเวลเพื่อปิด', await page.evaluate(() => HL.lvEl.hidden));
+    const j = await page.evaluate(() => { const j0 = HL.PS.job; HL.gain(0, HL.CFG.jobCurve(HL.PS.job) + 1); return { j0, j1: HL.PS.job, txt: HL.lvEl.textContent } });
+    rec('Job เลเวลอัป → หน้าต่างบอกแต้มสกิล +1', j.j1 === j.j0 + 1 && j.txt.includes('แต้มสกิล +1'), j.txt);
+    await page.waitForTimeout(3000); rec('หน้าต่างอัปเลเวลปิดเองภายใน 3 วิ', await page.evaluate(() => HL.lvEl.hidden)); }
+  { await page.evaluate(() => { HL.PS.job = 30; HL.PS.cd = {}; HL.PS.cast = null; const s = HL.ZONES.field2.start; HL.enterZone('field2', s[0], s[1]);
+      const m = HL.mons.find(m => !m.c.boss); Object.assign(m.c, {}); m.x = HL.player.x + 30; m.y = HL.player.y + 10; m.hx = m.x; m.hy = m.y; m.state = 'idle'; });
+    rec('ปุ่มสกิลออโตเริ่มต้น = ปิด', (await page.getAttribute('#ask', 'aria-pressed')) === 'false');
+    await page.click('#ask');
+    let used = []; for (let i = 0; i < 20 && !used.length; i++) { await page.waitForTimeout(150); used = await page.evaluate(() => Object.keys(HL.PS.cd).filter(k => k !== 'b' && HL.PS.cd[k] > 0)); }
+    rec('สกิลออโต: มอนสเตอร์อยู่ในระยะ → ใช้สกิลในช่องลัดเอง', (await page.getAttribute('#ask', 'aria-pressed')) === 'true' && used.length > 0, 'สกิลที่ใช้ ' + used.join(','));
+    rec('สกิลออโต: จำค่าไว้ในเครื่อง', await page.evaluate(() => localStorage.getItem('hl_autosk') === '1'));
+    await page.click('#ask'); rec('ปิดสกิลออโตได้', (await page.getAttribute('#ask', 'aria-pressed')) === 'false'); }
+  { const r = await page.evaluate(() => { const m = HL.mons.find(m => !m.c.boss); HL.setTarget(m); return null });
+    await page.waitForTimeout(300);
+    const t = await page.locator('#tgt').boundingBox(), c = await page.locator('#c').boundingBox();
+    const jx = c.x + Math.max(86, c.width * .17), jy = c.y + c.height - Math.max(130, c.height * .16);
+    rec('การ์ดเป้าหมายไม่ทับจอย (ย้ายไปมุมขวาบน)', t && !(jx + 70 > t.x && jx - 70 < t.x + t.width && jy + 70 > t.y && jy - 70 < t.y + t.height) && t.y < c.height / 2, JSON.stringify(t)); }
   await page.evaluate(() => { HL.AUTO.on = false; HL.PS.dead = false; HL.PS.hp = HL.PS.maxHp; const s = HL.ZONES.village.start; HL.enterZone('village', s[0], s[1]); });
 
   // ย้ายโซนผ่านปุ่มทดสอบ

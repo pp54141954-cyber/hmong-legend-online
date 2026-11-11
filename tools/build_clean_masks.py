@@ -73,6 +73,10 @@ EXITS = {
 # สัดส่วน (ดิน+หญ้าโล่ง) ขั้นต่ำที่นับว่าเดินได้ — V2-R23 ลดจาก .62 ให้เดินบนหญ้าได้กว้างขึ้นตามที่เจ้าของขอ
 LAWN = {}
 
+from draw_walkways import WALKWAYS  # V2-R24 ทางเดินไม้บนน้ำ = เดินได้
+for _z, _ws in WALKWAYS.items():
+    LINK.setdefault(_z, []).extend(('.', *w) for w in _ws)
+
 def build(zid):
     im = Image.open(os.path.join(ROOT, 'assets/maps_src', zid + '.png')).convert('RGB')
     assert im.size == (COLS * T, ROWS * T), im.size

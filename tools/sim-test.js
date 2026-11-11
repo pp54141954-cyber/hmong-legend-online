@@ -11,7 +11,7 @@ const PX = 752, PY = 464; // ทางเดินนอกเขตปลอด
 for (const [i, name, expectDx] of [[1, 'ท่าเคลื่อนที่', 80], [10, 'ก้าวหลบสวนคม', -52], [11, 'พริบตาสามคม', 40]]) {
   for (const early of [false, true]) {
     const sim = createSim({ rand: () => .5 });
-    const p = { id: 1, c: { zone: 'village', x: PX, y: PY, dir: 'E', lv: 1, exp: 0, job: 30, jexp: 0 } };
+    const p = { id: 1, c: { zone: 'village', x: PX, y: PY, dir: 'E', lv: 1, exp: 0, job: 30, jexp: 0, starter: 1 } };
     sim.addPlayer(p);
     sim.learn(p, W.CFG.skills[i - 1].name); // V2-R8: ท่ากดต้องอัประดับ 1 ก่อน
     rec(name + (early ? ' (mv มาก่อน)' : ' (mv มาทีหลัง)') + ' ใช้ท่าได้', sim.act(p, i, 100) === 'ok');
@@ -24,18 +24,34 @@ for (const [i, name, expectDx] of [[1, 'ท่าเคลื่อนที่'
 // รางวัลและเลเวลอัปคิดบนเซิร์ฟเวอร์
 {
   const sim = createSim({ rand: () => .5 });
-  const p = { id: 1, c: { zone: 'village', x: PX, y: PY, dir: 'E', lv: 1, exp: 0, job: 1, jexp: 0 } };
+  const p = { id: 1, c: { zone: 'village', x: PX, y: PY, dir: 'E', lv: 1, exp: 0, job: 1, jexp: 0, starter: 1 } };
   sim.addPlayer(p);
   sim.gain(p, W.CFG.expCurve(1) + 5, W.CFG.jobCurve(1));
   rec('EXP ถึงเกณฑ์ → Lv 2, HP เต็มตามสูตร', p.c.lv === 2 && p.c.exp === 5 && p.maxHp === W.CFG.player.baseHP + W.CFG.player.hpPerLv && p.hp === p.maxHp, JSON.stringify({ lv: p.c.lv, exp: p.c.exp, maxHp: p.maxHp }));
   rec('Job EXP ถึงเกณฑ์ → Job 2', p.c.job === 2 && p.c.jexp === 0);
 }
 
+// V2-R24 ชุดไอเทมเริ่มต้น: ตัวละครใหม่ได้ครั้งเดียว ใส่อุปกรณ์ให้ทันที
+{
+  const sim = createSim({ rand: () => .5 });
+  const p = { id: 1, c: { zone: 'village', x: PX, y: PY, dir: 'E', lv: 1, exp: 0, job: 1, jexp: 0 } };
+  sim.addPlayer(p);
+  const S = W.CFG.starter, w = W.CFG.items[S.eq.weapon], a = W.CFG.items[S.eq.armor];
+  rec('ชุดเริ่มต้น: ใส่ดาบไม้ + เสื้อผ้าฝ้ายให้ทันที (ATK/HP เพิ่มตาม)', p.c.eq.weapon === S.eq.weapon && p.c.eq.armor === S.eq.armor && p.atk === W.CFG.player.baseAtk + w.atk && p.maxHp === W.CFG.player.baseHP + a.hp && p.def === a.def, JSON.stringify({ eq: p.c.eq, atk: p.atk, hp: p.maxHp, def: p.def }));
+  rec('ชุดเริ่มต้น: ยาเข้ากระเป๋าครบ + แจ้งผู้เล่น', S.bag.every(([id, n]) => p.c.bag.some(s => s.id === id && s.n === n)) && p.c.starter === 1 && p.personal.some(e => e.k === 'starter'), JSON.stringify(p.c.bag));
+  const p2 = { id: 2, c: Object.assign({}, p.c, { bag: p.c.bag.map(s => Object.assign({}, s)), eq: Object.assign({}, p.c.eq) }) };
+  sim.removePlayer && sim.removePlayer(p); sim.addPlayer(p2);
+  rec('ชุดเริ่มต้น: เข้าเกมครั้งถัดไปไม่ได้ซ้ำ', p2.c.bag.length === p.c.bag.length && !p2.personal.some(e => e.k === 'starter'));
+  const p3 = { id: 3, c: { zone: 'village', x: PX, y: PY, dir: 'E', lv: 5, exp: 0, job: 1, jexp: 0, eq: { weapon: 'sword_iron' }, bag: [] } };
+  sim.addPlayer(p3);
+  rec('ชุดเริ่มต้น: ตัวละครเก่าที่ถือดาบอยู่แล้ว → ไม่ถอดของเดิม ดาบไม้เข้ากระเป๋าแทน', p3.c.eq.weapon === 'sword_iron' && p3.c.bag.some(s => s.id === 'sword_wood'));
+}
+
 // มอนสเตอร์ไม่ไล่ผู้เล่นในเขตปลอดภัย
 {
   const sim = createSim();
   const z = sim.zones.village, s = W.ZONES.village.start;
-  const p = { id: 1, c: { zone: 'village', x: s[0], y: s[1], dir: 'S', lv: 1, exp: 0, job: 1, jexp: 0 } };
+  const p = { id: 1, c: { zone: 'village', x: s[0], y: s[1], dir: 'S', lv: 1, exp: 0, job: 1, jexp: 0, starter: 1 } };
   sim.addPlayer(p);
   const boar = z.mons.find(m => m.type === 'หมูป่า');
   Object.assign(boar, { x: s[0] + 40, y: s[1], hx: s[0] + 40, hy: s[1] });
@@ -44,7 +60,7 @@ for (const [i, name, expectDx] of [[1, 'ท่าเคลื่อนที่'
 }
 
 // ---------- V2-R4 กระเป๋า ของดรอป อุปกรณ์ ----------
-const mkP = (sim, extra) => { const p = { id: 1, c: Object.assign({ zone: 'village', x: PX, y: PY, dir: 'E', lv: 1, exp: 0, job: 1, jexp: 0 }, extra) }; sim.addPlayer(p); return p; };
+const mkP = (sim, extra) => { const p = { id: 1, c: Object.assign({ zone: 'village', x: PX, y: PY, dir: 'E', lv: 1, exp: 0, job: 1, jexp: 0, starter: 1 }, extra) }; sim.addPlayer(p); return p; };
 const killFirst = (sim, p, type) => {
   const z = sim.zones.village, m = z.mons.find(m => m.type === type && m.state !== 'dead');
   Object.assign(m, { x: PX + 20, y: PY, hx: PX + 20, hy: PY, wx: PX + 20, wy: PY, t: 99, hp: 1, state: 'idle' });
@@ -228,7 +244,7 @@ const killFirst = (sim, p, type) => {
 }
 // ---------- V2-R21 ปาร์ตี้ ----------
 {
-  const mk = (sim, id, name, extra) => { const p = { id, c: Object.assign({ name, zone: 'village', x: PX, y: PY, dir: 'E', lv: 1, exp: 0, job: 1, jexp: 0 }, extra) }; sim.addPlayer(p); return p; };
+  const mk = (sim, id, name, extra) => { const p = { id, c: Object.assign({ name, zone: 'village', x: PX, y: PY, dir: 'E', lv: 1, exp: 0, job: 1, jexp: 0, starter: 1 }, extra) }; sim.addPlayer(p); return p; };
   const sim = createSim({ rand: () => .5 });
   const a = mk(sim, 1, 'Aa'), b = mk(sim, 2, 'Bb'), c = mk(sim, 3, 'Cc'), far = mk(sim, 4, 'Far', { x: PX + 2000 });
   rec('ชวนชื่อที่ไม่มี → ปฏิเสธ', sim.party(a, 'invite', 'nobody', 0) === 'no-player');
@@ -250,7 +266,7 @@ const killFirst = (sim, p, type) => {
 // ---------- V2-R21 แบ่งรางวัลบอสตามดาเมจ ----------
 {
   const sim = createSim({ rand: () => .5 }), T0 = W.CFG.time.cycleSec * 2.25;
-  const mk = (id, name) => { const p = { id, c: { name, zone: 'peak', x: 0, y: 0, dir: 'E', lv: 50, exp: 0, job: 30, jexp: 0 } }; sim.addPlayer(p); p.hp = p.maxHp = 1e9; return p; };
+  const mk = (id, name) => { const p = { id, c: { name, zone: 'peak', x: 0, y: 0, dir: 'E', lv: 50, exp: 0, job: 30, jexp: 0, starter: 1 } }; sim.addPlayer(p); p.hp = p.maxHp = 1e9; return p; };
   const a = mk(1, 'A'), b = mk(2, 'B'), c = mk(3, 'C'); sim.step(.01, T0);
   const boss = sim.zones.peak.mons.find(m => m.type === 'ราชาปีศาจภูเขา');
   boss.dmgBy = new Map([[a, boss.c.hp * .6], [b, boss.c.hp * .4 - 1], [c, boss.c.hp * .001]]); boss.hp = 1; boss.t = 99;
