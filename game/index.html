@@ -357,6 +357,9 @@ const CFG={
   peak:[{type:'ราชาปีศาจภูเขา',tx:13,ty:9,when:'always'},{type:'มังกรแห่งหุบเขาหมอก',tx:35,ty:20,when:'world'}]},
  bossActive(when,wt){return !when||when==='always'||(when==='bloodmoon'&&wt.blood)||(when==='world'&&wt.world)},
  bag:{slots:30,stack:99,potionCd:1},
+ /* แต้มสเตตัส (V2-R25, เจ้าของเลือกแบบ 4 ค่า): ได้ 3 แต้มต่อเลเวล (Lv 1 = 0) — สูตรใช้ร่วมกับเซิร์ฟเวอร์ */
+ stats:{perLv:3,max:99,keys:['str','vit','agi','luk'],
+  info:{str:['STR','พลัง','ATK +1 ต่อแต้ม'],vit:['VIT','อึด','HP +4 ต่อแต้ม · DEF +1 ทุก 4 แต้ม'],agi:['AGI','ว่องไว','ความเร็วเดิน +0.4% · ลดคูลดาวน์ +0.2% ต่อแต้ม'],luk:['LUK','โชค','คริติคอล +0.25% ต่อแต้ม']}},
  /* ชุดไอเทมเริ่มต้น (V2-R24): ให้ครั้งเดียวต่อตัวละคร ใส่อุปกรณ์ให้ทันที */
  starter:{eq:{weapon:'sword_wood',armor:'coat_cloth'},bag:[['potion_s',10],['potion_m',3]]},
  items:{
@@ -399,7 +402,12 @@ CFG.balance={hits:5,survive:12,killsBase:14,killsPerLv:1/3,jobKillsBase:10,
   'วิญญาณแห่งป่า':24,'เทพหมาป่าภูเขา':34,'วิญญาณหมาป่าศักดิ์สิทธิ์':36,'มังกรภูเขาดำ':44,'ราชาปีศาจภูเขา':50,'มังกรแห่งหุบเขาหมอก':60},
  boss:{hpMul:40,atkMul:2.5,expMul:30},world:{hpMul:200,atkMul:3,expMul:100},
  /* ค่าพื้นฐานของผู้เล่นเลเวล L (ไม่รวมอุปกรณ์/สกิลติดตัว) */
- pAtk:L=>CFG.player.baseAtk+(L-1)*CFG.player.atkPerLv,pHp:L=>CFG.player.baseHP+(L-1)*CFG.player.hpPerLv};
+ pAtk:L=>CFG.player.baseAtk+(L-1)*(CFG.player.atkPerLv+1),pHp:L=>CFG.player.baseHP+(L-1)*(CFG.player.hpPerLv+4)} /* +1 STR +4 HP (1 VIT) ต่อเลเวล = ผู้เล่นที่ลงแต้มแบบสมดุล (V2-R25) */;
+CFG.stats.clean=st=>{const o={};for(const k of CFG.stats.keys)o[k]=Math.max(0,Math.floor(+((st||{})[k])||0));return o};
+CFG.stats.total=lv=>Math.max(0,(lv-1)*CFG.stats.perLv);
+CFG.stats.used=st=>CFG.stats.keys.reduce((a,k)=>a+((st||{})[k]||0),0);
+CFG.stats.free=(lv,st)=>CFG.stats.total(lv)-CFG.stats.used(st);
+CFG.stats.bonus=st=>{st=st||{};const v=k=>st[k]||0;return{atk:v('str'),hp:v('vit')*4,def:Math.floor(v('vit')/4),spd:Math.min(.25,v('agi')*.004),cdr:Math.min(.2,v('agi')*.002),crit:Math.min(.25,v('luk')*.0025)}};
 CFG.applyBalance=function(){const B=CFG.balance;
  for(const[type,m]of Object.entries(CFG.monsters)){const L=B.lv[type];if(!L)continue;
   const k=m.world?B.world:m.boss?B.boss:{hpMul:1,atkMul:1,expMul:1};
@@ -420,7 +428,9 @@ const Combat={
   if(d>range)return false;if(d<6)return true;return Math.acos(Math.max(-1,Math.min(1,(dx*fx+dy*fy)/d)))<=sk.arc/2}
 };
 const PS={buffT:0,buffBonus:0,guardT:0,guardRed:0,lv:1,exp:0,job:1,jexp:0,hp:0,maxHp:0,atk:0,dead:false,deadT:0,hurt:0,cd:{},page:0,kills:0,cast:null};
-function recalc(){PS.maxHp=CFG.player.baseHP+(PS.lv-1)*CFG.player.hpPerLv;PS.atk=CFG.player.baseAtk+(PS.lv-1)*CFG.player.atkPerLv}
+function recalc(){const S=CFG.stats.bonus(PS.st);PS.maxHp=CFG.player.baseHP+(PS.lv-1)*CFG.player.hpPerLv+S.hp;PS.atk=CFG.player.baseAtk+(PS.lv-1)*CFG.player.atkPerLv+S.atk;PS.def=S.def}
+function statUpLocal(k,n){n=n||1;if(!CFG.stats.keys.includes(k)||CFG.stats.free(PS.lv,PS.st)<n||((PS.st||{})[k]||0)+n>CFG.stats.max)return false;PS.st=CFG.stats.clean(PS.st);PS.st[k]+=n;recalc();return true}
+function statResetLocal(){PS.st={};recalc();PS.hp=Math.min(PS.hp,PS.maxHp)}
 recalc();PS.hp=PS.maxHp;
 const inSafe=(x,y)=>Z.D.safe(Math.floor(x/T),Math.floor(y/T));
 /* โหมดออนไลน์: เซิร์ฟเวอร์ตัดสินมอนสเตอร์ ดาเมจ รางวัล HP — เกมนี้แค่แสดงผลและส่งคำขอ */
@@ -803,7 +813,7 @@ const lvEl=document.createElement('div');lvEl.id='lvup';lvEl.hidden=true;lvEl.se
 lvEl.onclick=()=>{lvEl.hidden=true;lvRows.length=0};
 function lvUp(kind,v){const P=CFG.player,unlock=CFG.skills.filter(k=>k.job===v).map(k=>k.name);
   if(lvEl.hidden)lvRows.length=0;
-  lvRows.push(kind==='lv'?{h:'เลเวลอัป!',b:'Lv '+(v-1)+' → <b>Lv '+v+'</b>',g:['HP สูงสุด +'+P.hpPerLv,'ATK +'+P.atkPerLv,'ฟื้น HP เต็ม']}
+  lvRows.push(kind==='lv'?{h:'เลเวลอัป!',b:'Lv '+(v-1)+' → <b>Lv '+v+'</b>',g:['HP สูงสุด +'+P.hpPerLv,'ATK +'+P.atkPerLv,'แต้มสเตตัส +'+CFG.stats.perLv+' (แตะวงเลเวล)','ฟื้น HP เต็ม']}
     :{h:'Job เลเวลอัป!',b:'Job '+(v-1)+' → <b>Job '+v+'</b>',g:['แต้มสกิล +1'].concat(unlock.length?['ปลดล็อก: '+unlock.join(', ')]:[])});
   lvEl.innerHTML='';for(const r of lvRows.slice(-2)){const d=document.createElement('div');d.className='lr';d.innerHTML='<h4>'+r.h+'</h4><p>'+r.b+'</p><ul>'+r.g.map(t=>'<li></li>').join('')+'</ul>';r.g.forEach((t,i)=>d.querySelectorAll('li')[i].textContent=t);lvEl.appendChild(d)}
   const t=document.createElement('small');t.textContent='แตะเพื่อปิด';lvEl.appendChild(t);
@@ -854,7 +864,7 @@ enterZone(CFG.player.home,ZONES[CFG.player.home].start[0],ZONES[CFG.player.home]
 let last=performance.now();
 function loop(n){const dt=Math.min((n-last)/1000,.05);last=n;update(dt);draw();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
-window.HL={AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
+window.HL={statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
 })();
 
 </script>
@@ -883,12 +893,23 @@ window.HL={AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOT
 #ptp .mem{display:flex;flex-direction:column;gap:3px;font-size:12px;padding:6px;border-radius:8px;background:#ffffff0a}#ptp .hb{height:6px;border-radius:3px;background:#0009;overflow:hidden}#ptp .hb i{display:block;height:100%;background:#e34848}
 #ptp .inv{background:#b4531a33;border:1px solid #ffb34788;border-radius:8px;padding:8px;font-size:13px}#ptp .note{font-size:11px;opacity:.7}
 #skb{flex:none;width:40px;height:40px;border-radius:50%;padding:0;font-size:19px;border-color:#ffffff40;background:#ffffff12;color:#f4efe2}
-#stp{position:absolute;top:calc(66px + env(safe-area-inset-top,0px));left:8px;right:8px;max-width:420px;margin:0 auto;max-height:calc(100% - 230px);overflow:auto;z-index:6;display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(18,22,18,.95);color:#f4efe2;border-radius:14px}
-#stp[hidden],#lvup[hidden]{display:none}#stp h3 button{color:#f4efe2;border-color:#ffffff40;padding:2px 10px}
-#stp h3{display:flex;justify-content:space-between;align-items:center;margin:0;font-size:16px}#stp .hd{display:flex;gap:10px;align-items:center;background:#f4efe2;color:#1c2b22;border-radius:12px;padding:8px 12px}#stp .hd .lv{width:46px;height:46px;border-radius:50%;background:radial-gradient(#d0682a,#8e3c10);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;line-height:1}#stp .hd .lv small{font-size:9px}
-#stp .bar{height:8px;border-radius:4px;background:#0003;overflow:hidden;margin:2px 0 4px}#stp .bar i{display:block;height:100%}#stp .hd .nm{flex:1;font-size:12px}#stp .hd .nm b{font-size:15px}
-#stp .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}#stp .cell{background:#24324a;border-radius:10px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;font-size:12px}#stp .cell b{font-size:15px;color:#ffcf8a}
-#stp h4{margin:4px 0 0;font-size:13px;color:#ffcf8a}#stp .eqr{display:flex;gap:6px}#stp .eqr div{flex:1;background:#ffffff10;border-radius:10px;padding:6px;font-size:11px;text-align:center;min-height:38px}#stp .eqr div i{display:block;font-style:normal;opacity:.6;font-size:10px}#stp .note{font-size:11px;opacity:.7}
+#stp[hidden],#lvup[hidden]{display:none}
+#stp{position:absolute;top:calc(56px + env(safe-area-inset-top,0px));left:8px;right:8px;max-width:440px;margin:0 auto;max-height:calc(100% - 200px);z-index:6;display:flex;flex-direction:column;background:#eef2f8;color:#1c2b3a;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px #0008}
+#stp .whd{position:relative;background:linear-gradient(#2f5aa0,#244a86);padding:10px 12px 0;color:#fff}#stp .whd>b{font-size:16px}#stp .x{position:absolute;top:8px;right:8px;width:34px;height:34px;padding:0;font-size:20px;line-height:1;color:#fff;background:#e5484d;border:0;border-radius:10px;box-shadow:0 2px 0 #9b2226}
+#stp .tabs{display:flex;gap:6px;margin-top:8px}#stp .tabs button{flex:1;padding:7px 4px;border:0;border-radius:12px 12px 0 0;background:#1b3a6b;color:#dfe8f7;font-weight:700;font-size:13px}#stp .tabs button.on{background:#eef2f8;color:#244a86}
+#stp .wbody{overflow:auto;padding:10px;display:flex;flex-direction:column;gap:10px}#stp .card{background:#fff;border-radius:14px;padding:10px;box-shadow:0 1px 3px #0002}
+#stp .hd{display:flex;gap:10px;align-items:center}#stp .hd .lv{flex:none;width:48px;height:48px;border-radius:50%;background:radial-gradient(#d0682a,#8e3c10);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;line-height:1;font-size:18px}#stp .hd .lv small{font-size:9px}
+#stp .nm{flex:1;font-size:12px;min-width:0}#stp .nm b{font-size:15px}#stp .bl{display:flex;align-items:center;gap:6px;margin-top:4px}#stp .bl span{width:28px;font-size:10px;font-weight:700;opacity:.6}#stp .bl small{font-size:10px;opacity:.7;min-width:62px;text-align:right}
+#stp .bar{flex:1;height:8px;border-radius:4px;background:#d9e1ec;overflow:hidden}#stp .bar i{display:block;height:100%}
+#stp .ch{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}#stp .ch b{font-size:15px}#stp .ch span{font-size:12px;font-weight:700;color:#2f9a4a}#stp .ch .real{font-weight:400;color:#7a8799;font-size:10px}
+#stp .srow{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid #e6ebf2}#stp .bd{flex:none;width:42px;height:34px;border-radius:9px;color:#fff;font-style:normal;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 0 #0003}
+#stp .sd{flex:1;display:flex;flex-direction:column;min-width:0;font-size:13px;font-weight:700}#stp .sd small{font-size:9px;font-weight:400;color:#7a8799;line-height:1.2}#stp .sv{text-align:right;min-width:58px}#stp .sv b{font-size:20px;display:block;line-height:1}#stp .sv small{font-size:9px;color:#7a8799}
+#stp .sup{flex:none;width:40px;height:34px;padding:0;font-size:14px;font-weight:800;color:#244a86;background:#e3ecfa;border:0;border-radius:9px}#stp .sup:disabled{opacity:.35}#stp .mx{flex:none;width:40px;text-align:center;font-style:normal;font-weight:800;font-size:12px;color:#a8b3c2}
+#stp .srst{display:flex;justify-content:space-between;align-items:center;padding-top:6px;border-top:1px solid #e6ebf2}#stp .srst small{font-size:10px;color:#7a8799}#stp .srst button{font-size:11px;color:#9b2226;border:1px solid #e5484d66;background:#fff;padding:4px 10px;border-radius:8px}#stp .srst button:disabled{opacity:.35}
+#stp h5{margin:8px 0 4px;font-size:12px;color:#2f5aa0}#stp .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}#stp .cell{background:#eef2f8;border-radius:10px;padding:7px 9px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#55657a}
+#stp .cell b{font-size:15px;color:#1c2b3a;text-align:right}#stp .cell b small{display:block;font-size:9px;font-weight:400;color:#2f9a4a}
+#stp .eqr{display:flex;gap:6px}#stp .eqr div{flex:1;background:#eef2f8;border-radius:10px;padding:6px;font-size:11px;font-weight:700;text-align:center;min-height:40px}#stp .eqr div i{display:block;font-style:normal;font-weight:400;color:#7a8799;font-size:10px}#stp .note{margin:6px 0 0;font-size:10px;color:#7a8799}
+#lvb.dot{position:relative}#lvb.dot::after{content:'';position:absolute;top:0;right:0;width:11px;height:11px;border-radius:50%;background:#ff4a3a;border:2px solid #1c140c}#stp .eqr{display:flex;gap:6px}#stp .eqr div{flex:1;background:#ffffff10;border-radius:10px;padding:6px;font-size:11px;text-align:center;min-height:38px}#stp .eqr div i{display:block;font-style:normal;opacity:.6;font-size:10px}#stp .note{font-size:11px;opacity:.7}
 #skp{position:absolute;top:calc(66px + env(safe-area-inset-top,0px));left:8px;right:8px;max-width:440px;margin:0 auto;max-height:calc(100% - 230px);overflow:auto;z-index:6;display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(18,22,18,.95);color:#f4efe2;border-radius:14px}
 #skp[hidden]{display:none}#skp h3{margin:0;font-size:14px;display:flex;justify-content:space-between;align-items:center}#skp h3 button{color:#f4efe2;border-color:#ffffff40;padding:2px 10px}
 #skp h4{margin:6px 0 0;font-size:13px;color:#ffcf8a}
@@ -1030,19 +1051,36 @@ function renderBag(){if(bagEl.hidden)return;const I=HL.CFG.items,me=NET.me;bagEl
   const n=document.createElement('div');n.className='note';n.textContent='ชื่อ ค่า และอัตราดรอปของไอเทมเป็นค่าชั่วคราว';bagEl.appendChild(n)}
 /* หน้าต่างสถานะ (V2-R24): แตะวงเลเวลมุมซ้ายบน */
 const stEl=$('stp'),lvBtn=$('lvb');lvBtn.setAttribute('role','button');lvBtn.setAttribute('tabindex','0');lvBtn.setAttribute('aria-label','สถานะตัวละคร');lvBtn.setAttribute('aria-expanded','false');
-function renderStat(){if(stEl.hidden)return;const P=HL.PS,C=HL.CFG,on=NET.auth&&NET.me,me=NET.me||{},B=on?(NET.bon||{}):{},pct=v=>Math.round((v||0)*1000)/10+'%';
-  const z=HL.ZONES[HL.Z&&HL.Z.id]||{},xpN=C.expCurve(P.lv),jN=C.jobCurve(P.job);
-  const row=(k,v)=>'<div class="cell"><span>'+k+'</span><b>'+v+'</b></div>';
-  const eqn=sl=>{const id=(NET.eq||{})[sl],it=id&&C.items[id];return it?it.name:'—'};
-  stEl.innerHTML='<h3><span>สถานะตัวละคร</span><button>ปิด</button></h3>'
-   +'<div class="hd"><div class="lv"><small>Lv</small>'+P.lv+'</div><div class="nm"><b></b><br>นักดาบ · Job '+P.job+'<div>EXP '+(P.lv>=C.player.maxLv?'MAX':Math.floor(P.exp)+'/'+xpN)+'</div><div class="bar"><i style="width:'+(P.lv>=C.player.maxLv?100:Math.min(100,100*P.exp/xpN))+'%;background:#f2c14e"></i></div><div>Job EXP '+(P.job>=C.player.maxJob?'MAX':Math.floor(P.jexp||0)+'/'+jN)+'</div><div class="bar"><i style="width:'+(P.job>=C.player.maxJob?100:Math.min(100,100*(P.jexp||0)/jN))+'%;background:#4a8ad6"></i></div></div></div>'
-   +'<div class="grid">'+row('HP',Math.ceil(on?me.hp:P.hp)+'/'+(on?me.maxHp:P.maxHp))+row('ATK',on?me.atk:P.atk)+row('DEF',on?me.def:0)+row('คริติคอล',pct(.1+(B.crit||0)))
-   +row('ความเร็วเดิน',Math.round(C.player.speed*(1+(B.spd||0))))+row('ลดคูลดาวน์',pct(B.cdr))+row('ดาเมจสกิล','+'+pct(B.skillDmg))+row('แต้มสกิล',on?NET.pts:'-')+'</div>'
-   +'<h4>อุปกรณ์</h4><div class="eqr"><div><i>อาวุธ</i>'+eqn('weapon')+'</div><div><i>เสื้อ</i>'+eqn('armor')+'</div><div><i>เครื่องประดับ</i>'+eqn('acc')+'</div></div>'
-   +'<div class="note">โซน: '+(z.name||'-')+' · โบนัสจากสกิลติดตัว ATK +'+pct(B.atkPct)+' HP +'+pct(B.hpPct)+(on?'':' · ค่าออนไลน์จะแสดงเมื่อเชื่อมต่อ')+'</div>';
-  stEl.querySelector('.nm b').textContent=on?(NET.name||me.name||'ผู้เล่น'):'ผู้เล่น (ออฟไลน์)';stEl.querySelector('h3 button').onclick=toggleStat}
+/* หน้าต่างตัวละคร (V2-R25 ตามสไตล์ภาพตัวอย่างของเจ้าของ): แท็บ, สเตตัสพื้นฐาน +1/+5, สเตตัสต่อสู้ แยกโจมตี/ป้องกัน */
+const ST_COL={str:'#e5484d',agi:'#46a758',vit:'#f0a030',luk:'#8e4ec6'};
+function renderStat(){if(stEl.hidden)return;const P=HL.PS,C=HL.CFG,S=C.stats,on=NET.auth&&NET.me,me=NET.me||{},pct=v=>Math.round((v||0)*1000)/10+'%',esc=t=>String(t).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
+  const st=on?(NET.st||{}):(P.st||{}),free=on?(NET.spts??0):S.free(P.lv,P.st),SB=S.bonus(st),B=on?(NET.bon||{}):SB;
+  const xpN=C.expCurve(P.lv),jN=C.jobCurve(P.job),z=HL.ZONES[HL.Z&&HL.Z.id]||{},eqn=sl=>{const id=(NET.eq||{})[sl],it=id&&C.items[id];return it?it.name:'—'};
+  const cell=(k,v,sub)=>'<div class="cell"><span>'+k+'</span><b>'+v+(sub?'<small>'+sub+'</small>':'')+'</b></div>';
+  const atk=on?me.atk:P.atk,hp=on?me.maxHp:P.maxHp,def=on?me.def:(P.def||0);
+  stEl.innerHTML='<div class="whd"><b>ตัวละคร</b><button class="x" aria-label="ปิด">×</button><div class="tabs"><button class="on" aria-pressed="true">สเตตัส</button><button data-tab="bag">กระเป๋า</button><button data-tab="sk">สกิล</button></div></div>'
+   +'<div class="wbody"><div class="card hd"><div class="lv"><small>Lv</small>'+P.lv+'</div><div class="nm"><b>'+esc(on?(NET.name||'ผู้เล่น'):'ผู้เล่น (ออฟไลน์)')+'</b> · นักดาบ Job '+P.job
+   +'<div class="bl"><span>EXP</span><div class="bar"><i style="width:'+(P.lv>=C.player.maxLv?100:Math.min(100,100*P.exp/xpN))+'%;background:#f2a93b"></i></div><small>'+(P.lv>=C.player.maxLv?'MAX':Math.floor(P.exp)+'/'+xpN)+'</small></div>'
+   +'<div class="bl"><span>Job</span><div class="bar"><i style="width:'+(P.job>=C.player.maxJob?100:Math.min(100,100*(P.jexp||0)/jN))+'%;background:#4a8ad6"></i></div><small>'+(P.job>=C.player.maxJob?'MAX':Math.floor(P.jexp||0)+'/'+jN)+'</small></div></div></div>'
+   +'<div class="card"><div class="ch"><b>สเตตัสพื้นฐาน</b><span id="sptsv">คงเหลือ '+free+'</span></div>'
+   +S.keys.map(k=>{const I=S.info[k],v=st[k]||0,mx=v>=S.max,b1=!mx&&free>=1,b5=!mx&&free>=1;
+      return '<div class="srow"><i class="bd" style="background:'+ST_COL[k]+'">'+I[0]+'</i><div class="sd"><span>'+I[1]+'</span><small>'+I[2]+'</small></div><div class="sv"><b>'+v+'</b><small>ลงแล้ว '+v+'/'+S.max+'</small></div>'
+       +(mx?'<em class="mx">MAX</em><em class="mx">MAX</em>':'<button class="sup" data-k="'+k+'" data-n="1" aria-label="เพิ่ม '+I[0]+'"'+(b1?'':' disabled')+'>+1</button><button class="sup" data-k="'+k+'" data-n="5" aria-label="เพิ่ม '+I[0]+' 5"'+(b5?'':' disabled')+'>+5</button>')+'</div>'}).join('')
+   +'<div class="srst"><small>ได้ '+S.perLv+' แต้มต่อเลเวล</small><button id="strst"'+(S.used(st)?'':' disabled')+'>รีเซ็ตแต้ม</button></div></div>'
+   +'<div class="card"><div class="ch"><b>สเตตัสต่อสู้</b><span class="real">ค่าจริงที่ใช้คำนวณในเกม</span></div>'
+   +'<h5>โจมตี</h5><div class="grid">'+cell('ATK',atk,SB.atk?'+'+SB.atk:'')+cell('คริติคอล',pct(.1+(B.crit||0)))+cell('ดาเมจสกิล','+'+pct(B.skillDmg))+cell('ลด CD สกิล',pct(B.cdr),'สูงสุด 50%')+'</div>'
+   +'<h5>ป้องกัน</h5><div class="grid">'+cell('HP สูงสุด',hp,SB.hp?'+'+SB.hp:'')+cell('HP ตอนนี้',Math.ceil(on?me.hp:P.hp))+cell('DEF',def,SB.def?'+'+SB.def:'')+cell('ความเร็วเดิน',Math.round(C.player.speed*(1+(B.spd||0))))+'</div>'
+   +'<h5>อื่น ๆ</h5><div class="grid">'+cell('แต้มสกิล',on?NET.pts:'-')+cell('โซน',esc(z.name||'-'))+'</div></div>'
+   +'<div class="card"><div class="ch"><b>อุปกรณ์</b></div><div class="eqr"><div><i>อาวุธ</i>'+eqn('weapon')+'</div><div><i>เสื้อ</i>'+eqn('armor')+'</div><div><i>เครื่องประดับ</i>'+eqn('acc')+'</div></div>'
+   +(on?'':'<p class="note">ออฟไลน์: ค่าจากเครื่อง (ออนไลน์ใช้ค่าจากเซิร์ฟเวอร์)</p>')+'</div></div>';
+  stEl.querySelector('.x').onclick=toggleStat;
+  for(const b of stEl.querySelectorAll('.tabs [data-tab]'))b.onclick=()=>{toggleStat();if(b.dataset.tab==='bag')toggleBag();else toggleSkills()};
+  for(const b of stEl.querySelectorAll('.sup'))b.onclick=()=>{const k=b.dataset.k,n=Math.min(+b.dataset.n,free);if(on)send({t:'stat',op:'up',k,n});else{HL.statUpLocal(k,n);renderStat()}};
+  stEl.querySelector('#strst').onclick=()=>{if(on)send({t:'stat',op:'reset'});else{HL.statResetLocal();renderStat()}};
+  updStatDot()}
 function toggleStat(){if(stEl.hidden){if(!bagEl.hidden)toggleBag();if(!skEl2.hidden)toggleSkills()}stEl.hidden=!stEl.hidden;lvBtn.setAttribute('aria-expanded',String(!stEl.hidden));renderStat()}
 lvBtn.onclick=toggleStat;lvBtn.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleStat()}};
+function updStatDot(){const P=HL.PS,f=NET.auth?(NET.spts||0):HL.CFG.stats.free(P.lv,P.st);lvBtn.classList.toggle('dot',f>0)}
 function toggleBag(){if(bagEl.hidden&&!stEl.hidden)toggleStat();if(bagEl.hidden&&!skEl2.hidden)toggleSkills();bagEl.hidden=!bagEl.hidden;bagBtn.setAttribute('aria-expanded',String(!bagEl.hidden));renderBag()}
 bagBtn.onclick=toggleBag;bagEl.addEventListener('keydown',e=>e.stopPropagation());
 const DENY_SK={'locked':'ยังไม่ถึง Job ที่ปลดล็อก','max':'สกิลนี้ระดับสูงสุดแล้ว','no-points':'แต้มสกิลไม่พอ','invalid':'ไม่มีสกิลนี้'};
@@ -1099,7 +1137,7 @@ function applyWorld(m){const CFG=HL.CFG,P=HL.PS;if(m.mf)monById.clear();for(cons
   HL.setMons([...monById.values()]);
   for(const e of m.ev||[]){const o=monById.get(e.id);if(!o)continue;
     if(e.k==='dmg'){NET.stats.dmgEv++;o.hurt=.25;HL.addNum(o.x,o.y-o.c.size*.6-18,e.dmg,e.crit?'#ffd34a':'#ffffff');if(e.by===NET.id)HL.setTarget(o)}}
-  const me=m.me;if(me){NET.me=me;let bagCh=false,skCh=false;if(me.bag){NET.bag=me.bag;NET.eq=me.eq;bagCh=true}if(me.sk){NET.sk=me.sk;NET.pts=me.pts;NET.bon=me.bon||{};skCh=true}if(me.party){NET.party=me.party;NET.partyIds=new Set(me.party.m.map(r=>r[0]));renderParty()}const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
+  const me=m.me;if(me){NET.me=me;let bagCh=false,skCh=false;if(me.bag){NET.bag=me.bag;NET.eq=me.eq;bagCh=true}if(me.sk){NET.sk=me.sk;NET.pts=me.pts;NET.bon=me.bon||{};skCh=true}if(me.st){NET.st=me.st;NET.spts=me.spts;updStatDot()}if(me.party){NET.party=me.party;NET.partyIds=new Set(me.party.m.map(r=>r[0]));renderParty()}const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
     for(const e of me.ev||[]){const pl=HL.player;
       if(e.k==='reward'){const o=monById.get(e.id);HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-40,'+'+e.exp+' EXP','#8fe38f')}
       else if(e.k==='hurt'){const mo=monById.get(e.by);if(mo){mo.atkT0=HL.tNow;mo.dir=pl.x<mo.x?'W':'E'}if(e.guard)HL.addNum(pl.x,pl.y-66,'ป้องกัน','#9fd6ff');HL.addNum(pl.x,pl.y-52,e.dmg,'#ff6b6b');P.hurt=.4}
@@ -1116,7 +1154,7 @@ function applyWorld(m){const CFG=HL.CFG,P=HL.PS;if(m.mf)monById.clear();for(cons
       else if(e.k==='bagfull'){HL.say('กระเป๋าเต็ม · ทิ้ง '+(HL.CFG.items[e.id]||{}).name)}}
     P.dead=me.dead;
     if(skCh)renderSkills();
-    if(!stEl.hidden)renderStat();
+    if(!stEl.hidden){const k=JSON.stringify([me.hp,me.maxHp,me.atk,me.def,NET.spts,NET.st,P.lv,P.exp|0,P.job,NET.eq]);if(k!==renderStat.k){renderStat.k=k;renderStat()}}
     if(bagCh)renderBag();else{const sEl=$('bagstat');if(sEl&&!bagEl.hidden)sEl.textContent='ATK '+me.atk+' · DEF '+me.def+' · HP '+me.hp+'/'+me.maxHp+' · ช่อง '+NET.bag.length+'/'+HL.CFG.bag.slots}}}
 // ส่งตำแหน่ง 10 ครั้ง/วินาทีเมื่อมีการเปลี่ยน + ทุก 1 วินาทีเป็นสัญญาณยังอยู่, ส่งความคืบหน้าเมื่อเปลี่ยน
 let last=performance.now(),beat=0;

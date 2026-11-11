@@ -254,10 +254,10 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     await page.screenshot({ path: 'tools/last-walkway.png' }); }
   { await page.evaluate(() => { HL.PS.lv = 5; HL.recalc(); HL.PS.hp = HL.PS.maxHp; });
     await page.click('#lvb'); await page.waitForSelector('#stp:not([hidden]) .grid');
-    const t = await page.evaluate(() => ({ cells: [...document.querySelectorAll('#stp .cell span')].map(e => e.textContent), lv: document.querySelector('#stp .hd .lv').textContent, atk: [...document.querySelectorAll('#stp .cell')].find(c => c.textContent.startsWith('ATK')).querySelector('b').textContent, want: HL.PS.atk }));
+    const t = await page.evaluate(() => ({ cells: [...document.querySelectorAll('#stp .cell span')].map(e => e.textContent), lv: document.querySelector('#stp .hd .lv').textContent, atk: [...document.querySelectorAll('#stp .cell')].find(c => c.textContent.startsWith('ATK')).querySelector('b').firstChild.textContent, want: HL.PS.atk }));
     rec('หน้าต่างสถานะ: แตะวงเลเวล → แสดง HP ATK DEF คริ ความเร็ว อุปกรณ์', t.cells.length >= 8 && t.lv === 'Lv5' && +t.atk === t.want && await page.isVisible('#stp .eqr'), JSON.stringify(t));
     await page.screenshot({ path: 'tools/last-status.png' });
-    await page.click('#stp h3 button'); rec('ปิดหน้าต่างสถานะได้ (ไม่บังจอ)', await page.evaluate(() => document.getElementById('stp').hidden) && !(await page.isVisible('#stp'))); }
+    await page.click('#stp .x'); rec('ปิดหน้าต่างสถานะได้ (ไม่บังจอ)', await page.evaluate(() => document.getElementById('stp').hidden) && !(await page.isVisible('#stp'))); }
   { const r = await page.evaluate(() => { HL.lvEl.hidden = true; const l0 = HL.PS.lv; HL.gain(HL.CFG.expCurve(HL.PS.lv) + 1, 0);
       return { l0, l1: HL.PS.lv, shown: !HL.lvEl.hidden, txt: HL.lvEl.textContent } });
     rec('หน้าต่างอัปเลเวลขึ้นเมื่อเลเวลอัป (บอก HP/ATK ที่เพิ่ม)', r.l1 === r.l0 + 1 && r.shown && r.txt.includes('Lv ' + r.l1) && r.txt.includes('ATK +'), r.txt);
@@ -274,6 +274,27 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     rec('สกิลออโต: มอนสเตอร์อยู่ในระยะ → ใช้สกิลในช่องลัดเอง', (await page.getAttribute('#ask', 'aria-pressed')) === 'true' && used.length > 0, 'สกิลที่ใช้ ' + used.join(','));
     rec('สกิลออโต: จำค่าไว้ในเครื่อง', await page.evaluate(() => localStorage.getItem('hl_autosk') === '1'));
     await page.click('#ask'); rec('ปิดสกิลออโตได้', (await page.getAttribute('#ask', 'aria-pressed')) === 'false'); }
+  { await page.evaluate(() => { HL.statResetLocal(); HL.PS.lv = 4; HL.recalc(); HL.PS.hp = HL.PS.maxHp; HL.lvEl.hidden = true; });
+    await page.waitForTimeout(200);
+    rec('มีแต้มเหลือ → จุดแดงบนวงเลเวล', await page.evaluate(() => { document.getElementById('lvb').click(); return document.getElementById('lvb').classList.contains('dot') }));
+    await page.waitForSelector('#stp:not([hidden]) .srow');
+    const a0 = await page.evaluate(() => HL.PS.atk);
+    for (let i = 0; i < 3; i++) await page.click('#stp button[aria-label="เพิ่ม STR"]');
+    const r = await page.evaluate(() => ({ atk: HL.PS.atk, st: HL.PS.st, left: document.getElementById('sptsv').textContent, dis: [...document.querySelectorAll('#stp .sup')].every(b => b.disabled), cell: [...document.querySelectorAll('#stp .cell')].find(c => c.textContent.startsWith('ATK')).querySelector('b').firstChild.textContent }));
+    rec('หน้าต่างสถานะ: กด + STR 3 ครั้ง → ATK +3 และจอแสดงตาม', r.atk === a0 + 3 && +r.cell === r.atk && r.st.str === 3, JSON.stringify(r));
+    for (let i = 0; i < 6; i++) await page.click('#stp button[aria-label="เพิ่ม VIT"]');
+    const r2 = await page.evaluate(() => ({ left: document.getElementById('sptsv').textContent, dis: [...document.querySelectorAll('#stp .sup')].every(b => b.disabled), dot: document.getElementById('lvb').classList.contains('dot') }));
+    rec('แต้มหมด (Lv 4 = 9 แต้ม) → ปุ่ม + ปิด, จุดแดงหาย', r2.left === 'คงเหลือ 0' && r2.dis && !r2.dot, JSON.stringify(r2));
+    await page.screenshot({ path: 'tools/last-statpts.png' });
+    await page.click('#strst'); rec('รีเซ็ตแต้มสเตตัส → คืนครบ', await page.evaluate(() => document.getElementById('sptsv').textContent === 'คงเหลือ 9' && HL.PS.atk === HL.CFG.player.baseAtk + 3 * HL.CFG.player.atkPerLv));
+    await page.click('#stp button[aria-label="เพิ่ม AGI 5"]');
+    rec('ปุ่ม +5 → ลงทีละ 5 แต้ม', await page.evaluate(() => HL.PS.st.agi === 5 && document.getElementById('sptsv').textContent === 'คงเหลือ 4'));
+    await page.click('#stp .tabs [data-tab="bag"]');
+    rec('แท็บ "กระเป๋า" ในหน้าต่างตัวละคร → เปิดกระเป๋า', await page.evaluate(() => document.getElementById('stp').hidden && !document.getElementById('bag').hidden));
+    await page.click('#bag h3 button'); await page.click('#lvb'); await page.waitForSelector('#stp:not([hidden]) .srow');
+    await page.click('#stp .tabs [data-tab="sk"]');
+    rec('แท็บ "สกิล" → เปิดหน้าสกิล', await page.evaluate(() => document.getElementById('stp').hidden && !document.getElementById('skp').hidden));
+    await page.click('#skp h3 button'); await page.evaluate(() => HL.statResetLocal()); }
   { const r = await page.evaluate(() => { const m = HL.mons.find(m => !m.c.boss); HL.setTarget(m); return null });
     await page.waitForTimeout(300);
     const t = await page.locator('#tgt').boundingBox(), c = await page.locator('#c').boundingBox();

@@ -185,6 +185,9 @@ const CFG={
   peak:[{type:'ราชาปีศาจภูเขา',tx:13,ty:9,when:'always'},{type:'มังกรแห่งหุบเขาหมอก',tx:35,ty:20,when:'world'}]},
  bossActive(when,wt){return !when||when==='always'||(when==='bloodmoon'&&wt.blood)||(when==='world'&&wt.world)},
  bag:{slots:30,stack:99,potionCd:1},
+ /* แต้มสเตตัส (V2-R25, เจ้าของเลือกแบบ 4 ค่า): ได้ 3 แต้มต่อเลเวล (Lv 1 = 0) — สูตรใช้ร่วมกับเซิร์ฟเวอร์ */
+ stats:{perLv:3,max:99,keys:['str','vit','agi','luk'],
+  info:{str:['STR','พลัง','ATK +1 ต่อแต้ม'],vit:['VIT','อึด','HP +4 ต่อแต้ม · DEF +1 ทุก 4 แต้ม'],agi:['AGI','ว่องไว','ความเร็วเดิน +0.4% · ลดคูลดาวน์ +0.2% ต่อแต้ม'],luk:['LUK','โชค','คริติคอล +0.25% ต่อแต้ม']}},
  /* ชุดไอเทมเริ่มต้น (V2-R24): ให้ครั้งเดียวต่อตัวละคร ใส่อุปกรณ์ให้ทันที */
  starter:{eq:{weapon:'sword_wood',armor:'coat_cloth'},bag:[['potion_s',10],['potion_m',3]]},
  items:{
@@ -227,7 +230,12 @@ CFG.balance={hits:5,survive:12,killsBase:14,killsPerLv:1/3,jobKillsBase:10,
   'วิญญาณแห่งป่า':24,'เทพหมาป่าภูเขา':34,'วิญญาณหมาป่าศักดิ์สิทธิ์':36,'มังกรภูเขาดำ':44,'ราชาปีศาจภูเขา':50,'มังกรแห่งหุบเขาหมอก':60},
  boss:{hpMul:40,atkMul:2.5,expMul:30},world:{hpMul:200,atkMul:3,expMul:100},
  /* ค่าพื้นฐานของผู้เล่นเลเวล L (ไม่รวมอุปกรณ์/สกิลติดตัว) */
- pAtk:L=>CFG.player.baseAtk+(L-1)*CFG.player.atkPerLv,pHp:L=>CFG.player.baseHP+(L-1)*CFG.player.hpPerLv};
+ pAtk:L=>CFG.player.baseAtk+(L-1)*(CFG.player.atkPerLv+1),pHp:L=>CFG.player.baseHP+(L-1)*(CFG.player.hpPerLv+4)} /* +1 STR +4 HP (1 VIT) ต่อเลเวล = ผู้เล่นที่ลงแต้มแบบสมดุล (V2-R25) */;
+CFG.stats.clean=st=>{const o={};for(const k of CFG.stats.keys)o[k]=Math.max(0,Math.floor(+((st||{})[k])||0));return o};
+CFG.stats.total=lv=>Math.max(0,(lv-1)*CFG.stats.perLv);
+CFG.stats.used=st=>CFG.stats.keys.reduce((a,k)=>a+((st||{})[k]||0),0);
+CFG.stats.free=(lv,st)=>CFG.stats.total(lv)-CFG.stats.used(st);
+CFG.stats.bonus=st=>{st=st||{};const v=k=>st[k]||0;return{atk:v('str'),hp:v('vit')*4,def:Math.floor(v('vit')/4),spd:Math.min(.25,v('agi')*.004),cdr:Math.min(.2,v('agi')*.002),crit:Math.min(.25,v('luk')*.0025)}};
 CFG.applyBalance=function(){const B=CFG.balance;
  for(const[type,m]of Object.entries(CFG.monsters)){const L=B.lv[type];if(!L)continue;
   const k=m.world?B.world:m.boss?B.boss:{hpMul:1,atkMul:1,expMul:1};

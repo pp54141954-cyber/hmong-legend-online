@@ -114,9 +114,20 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   rec('ไอคอนไอเทมในกระเป๋าแสดงครบ', icons.length >= 2 && icons.every(Boolean), icons.length + ' รูป');
   rec('ชุดเริ่มต้น (บัญชีใหม่): ดาบไม้ + เสื้อผ้าฝ้ายสวมอยู่ ยากลางอยู่ในกระเป๋า', SA().c.eq.weapon === 'sword_wood' && SA().c.eq.armor === 'coat_cloth' && (await A.page.textContent('#bag')).includes('ยาสมุนไพรกลาง'), JSON.stringify(SA().c.eq));
   { await A.page.click('#lvb'); await A.page.waitForSelector('#stp:not([hidden]) .grid');
-    const st = await A.page.evaluate(() => { const g = k => [...document.querySelectorAll('#stp .cell')].find(c => c.querySelector('span').textContent === k).querySelector('b').textContent; return { atk: +g('ATK'), def: +g('DEF'), w: document.querySelector('#stp .eqr').textContent } });
+    const st = await A.page.evaluate(() => { const g = k => [...document.querySelectorAll('#stp .cell')].find(c => c.querySelector('span').textContent === k).querySelector('b').firstChild.textContent; return { atk: +g('ATK'), def: +g('DEF'), w: document.querySelector('#stp .eqr').textContent } });
     rec('หน้าต่างสถานะออนไลน์: ATK/DEF ตรงกับเซิร์ฟเวอร์ และแสดงอุปกรณ์ที่สวม', st.atk === SA().atk && st.def === SA().def && st.w.includes('ดาบไม้ฝึกหัด'), JSON.stringify(st) + ' server ATK ' + SA().atk);
-    await A.page.click('#stp h3 button'); await A.page.click('#bagb'); } // เปิดสถานะจะปิดกระเป๋า → เปิดกลับ
+    SA().c.lv = 3; srv.sim.stats(SA()); SA().skDirty = true; // ฉาก: Lv 3 = 6 แต้ม
+    await A.page.waitForFunction(() => HLNET.spts === 6, null, { timeout: 3000 });
+    const atk0 = SA().atk;
+    for (let i = 0; i < 2; i++) { await A.page.click('#stp button[aria-label="เพิ่ม STR"]'); await A.page.waitForTimeout(250); }
+    const ok = await until(async () => SA().atk === atk0 + 2 && (await A.page.evaluate(() => [...document.querySelectorAll('#stp .cell')].find(c => c.textContent.startsWith('ATK')).querySelector('b').firstChild.textContent)) === String(atk0 + 2));
+    rec('ออนไลน์: กด + STR 2 ครั้ง → เซิร์ฟเวอร์ ATK +2 และจอตรงกัน', ok && SA().c.st.str === 2, 'ATK ' + atk0 + '→' + SA().atk);
+    const d0 = SA().denied || 0; A.page.evaluate(() => HLNET.send({ t: 'stat', op: 'up', k: 'str', n: 10 }));
+    rec('ออนไลน์: ขอแต้มเกินที่มี → เซิร์ฟเวอร์ปฏิเสธ', await until(async () => (SA().denied || 0) > d0) && SA().c.st.str === 2);
+    A.page.evaluate(() => HLNET.send({ t: 'stat', op: 'reset' }));
+    rec('ออนไลน์: รีเซ็ตแต้ม → ATK กลับ', await until(async () => SA().atk === atk0 && (await A.page.evaluate(() => HLNET.spts)) === 6));
+    SA().c.lv = 1; srv.sim.stats(SA()); SA().skDirty = true;
+    await A.page.click('#stp .x'); await A.page.click('#bagb'); } // เปิดสถานะจะปิดกระเป๋า → เปิดกลับ
   srv.sim.addItem(SA(), 'sword_iron', 1); // ฉาก: ให้ดาบเหล็ก 1 เล่ม
   await A.page.waitForSelector('#bag button[aria-label="ใส่ ดาบเหล็กตีมือ"]', { timeout: 3000 });
   const atkBase = SA().atk, oldW = (W.CFG.items[SA().c.eq.weapon] || { atk: 0 }).atk; // V2-R24: มีดาบไม้จากชุดเริ่มต้นอยู่แล้ว

@@ -61,8 +61,9 @@ function createSim({ rand = Math.random } = {}) {
     const P = CFG.player, eq = p.c.eq || {};
     let atk = 0, def = 0, hp = 0;
     for (const id of Object.values(eq)) { const it = id && CFG.items[id]; if (it) { atk += it.atk || 0; def += it.def || 0; hp += it.hp || 0; } }
-    const B = p.bon = skillBonus(p);
-    p.maxHp = Math.round((P.baseHP + (p.c.lv - 1) * P.hpPerLv + hp) * (1 + B.hpPct)); p.atk = Math.round((P.baseAtk + (p.c.lv - 1) * P.atkPerLv + atk) * (1 + B.atkPct)); p.def = def;
+    const B = p.bon = skillBonus(p), S = CFG.stats.bonus(p.c.st); // แต้มสเตตัส: ATK/HP/DEF บวกก่อนคูณโบนัส %, AGI/LUK รวมในโบนัส
+    B.spd += S.spd; B.cdr += S.cdr; B.crit += S.crit;
+    p.maxHp = Math.round((P.baseHP + (p.c.lv - 1) * P.hpPerLv + hp + S.hp) * (1 + B.hpPct)); p.atk = Math.round((P.baseAtk + (p.c.lv - 1) * P.atkPerLv + atk + S.atk) * (1 + B.atkPct)); p.def = def + S.def;
     if (p.hp > p.maxHp) p.hp = p.maxHp;
   }
 
@@ -82,6 +83,16 @@ function createSim({ rand = Math.random } = {}) {
     }
     return B;
   }
+  // แต้มสเตตัส: เซิร์ฟเวอร์ตรวจแต้มคงเหลือทุกครั้ง
+  const statFree = p => CFG.stats.free(p.c.lv, p.c.st);
+  function statOp(p, op, k, n) {
+    if (op === 'reset') { p.c.st = CFG.stats.clean({}); stats(p); p.skDirty = true; p.dirty = true; return 'ok'; }
+    if (op !== 'up' || !CFG.stats.keys.includes(k)) return 'invalid';
+    n = Math.max(1, Math.min(10, Math.floor(+n || 1)));
+    if (statFree(p) < n) return 'no-points';
+    if (p.c.st[k] + n > CFG.stats.max) return 'max';
+    p.c.st[k] += n; stats(p); p.skDirty = true; p.dirty = true; return 'ok';
+  }
   function learn(p, name) {
     const r = SKBYNAME.get(String(name)); if (!r) return 'invalid';
     if (p.c.job < r.job) return 'locked';
@@ -95,6 +106,7 @@ function createSim({ rand = Math.random } = {}) {
     p.c.bag = Array.isArray(p.c.bag) ? p.c.bag.filter(s => s && CFG.items[s.id] && s.n > 0) : [];
     p.c.eq = Object.assign({ weapon: null, armor: null, acc: null }, p.c.eq || {});
     p.c.sk = Object.assign({}, p.c.sk || {});
+    p.c.st = CFG.stats.clean(p.c.st); if (CFG.stats.free(p.c.lv, p.c.st) < 0) p.c.st = CFG.stats.clean({}); // ข้อมูลเกินแต้มที่มี = รีเซ็ต
     for (const r of SKROWS) if (r.start && !p.c.sk[r.name]) p.c.sk[r.name] = 1; // สกิลเริ่มต้นได้ระดับ 1 ฟรี
     Object.assign(p, { hp: 0, dead: false, deadT: 0, cd: {}, castUntil: 0, buffT: 0, buffBonus: 0, guardT: 0, guardRed: 0, personal: [], potionAt: 0, bagDirty: true, skDirty: true });
     if (!p.c.starter && CFG.starter) { // ชุดไอเทมเริ่มต้น: ใส่อุปกรณ์ให้เลย (ช่องที่ว่าง) + ยาเข้ากระเป๋า
@@ -173,7 +185,7 @@ function createSim({ rand = Math.random } = {}) {
 
   function gain(p, e, j) {
     const c = p.c, P = CFG.player;
-    if (c.lv < P.maxLv) { c.exp += e; while (c.lv < P.maxLv && c.exp >= CFG.expCurve(c.lv)) { c.exp -= CFG.expCurve(c.lv); c.lv++; stats(p); p.hp = p.maxHp; p.personal.push({ k: 'lv', lv: c.lv }); } }
+    if (c.lv < P.maxLv) { c.exp += e; while (c.lv < P.maxLv && c.exp >= CFG.expCurve(c.lv)) { c.exp -= CFG.expCurve(c.lv); c.lv++; stats(p); p.hp = p.maxHp; p.skDirty = true; p.personal.push({ k: 'lv', lv: c.lv }); } }
     if (c.job < P.maxJob) { c.jexp += j; while (c.job < P.maxJob && c.jexp >= CFG.jobCurve(c.job)) { c.jexp -= CFG.jobCurve(c.job); c.job++; p.personal.push({ k: 'job', job: c.job }); p.skDirty = true; } }
     p.dirty = true;
   }
@@ -375,6 +387,6 @@ function createSim({ rand = Math.random } = {}) {
     }
   }
 
-  return { party, partyView, parties, get WT() { return WT; }, setTimeOffset(s) { timeOff = s; }, zones, players, addPlayer, removePlayer, act, step, pathClear, stats, gain, addItem, inv, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
+  return { party, partyView, parties, get WT() { return WT; }, setTimeOffset(s) { timeOff = s; }, zones, players, addPlayer, removePlayer, statOp, statFree, act, step, pathClear, stats, gain, addItem, inv, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
 }
 module.exports = { createSim };

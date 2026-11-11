@@ -47,6 +47,31 @@ for (const [i, name, expectDx] of [[1, 'ท่าเคลื่อนที่'
   rec('ชุดเริ่มต้น: ตัวละครเก่าที่ถือดาบอยู่แล้ว → ไม่ถอดของเดิม ดาบไม้เข้ากระเป๋าแทน', p3.c.eq.weapon === 'sword_iron' && p3.c.bag.some(s => s.id === 'sword_wood'));
 }
 
+// V2-R25 แต้มสเตตัส: เซิร์ฟเวอร์ตรวจแต้ม คำนวณค่าเอง
+{
+  const sim = createSim({ rand: () => .5 }), P = W.CFG.player;
+  const p = { id: 1, c: { zone: 'village', x: PX, y: PY, dir: 'E', lv: 5, exp: 0, job: 1, jexp: 0, starter: 1 } };
+  sim.addPlayer(p);
+  rec('Lv 5 มีแต้มสเตตัส 12 (3 ต่อเลเวล)', sim.statFree(p) === 12, sim.statFree(p));
+  const a0 = p.atk, h0 = p.maxHp, sp0 = p.bon.spd, cr0 = p.bon.crit;
+  rec('เพิ่ม STR 4 → ATK +4', sim.statOp(p, 'up', 'str', 4) === 'ok' && p.atk === a0 + 4, p.atk);
+  rec('เพิ่ม VIT 4 → HP สูงสุด +16, DEF +1', sim.statOp(p, 'up', 'vit', 4) === 'ok' && p.maxHp === h0 + 16 && p.def === 1, p.maxHp + ' DEF ' + p.def);
+  sim.statOp(p, 'up', 'agi', 2); sim.statOp(p, 'up', 'luk', 2);
+  rec('AGI 2 / LUK 2 → ความเร็ว +0.8% คริ +0.5% (รวมในโบนัสที่เซิร์ฟเวอร์ใช้)', Math.abs(p.bon.spd - sp0 - .008) < 1e-9 && Math.abs(p.bon.crit - cr0 - .005) < 1e-9);
+  rec('แต้มหมด → ปฏิเสธ', sim.statFree(p) === 0 && sim.statOp(p, 'up', 'str', 1) === 'no-points' && p.c.st.str === 4);
+  rec('ค่าสเตตัสปลอม (ไม่มีในรายการ) → ปฏิเสธ', sim.statOp(p, 'up', 'hack', 1) === 'invalid' && sim.statOp(p, 'up', '__proto__', 1) === 'invalid');
+  rec('รีเซ็ต → แต้มคืนครบ ค่ากลับเท่าเดิม', sim.statOp(p, 'reset') === 'ok' && sim.statFree(p) === 12 && p.atk === a0 && p.maxHp === h0);
+  sim.gain(p, W.CFG.expCurve(5), 0);
+  rec('เลเวลอัป → แต้ม +3', p.c.lv === 6 && sim.statFree(p) === 15, sim.statFree(p));
+  const q = { id: 2, c: { zone: 'village', x: PX, y: PY, dir: 'E', lv: 2, exp: 0, job: 1, jexp: 0, starter: 1, st: { str: 50, vit: -3 } } };
+  sim.addPlayer(q);
+  const h = { id: 3, c: { zone: 'village', x: PX, y: PY, dir: 'E', lv: 100, exp: 0, job: 1, jexp: 0, starter: 1 } }; sim.addPlayer(h);
+  for (let i = 0; i < 10; i++) sim.statOp(h, 'up', 'str', 10);
+  rec('เพดาน 99 ต่อค่า: ลง 10×10 ได้แค่ 90 (ครั้งที่ 10 เกิน 99 ถูกปฏิเสธ)', h.c.st.str === 90, h.c.st.str);
+  sim.statOp(h, 'up', 'str', 9); rec('ลงครบ 99 แล้วกดอีก → max', h.c.st.str === 99 && sim.statOp(h, 'up', 'str', 1) === 'max', h.c.st.str);
+  rec('ข้อมูลแต้มเกินที่มี (แก้ฐานข้อมูล) → รีเซ็ตเป็น 0', q.c.st.str === 0 && sim.statFree(q) === 3, JSON.stringify(q.c.st));
+}
+
 // มอนสเตอร์ไม่ไล่ผู้เล่นในเขตปลอดภัย
 {
   const sim = createSim();

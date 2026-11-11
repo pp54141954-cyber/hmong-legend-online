@@ -165,6 +165,11 @@ function createServer(opts = {}) {
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'skill', name: m.name, r }); }
         return;
       }
+      if (m.t === 'stat') {
+        const r = sim.statOp(p, String(m.op), String(m.k), m.n);
+        if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'stat', op: m.op, r }); }
+        return;
+      }
       if (m.t === 'party') {
         const r = sim.party(p, String(m.op), m.name, now / 1000);
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'party', op: m.op, r }); }
@@ -221,7 +226,7 @@ function createServer(opts = {}) {
       out.me = { zone: c.zone, x: R(c.x), y: R(c.y), hp: Math.ceil(p.hp), maxHp: p.maxHp, atk: p.atk, def: p.def, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, dead: p.dead,
         buffT: +p.buffT.toFixed(1), guardT: +p.guardT.toFixed(1), ...(p.personal.length ? { ev: p.personal } : {}),
         ...(p.bagDirty ? { bag: c.bag, eq: c.eq } : {}),
-        ...(p.skDirty ? { sk: c.sk, pts: sim.freePoints(p), bon: p.bon } : {}),
+        ...(p.skDirty ? { sk: c.sk, pts: sim.freePoints(p), bon: p.bon, st: c.st, spts: sim.statFree(p) } : {}),
         ...(p.partyDirty || (p.party && tickN % 10 === 0) ? { party: sim.partyView(p) } : {}) };
       send(p.ws, out);
       p.personal = []; p.bagDirty = false; p.skDirty = false; p.partyDirty = false; p.full = false;
