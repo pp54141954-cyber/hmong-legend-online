@@ -486,6 +486,10 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     rec('ออฟไลน์: ทุกอาชีพ ทุกสกิล (72 ท่า) ใช้ได้และมีผล (ดาเมจ/ฟื้น/บัฟ/ป้องกัน)', r.length === 0, r.slice(0, 6).join(' | '));
     const sh = await page.evaluate(async () => { HL.PS.cls = 'นักธนู'; HL.buildSkills(); HL.PS.cd = {}; HL.PS.cast = null; HL.PS.dead = false; HL.player.dir = 'E'; for (const m of HL.mons) { m.state = 'dead'; m.respT = 1e9 } const n0 = HL.shotsN; document.getElementById('atk').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); await new Promise(r => setTimeout(r, 200)); document.getElementById('atk').dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); const n = HL.shotsN; HL.PS.cls = 'นักดาบ'; HL.buildSkills(); for (const m of HL.mons) m.respT = 1; return { n0, n } });
     rec('นักธนู: กดโจมตี → ยิงลูกศรออกไป (กระสุนในฉาก)', sh.n > sh.n0, JSON.stringify(sh)); }
+  // ===== V2-R38: ท่าทางอาชีพ (นักธนูชาย) =====
+  { const r = await page.evaluate(async () => { const L = { g: 'm', hair: 0, outfit: 0, hs: 0, of: 0 }; let P = null; for (let i = 0; i < 100 && !P; i++) { P = HL.poseFor('นักธนู', L); if (!P) await new Promise(r => setTimeout(r, 50)) }
+      return { ok: !!P, w: P && P.img.width, h: P && P.img.height, sword: HL.poseFor('นักดาบ', L), fem: HL.poseFor('นักธนู', { g: 'f' }), recol: P && HL.poseFor('นักธนู', { g: 'm', hair: 4, outfit: 2, hs: 0, of: 0 }).img !== P.img } });
+    rec('นักธนูชาย: มีภาพท่ายิงธนูจริง (960×496), สีผม/ชุดเปลี่ยนตามได้, อาชีพที่ยังไม่มีภาพใช้ท่าเดิม', r.ok && r.w === 960 && r.h === 496 && r.recol && !r.sword && !r.fem, JSON.stringify(r)); }
   rec('หน้าเกมปกติ (ระบบทดสอบอัตโนมัติ) ข้ามหน้าโหลดได้', await page.evaluate(() => document.getElementById('splash').hidden && SND.splash.shown === false));
   rec('ไม่มี JavaScript error ระหว่างทดสอบ', errors.length === 0, errors.slice(0, 5).join(' | '));
   await browser.close(); srv.close();
