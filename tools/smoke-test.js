@@ -421,11 +421,30 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     await cp.goto(url + '?pick=1'); await cp.waitForSelector('#cstart:not([hidden]) .csc');
     const o = await cp.evaluate(() => ({ n: document.querySelectorAll('#cstart .csc').length, on: document.querySelector('#cstart .csc.on b').textContent, d: document.querySelector('#cstart .csc .d').textContent }));
     rec('หน้าเลือกอาชีพตอนเริ่มเกม: 8 อาชีพ มีคำอธิบาย เลือกไว้ก่อน = นักดาบ', o.n === 8 && o.on === 'นักดาบ' && o.d.length > 5, JSON.stringify(o));
+    rec('หน้าสร้างตัวละคร: มีเพศ ชาย/หญิง, สีผม 6, ชุด 6 และภาพตัวอย่าง', await cp.evaluate(() => document.querySelectorAll('#cstart [data-g]').length === 2 && document.querySelectorAll('#cstart [data-h]').length === 6 && document.querySelectorAll('#cstart [data-o]').length === 6 && !!document.getElementById('lkcv')));
+    await cp.click('#cstart [data-g="f"]'); await cp.click('#cstart [data-h="2"]'); await cp.click('#cstart [data-o="2"]'); await cp.waitForTimeout(300);
+    rec('ภาพตัวอย่างวาดตัวละครจริง (มีพิกเซล)', await cp.evaluate(() => { const d = document.getElementById('lkcv').getContext('2d').getImageData(0, 0, 120, 156).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++; return n > 1500 }));
     await cp.click('#cstart button[aria-label="อาชีพ ผู้ใช้มนตรา"]');
     await cp.screenshot({ path: 'tools/last-cstart.png' });
     await cp.click('#csgo');
     const r = await cp.evaluate(() => ({ hid: document.getElementById('cstart').hidden, cls: HL.curCls(), saved: localStorage.getItem('hl_cls_off'), bar: document.querySelector('#skills .sk').getAttribute('aria-label'), exp: HL.skName(HL.SLOTS[0]), mage: HL.CLS_ACTIVE['ผู้ใช้มนตรา'] }));
     rec('เลือก "ผู้ใช้มนตรา" → เริ่มเกมเป็นอาชีพนั้น ปุ่มสกิลเปลี่ยนตาม', r.hid && r.cls === 'ผู้ใช้มนตรา' && r.saved === 'ผู้ใช้มนตรา' && r.bar === r.exp && r.mage.includes(r.bar), JSON.stringify(r));
+    const lk = await cp.evaluate(async () => { await new Promise(r => setTimeout(r, 300)); const L = HL.PS.look, c0 = document.createElement('canvas'), c1 = document.createElement('canvas'); c0.width = c1.width = 96; c0.height = c1.height = 124;
+      const S = HL.sheetsFor(L); c0.getContext('2d').drawImage(HL.sheetsFor({ g: 'm', hair: 0, outfit: 0 }).SPR, 0, 0, 96, 124, 0, 0, 96, 124); c1.getContext('2d').drawImage(S.SPR, 0, 0, 96, 124, 0, 0, 96, 124);
+      const a = c0.getContext('2d').getImageData(0, 0, 96, 124).data, b = c1.getContext('2d').getImageData(0, 0, 96, 124).data; let head = 0, body = 0; for (let i = 0; i < a.length; i += 4) { const y = (i >> 2) / 96 | 0; if (a[i] !== b[i] || a[i + 1] !== b[i + 1]) { if (y < 52) head++; else body++ } }
+      return { L, head, body, saved: JSON.parse(localStorage.getItem('hl_look_off') || 'null') } });
+    rec('หน้าตาที่เลือกถูกใช้ในเกม: สีผมเปลี่ยนเฉพาะหัว สีชุดเปลี่ยนเฉพาะตัว และจำในเครื่อง', lk.L.g === 'f' && lk.L.hair === 2 && lk.L.outfit === 2 && lk.head > 100 && lk.body > 50 && lk.saved && lk.saved.hair === 2, JSON.stringify(lk));
+    const draws = async () => { const a = await cp.evaluate(() => HL.femDraws); await cp.waitForTimeout(500); return (await cp.evaluate(() => HL.femDraws)) - a };
+    const pf = await draws(); await cp.evaluate(() => HL.setLook({ g: 'm', hair: 2, outfit: 2 })); const pm = await draws();
+    rec('ตัวละครหญิงในเกมวาดผมยาว + ดอกไม้ประดับทุกเฟรม (ชายไม่วาด)', pf > 10 && pm === 0, 'หญิง ' + pf + ' ครั้ง / ชาย ' + pm + ' ครั้ง ใน 0.5 วิ');
+    await cp.evaluate(() => HL.setLook({ g: 'f', hair: 2, outfit: 2 }));
+    await cp.evaluate(() => { const s = HL.ZONES.village2.start; HL.enterZone('village2', s[0], s[1]) });
+    await cp.click('#skb'); await cp.click('#skp h3 .clsb'); await cp.click('#lkedit'); await cp.waitForSelector('#cstart:not([hidden]) #lkcv');
+    const em = await cp.evaluate(() => ({ t: document.querySelector('#cstart .cshd b').textContent, grid: document.querySelector('#cstart .csg').hidden, btn: document.getElementById('csgo').textContent }));
+    rec('แต่งตัวละครภายหลัง (หน้าอาชีพ → แต่งตัวละคร): ซ่อนส่วนอาชีพ ปุ่มบันทึก', em.t === 'แต่งตัวละคร' && em.grid && em.btn === 'บันทึกหน้าตา', JSON.stringify(em));
+    await cp.click('#cstart [data-g="m"]'); await cp.click('#cstart [data-h="5"]'); await cp.click('#csgo');
+    rec('บันทึกหน้าตาใหม่ → ใช้ทันที', await cp.evaluate(() => HL.PS.look.g === 'm' && HL.PS.look.hair === 5 && document.getElementById('cstart').hidden));
+    await cp.evaluate(() => localStorage.removeItem('hl_look_off'));
     await cp.evaluate(() => localStorage.removeItem('hl_cls_off')); await cp.close(); }
   rec('หน้าเกมปกติ (ระบบทดสอบอัตโนมัติ) ข้ามหน้าโหลดได้', await page.evaluate(() => document.getElementById('splash').hidden && SND.splash.shown === false));
   rec('ไม่มี JavaScript error ระหว่างทดสอบ', errors.length === 0, errors.slice(0, 5).join(' | '));

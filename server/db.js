@@ -37,6 +37,8 @@ function open(file) {
   if (!cols.includes('cls')) db.exec("ALTER TABLE characters ADD COLUMN cls TEXT NOT NULL DEFAULT 'นักดาบ'");
   // V2-R29: เลือกอาชีพตอนเริ่มเกมแล้วหรือยัง
   if (!cols.includes('clsset')) db.exec('ALTER TABLE characters ADD COLUMN clsset INTEGER NOT NULL DEFAULT 0');
+  // V2-R30: หน้าตาตัวละคร (JSON g/hair/outfit)
+  if (!cols.includes('look')) db.exec("ALTER TABLE characters ADD COLUMN look TEXT NOT NULL DEFAULT '{}'");
   if (!cols.includes('starter')) db.exec('ALTER TABLE characters ADD COLUMN starter INTEGER NOT NULL DEFAULT 0');
 
   const hash = pass => {
@@ -53,7 +55,7 @@ function open(file) {
     getAcc: db.prepare('SELECT * FROM accounts WHERE username = ?'),
     insChar: db.prepare('INSERT INTO characters (account_id, name, zone, x, y, dir, lv, exp, job, jexp, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
     getChar: db.prepare('SELECT * FROM characters WHERE account_id = ?'),
-    saveChar: db.prepare('UPDATE characters SET zone=?, x=?, y=?, dir=?, lv=?, exp=?, job=?, jexp=?, bag=?, eq=?, skills=?, stat=?, cls=?, clsset=?, starter=?, updated_at=? WHERE account_id=?'),
+    saveChar: db.prepare('UPDATE characters SET zone=?, x=?, y=?, dir=?, lv=?, exp=?, job=?, jexp=?, bag=?, eq=?, skills=?, stat=?, look=?, cls=?, clsset=?, starter=?, updated_at=? WHERE account_id=?'),
     insSess: db.prepare('INSERT INTO sessions VALUES (?, ?, ?)'),
     getSess: db.prepare('SELECT * FROM sessions WHERE token = ? AND expire_at > ?'),
     delOld: db.prepare('DELETE FROM sessions WHERE expire_at <= ?'),
@@ -79,8 +81,8 @@ function open(file) {
       return token;
     },
     session(token) { return typeof token === 'string' ? q.getSess.get(token, Date.now()) : undefined; },
-    character(accountId) { const c = q.getChar.get(accountId); if (c) { c.bag = JSON.parse(c.bag || '[]'); c.eq = JSON.parse(c.eq || '{}'); c.sk = JSON.parse(c.skills || '{}'); delete c.skills; c.st = JSON.parse(c.stat || '{}'); delete c.stat; } return c; },
-    save(c) { q.saveChar.run(c.zone, c.x, c.y, c.dir, c.lv, c.exp, c.job, c.jexp, JSON.stringify(c.bag || []), JSON.stringify(c.eq || {}), JSON.stringify(c.sk || {}), JSON.stringify(c.st || {}), c.cls || 'นักดาบ', c.clsset ? 1 : 0, c.starter ? 1 : 0, Date.now(), c.account_id); },
+    character(accountId) { const c = q.getChar.get(accountId); if (c) { c.bag = JSON.parse(c.bag || '[]'); c.eq = JSON.parse(c.eq || '{}'); c.sk = JSON.parse(c.skills || '{}'); delete c.skills; c.st = JSON.parse(c.stat || '{}'); delete c.stat; try { c.look = JSON.parse(c.look || '{}'); } catch (e) { c.look = {}; } } return c; },
+    save(c) { q.saveChar.run(c.zone, c.x, c.y, c.dir, c.lv, c.exp, c.job, c.jexp, JSON.stringify(c.bag || []), JSON.stringify(c.eq || {}), JSON.stringify(c.sk || {}), JSON.stringify(c.st || {}), JSON.stringify(c.look || {}), c.cls || 'นักดาบ', c.clsset ? 1 : 0, c.starter ? 1 : 0, Date.now(), c.account_id); },
     close() { db.close(); },
   };
 }

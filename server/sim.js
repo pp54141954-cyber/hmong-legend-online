@@ -103,6 +103,9 @@ function createSim({ rand = Math.random } = {}) {
   }
   // เปลี่ยนอาชีพ: เฉพาะในเขตปลอดภัย ไม่ตาย — ระดับสกิลของอาชีพเดิมเก็บไว้ (กลับมาแล้วได้คืน)
   // เลือกครั้งแรก (V2-R29): ตัวละครที่ยังไม่เคยเลือก (clsset=0) เลือกได้ทุกที่ครั้งเดียว — หลังจากนั้นเปลี่ยนได้เฉพาะในเขตปลอดภัย
+  // หน้าตา (V2-R30): เพศ m/f, สีผม, ชุด — ตรวจช่วงค่าจาก CFG.look
+  const cleanLook = l => { l = l && typeof l === 'object' ? l : {}; const ok = (v, n) => Number.isInteger(v) && v >= 0 && v < n; return ok(+l.hair, CFG.look.hair) && ok(+l.outfit, CFG.look.outfit) && (l.g === 'm' || l.g === 'f') ? { g: l.g, hair: +l.hair, outfit: +l.outfit } : null; };
+  function setLook(p, l) { const v = cleanLook(l); if (!v) return 'invalid'; p.c.look = v; p.dirty = true; p.personal.push({ k: 'look', look: v }); return 'ok'; }
   function setClass(p, cls, first) {
     cls = String(cls); if (!ROWS[cls]) return 'invalid';
     const firstPick = !!first && !p.c.clsset;
@@ -144,6 +147,7 @@ function createSim({ rand = Math.random } = {}) {
     p.c.bag = Array.isArray(p.c.bag) ? p.c.bag.filter(s => s && CFG.items[s.id] && s.n > 0) : [];
     p.c.eq = Object.assign({ weapon: null, armor: null, acc: null }, p.c.eq || {});
     p.c.sk = Object.assign({}, p.c.sk || {});
+    p.c.look = cleanLook(p.c.look) || { g: 'm', hair: 0, outfit: 0 };
     p.c.st = CFG.stats.clean(p.c.st); if (CFG.stats.free(p.c.lv, p.c.st) < 0) p.c.st = CFG.stats.clean({}); // ข้อมูลเกินแต้มที่มี = รีเซ็ต
     if (!ROWS[p.c.cls]) p.c.cls = CLASS;
     for (const r of SKROWS) if (r.start && !p.c.sk[r.name]) p.c.sk[r.name] = 1; // สกิลเริ่มต้นได้ระดับ 1 ฟรี (ชื่อเดียวกันทุกอาชีพ)
@@ -428,6 +432,6 @@ function createSim({ rand = Math.random } = {}) {
     }
   }
 
-  return { party, partyView, parties, get WT() { return WT; }, setTimeOffset(s) { timeOff = s; }, zones, players, addPlayer, removePlayer, statOp, statFree, setClass, admin, CLASSES, clsOf, act, step, pathClear, stats, gain, addItem, inv, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
+  return { party, partyView, parties, get WT() { return WT; }, setTimeOffset(s) { timeOff = s; }, zones, players, addPlayer, removePlayer, statOp, statFree, setLook, cleanLook, setClass, admin, CLASSES, clsOf, act, step, pathClear, stats, gain, addItem, inv, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
 }
 module.exports = { createSim };

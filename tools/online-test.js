@@ -54,10 +54,19 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
     rec('บัญชีใหม่: ขึ้นหน้าเลือกอาชีพตอนเริ่มเกม (8 อาชีพ)', shown && n === 8, n + ' อาชีพ');
     await A.page.click('#cstart button[aria-label="อาชีพ นักธนู"]');
     rec('แตะการ์ดอาชีพ → ปุ่มเริ่มบอกชื่ออาชีพที่เลือก', (await A.page.textContent('#csgo')) === 'เริ่มผจญภัยเป็น นักธนู');
+    await A.page.click('#cstart [data-g="f"]'); await A.page.click('#cstart [data-h="3"]'); await A.page.click('#cstart [data-o="3"]');
     await A.page.click('#cstart button[aria-label="อาชีพ นักดาบ"]'); await A.page.click('#csgo'); await B.page.click('#csgo');
     const SAx = () => [...srv.online.values()].find(p => p.c.name === 'Tester_A');
     const ok = await until(async () => !(await A.page.isVisible('#cstart')) && !(await B.page.isVisible('#cstart')) && SAx().c.clsset === 1);
     rec('กดเริ่ม → เซิร์ฟเวอร์บันทึกอาชีพ หน้าเลือกปิด เริ่มเล่นได้', ok, SAx().c.cls);
+    rec('หน้าตาที่เลือกตอนสร้างถูกบันทึกที่เซิร์ฟเวอร์ (หญิง ผมขาวเงิน ชุดม่วง-ทอง)', JSON.stringify(SAx().c.look) === '{"g":"f","hair":3,"outfit":3}', JSON.stringify(SAx().c.look));
+    const seeA = await until(async () => { const v = await B.page.evaluate(id => (HLNET.plooks || {})[id], SAx().id); return v && v.g === 'f' && v.hair === 3; });
+    rec('เครื่องอื่น (B) เห็นหน้าตาของ A ตามที่เลือก', seeA);
+    await A.page.evaluate(() => HLNET.send({ t: 'look', look: { g: 'm', hair: 1, outfit: 4 } }));
+    const upd = await until(async () => SAx().c.look.hair === 1 && (await B.page.evaluate(id => (HLNET.plooks || {})[id], SAx().id)).hair === 1 && (await A.page.evaluate(() => HL.PS.look.hair)) === 1);
+    rec('A แต่งตัวใหม่ → เซิร์ฟเวอร์ + A + B เห็นหน้าตาใหม่', upd, JSON.stringify(SAx().c.look));
+    const dl = SAx().denied || 0; await A.page.evaluate(() => HLNET.send({ t: 'look', look: { g: 'x', hair: 99, outfit: 0 } }));
+    rec('ส่งหน้าตาผิดรูปแบบ → เซิร์ฟเวอร์ปฏิเสธ', await until(() => (SAx().denied || 0) > dl) && SAx().c.look.hair === 1);
     const d0 = SAx().denied || 0; await A.page.evaluate(() => HLNET.send({ t: 'cls', cls: 'นักฆ่า', first: 1 }));
     rec('ส่ง "เลือกครั้งแรก" ซ้ำ (ข้ามกฎหมู่บ้าน) → เซิร์ฟเวอร์ปฏิเสธ', await until(() => (SAx().denied || 0) > d0) && SAx().c.cls === 'นักดาบ'); }
 
@@ -349,6 +358,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   await signup(A2.page, 'Tester_A', 'secret123', 'login');
   await until(async () => (await st(A2.page)).joined); await sleep(500);
   rec('ล็อกอินครั้งต่อไป: ไม่ถามอาชีพซ้ำ', !(await A2.page.isVisible('#cstart')));
+  rec('ล็อกอินครั้งต่อไป: หน้าตาเดิมยังอยู่ (บันทึกในฐานข้อมูล)', await A2.page.evaluate(() => HL.PS.look.g === 'm' && HL.PS.look.hair === 1 && HL.PS.look.outfit === 4));
   await until(async () => (await st(A2.page)).joined);
   const re = await st(A2.page);
   const posOk = re.zone === saved.zone && Math.hypot(re.x - saved.x, re.y - saved.y) < 4;

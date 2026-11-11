@@ -82,7 +82,10 @@ for (const [i, name, expectDx] of [[1, 'ท่าเคลื่อนที่'
   { const n = { id: 9, c: { zone: 'field2', x: F.start[0], y: F.start[1], dir: 'S', lv: 1, exp: 0, job: 1, jexp: 0, starter: 1 } }; sim.addPlayer(n);
     rec('เลือกอาชีพครั้งแรก: ตัวละครใหม่เลือกได้แม้อยู่นอกหมู่บ้าน', sim.setClass(n, 'ผู้รักษา', true) === 'ok' && n.c.cls === 'ผู้รักษา' && n.c.clsset === 1 && n.personal.some(e => e.k === 'cls' && e.first));
     rec('เลือกอาชีพครั้งแรกซ้ำ → ปฏิเสธ (ใช้ข้ามกฎหมู่บ้านไม่ได้)', sim.setClass(n, 'นักฆ่า', true) === 'already' && n.c.cls === 'ผู้รักษา');
-    rec('หลังเลือกแล้ว เปลี่ยนนอกหมู่บ้านไม่ได้', sim.setClass(n, 'นักฆ่า') === 'not-safe'); }
+    rec('หลังเลือกแล้ว เปลี่ยนนอกหมู่บ้านไม่ได้', sim.setClass(n, 'นักฆ่า') === 'not-safe');
+    rec('หน้าตาเริ่มต้น = ชาย ผมดำ ชุดดำ-แดง', JSON.stringify(n.c.look) === '{"g":"m","hair":0,"outfit":0}');
+    rec('ตั้งหน้าตา: หญิง ผมขาวเงิน ชุดม่วง-ทอง', sim.setLook(n, { g: 'f', hair: 3, outfit: 3 }) === 'ok' && n.c.look.g === 'f' && n.c.look.hair === 3 && n.personal.some(e => e.k === 'look'));
+    rec('ค่าหน้าตาผิด (เพศ/สีเกินช่วง/ไม่ใช่ตัวเลข) → ปฏิเสธ', ['x', null, { g: 'x', hair: 0, outfit: 0 }, { g: 'm', hair: 99, outfit: 0 }, { g: 'm', hair: 1.5, outfit: 0 }, { g: 'f', hair: 0, outfit: -1 }].every(l => sim.setLook(n, l) === 'invalid') && n.c.look.hair === 3); }
   const q = { id: 2, c: { zone: 'field2', x: F.start[0], y: F.start[1], dir: 'S', lv: 30, exp: 0, job: 30, jexp: 0, starter: 1 } }; sim.addPlayer(q);
   rec('อาชีพ: นอกเขตปลอดภัย → เปลี่ยนไม่ได้', sim.setClass(q, 'นักธนู') === 'not-safe' && sim.clsOf(q) === 'นักดาบ');
   sim.learn(p, 'ลงอาคมคมดาบ'); const swordPts = sim.freePoints(p);
