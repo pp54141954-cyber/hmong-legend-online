@@ -12,7 +12,7 @@ const grab = (startRe, endRe, label) => {
 };
 const consts = grab(/const T=32,COLS=/, /\nconst mk=/, 'consts');
 const zones = grab(/const ZONES=\{/, /\n\/\* =+ สร้างโซน/, 'ZONES');
-const build = grab(/function buildZone\(id\)\{/, /\n \/\* วาดพื้น \*\//, 'buildZone');
+const build = grab(/function buildZone\(id\)\{/, /\n \/\* วาดพื้น/, 'buildZone');
 const cfg = grab(/const CFG=\{/, /\nconst Combat=\{/, 'CFG');
 const combat = grab(/const Combat=\{/, /\nconst PS=\{/, 'Combat');
 const table = grab(/const SKILL_TABLE=\[/, /\n/, 'SKILL_TABLE');

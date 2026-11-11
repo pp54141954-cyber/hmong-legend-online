@@ -75,6 +75,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 #cstart .lk{display:flex;gap:10px;align-items:center;background:#ffffff12;border:1px solid #ffffff22;border-radius:14px;padding:8px}#cstart #lkcv{flex:none;width:96px;height:125px;background:radial-gradient(#ffffff22,transparent 70%);border-radius:12px}
 #cstart .lko{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}#cstart .lkr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}#cstart .lkr>span{width:34px;font-size:12px;font-weight:700}#cstart .lkr small{font-size:10px;opacity:.7}
 #cstart .seg{display:flex;gap:4px}#cstart .seg button{padding:6px 16px;font-weight:800;color:#f4efe2;background:#ffffff14;border:2px solid #ffffff33;border-radius:10px}#cstart .seg button.on{background:#f2c14e;color:#3a1a08;border-color:#f2c14e}
+#cstart .chips{display:flex;gap:5px;flex-wrap:wrap}#cstart .chips button{padding:5px 10px;font-size:12px;font-weight:700;color:#f4efe2;background:#ffffff14;border:2px solid #ffffff33;border-radius:10px}#cstart .chips button.on{background:#f2c14e;color:#3a1a08;border-color:#f2c14e}
 #cstart .sws{display:flex;gap:5px;flex-wrap:wrap}#cstart .sws button{width:26px;height:26px;padding:0;border:2px solid #ffffff44;border-radius:50%}#cstart .sws button.on{border:3px solid #f2c14e;box-shadow:0 0 8px #f2c14e}#cstart .lkn{margin:0;font-size:10px;color:#ffcf8a;opacity:.85}
 #clp .lkedit{width:100%;padding:10px;font-size:14px;font-weight:800;color:#3a1a08;background:linear-gradient(#ffe08a,#f2a93b);border:0;border-radius:12px}
 #cstart .csg{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start;max-width:560px;width:100%;margin:0 auto}
@@ -469,7 +470,7 @@ const CFG={
  stats:{perLv:3,max:99,keys:['str','vit','agi','luk'],
   info:{str:['STR','พลัง','ATK +1 ต่อแต้ม'],vit:['VIT','อึด','HP +4 ต่อแต้ม · DEF +1 ทุก 4 แต้ม'],agi:['AGI','ว่องไว','ความเร็วเดิน +0.4% · ลดคูลดาวน์ +0.2% ต่อแต้ม'],luk:['LUK','โชค','คริติคอล +0.25% ต่อแต้ม']}},
  /* หน้าตาตัวละคร (V2-R30): จำนวนตัวเลือก — เซิร์ฟเวอร์ใช้ตรวจค่า */
- look:{hair:6,outfit:6},
+ look:{hair:6,outfit:6,hs:16,of:16},
  /* ชุดไอเทมเริ่มต้น (V2-R24): ให้ครั้งเดียวต่อตัวละคร ใส่อุปกรณ์ให้ทันที */
  starter:{eq:{weapon:'sword_wood',armor:'coat_cloth'},bag:[['potion_s',10],['potion_m',3]]},
  items:{
@@ -705,19 +706,33 @@ function drawVertCast(c){const p=Math.min(1,c.t/c.sk.poseT),dn=player.dir==='S',
 /* ===== หน้าตาตัวละคร (V2-R30) =====
    เพศ ชาย/หญิง · สีผม 6 · ชุด 6 — เปลี่ยนสีจากภาพตัวละครที่อนุมัติแล้ว (ไม่วาดตัวใหม่)
    หญิง: ใช้ภาพเดิม + ผมยาวประกอบชั่วคราว จนกว่าเจ้าของจะส่งภาพตัวละครหญิง (docs/prompts/female_character_sprites.md) */
+/* ทะเบียนทรงผม/แบบชุด (tools/build_char_sets.py ฝังให้) */
+const CHAR_CAT={"m":{"hair":[{"id":"m0","n":"สั้นผ้าคาดหัว"}],"outfit":[{"id":"m0","n":"ชุดม้งดั้งเดิม"}]},"f":{"hair":[{"id":"f0","n":"หางม้าสูง"}],"outfit":[{"id":"f0","n":"ชุดม้งดั้งเดิม"}]}};/*CHAR_CAT*/
 const HAIRS=[{n:'ดำ',c:null,sw:'#1c1a20'},{n:'น้ำตาลเข้ม',c:[96,60,34],sw:'#603c22'},{n:'น้ำตาลแดง',c:[136,56,32],sw:'#883820'},{n:'ขาวเงิน',c:[212,216,226],sw:'#d4d8e2'},{n:'ม่วง',c:[124,74,180],sw:'#7c4ab4'},{n:'น้ำเงินเข้ม',c:[44,66,140],sw:'#2c428c'}];
 const OUTFITS=[{n:'ดำ-แดง',base:null,acc:null,sw:['#1c1a20','#c4222c']},{n:'คราม-แดง',base:[40,52,112],acc:null,sw:['#28346f','#c4222c']},{n:'ดำ-เขียวหยก',base:null,acc:[44,168,112],sw:['#1c1a20','#2ca870']},{n:'ม่วง-ทอง',base:[76,44,104],acc:[230,180,60],sw:['#4c2c68','#e6b43c']},{n:'ขาว-แดง',base:[222,214,198],acc:null,sw:['#ded6c6','#c4222c']},{n:'ดำ-น้ำเงิน',base:null,acc:[56,116,216],sw:['#1c1a20','#3874d8']}];
-const cleanLook=l=>{l=l||{};const i=(v,n)=>Number.isInteger(+v)&&+v>=0&&+v<n?+v:0;return{g:l.g==='f'?'f':'m',hair:i(l.hair,HAIRS.length),outfit:i(l.outfit,OUTFITS.length)}};
-const lookKey=l=>l.hair+'.'+l.outfit;const LOOKC={};
+const cleanLook=l=>{l=l||{};const i=(v,n)=>Number.isInteger(+v)&&+v>=0&&+v<n?+v:0,g=l.g==='f'?'f':'m',C=CHAR_CAT[g]||{hair:[],outfit:[]};return{g,hair:i(l.hair,HAIRS.length),outfit:i(l.outfit,OUTFITS.length),hs:i(l.hs,Math.max(1,C.hair.length)),of:i(l.of,Math.max(1,C.outfit.length))}};
+const lookKey=l=>l.g+l.hs+'.'+l.of+'.'+l.hair+'.'+l.outfit;const LOOKC={};
 function recolor(img,l,fem){const H=HAIRS[l.hair].c,O=OUTFITS[l.outfit];if(!H&&!O.base&&!O.acc)return img;
-  const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;const k=c.getContext('2d');k.drawImage(img,0,0);const d=k.getImageData(0,0,c.width,c.height),a=d.data,W=c.width;
+  const c=document.createElement('canvas');c.width=img.naturalWidth||img.width;c.height=img.naturalHeight||img.height;const k=c.getContext('2d');k.drawImage(img,0,0);const d=k.getImageData(0,0,c.width,c.height),a=d.data,W=c.width;
   for(let i=0;i<a.length;i+=4){if(a[i+3]<8)continue;const r=a[i],g=a[i+1],b=a[i+2],y=((i>>2)/W|0)%CHc,mx=Math.max(r,g,b),mn=Math.min(r,g,b),lum=.3*r+.59*g+.11*b;
     if(fem){if(a[i+3]===254){if(H){const v=.28+lum/72*1.05;a[i]=Math.min(255,H[0]*v);a[i+1]=Math.min(255,H[1]*v);a[i+2]=Math.min(255,H[2]*v)}continue}if(y<52)continue} /* หญิง: ผม = พิกเซลที่ทำเครื่องหมาย */
     else if(y<52){if(H&&lum<72&&mx-mn<46){const v=.28+lum/72*1.05;a[i]=Math.min(255,H[0]*v);a[i+1]=Math.min(255,H[1]*v);a[i+2]=Math.min(255,H[2]*v)}continue} /* หัว: เฉพาะผม */
     if(O.acc&&r>105&&r>g*1.5&&r>b*1.4){const v=Math.min(1.35,r/190);a[i]=Math.min(255,O.acc[0]*v);a[i+1]=Math.min(255,O.acc[1]*v);a[i+2]=Math.min(255,O.acc[2]*v)}
     else if(O.base&&lum<78&&mx-mn<42){const v=.32+lum/78*.95;a[i]=Math.min(255,O.base[0]*v);a[i+1]=Math.min(255,O.base[1]*v);a[i+2]=Math.min(255,O.base[2]*v)}}
   k.putImageData(d,0,0);return c}
-function sheetsFor(l){l=cleanLook(l);const fem=l.g==='f'&&femReady(),key=(fem?'f':'m')+lookKey(l);if(LOOKC[key])return LOOKC[key];if(!(SPR0.complete&&IDL0.complete&&ATK0.complete&&SPR0.naturalWidth))return{SPR:SPR0,IDL:IDL0,ATK:ATK0,tmp:1};
+/* ชั้นภาพ (V2-R35): sprites/pc_<ชุด>_<h|b>_<walk|idle|attack>.webp — โหลดเมื่อใช้ */
+const LAYER={};const layer=(id,part,sh)=>{const k=id+'_'+part+'_'+sh;if(!LAYER[k]){const im=new Image();im.src='sprites/pc_'+k+'.webp';LAYER[k]=im}return LAYER[k]};
+const imOk=im=>im.complete&&im.naturalWidth>0;
+/* ประกอบทีละพิกเซล: มีพิกเซลหัว → ใช้หัว (คงค่า alpha 254 = ผม) ไม่งั้นใช้ตัว */
+function composeLayers(head,body){const w=body.naturalWidth,h=body.naturalHeight,c=document.createElement('canvas');c.width=w;c.height=h;const k=c.getContext('2d');
+  k.drawImage(body,0,0);const B=k.getImageData(0,0,w,h);const t=document.createElement('canvas');t.width=w;t.height=h;const tk=t.getContext('2d');tk.drawImage(head,0,0);const Hd=tk.getImageData(0,0,w,h).data,b=B.data;
+  for(let i=0;i<b.length;i+=4)if(Hd[i+3]>0){b[i]=Hd[i];b[i+1]=Hd[i+1];b[i+2]=Hd[i+2];b[i+3]=Hd[i+3]}k.putImageData(B,0,0);return c}
+function lookSets(l){const C=CHAR_CAT[l.g];if(!C||!C.hair.length||!C.outfit.length)return null;return{h:(C.hair[l.hs]||C.hair[0]).id,b:(C.outfit[l.of]||C.outfit[0]).id}}
+function sheetsFor(l){l=cleanLook(l);{const ls=lookSets(l);if(ls){const key='L'+lookKey(l);if(LOOKC[key])return LOOKC[key];
+    const sh=['walk','idle','attack'],H=sh.map(n=>layer(ls.h,'h',n)),Bd=sh.map(n=>layer(ls.b,'b',n));
+    if(![...H,...Bd].every(im=>im.complete))return{SPR:SPR0,IDL:IDL0,ATK:ATK0,tmp:1};
+    if([...H,...Bd].every(imOk)){const out=sh.map((_,i)=>recolor(composeLayers(H[i],Bd[i]),l,true));return LOOKC[key]={SPR:out[0],IDL:out[1],ATK:out[2],fem:l.g==='f',layered:1}}}}
+  /* สำรอง: ภาพเดิม (ไม่มีชั้นภาพ/โหลดไม่ได้) */const fem=l.g==='f'&&femReady(),key=(fem?'f':'m')+lookKey(l);if(LOOKC[key])return LOOKC[key];if(!(SPR0.complete&&IDL0.complete&&ATK0.complete&&SPR0.naturalWidth))return{SPR:SPR0,IDL:IDL0,ATK:ATK0,tmp:1};
   if(l.g==='f'&&!fem&&!FSPR0.complete)return{SPR:SPR0,IDL:IDL0,ATK:ATK0,tmp:1}; /* ภาพหญิงยังโหลดไม่เสร็จ: ลองใหม่เฟรมถัดไป */
   const b=fem?[FSPR0,FIDL0,FATK0]:[SPR0,IDL0,ATK0];return LOOKC[key]={SPR:recolor(b[0],l,fem),IDL:recolor(b[1],l,fem),ATK:recolor(b[2],l,fem),fem}}
 function setLook(l){PS.look=cleanLook(l);const s=sheetsFor(PS.look);SPR=s.SPR;IDL=s.IDL;ATK=s.ATK;PS.lookPending=!!s.tmp}
@@ -731,7 +746,7 @@ function femHair(x,y,dir,l,sc,K){if(!K)femHair.n=(femHair.n||0)+1;K=K||ctx;const
   /* ดอกไม้ประดับผม (แยกตัวละครหญิงให้เห็นชัด) */
   const[fx,fy]=P(dir==='W'?36:60,24);K.fillStyle='#ff6fa6';for(let i=0;i<5;i++){const t=i/5*Math.PI*2;K.beginPath();K.arc(fx+Math.cos(t)*2.6*sc,fy+Math.sin(t)*2.6*sc,2.2*sc,0,7);K.fill()}K.fillStyle='#ffe27a';K.beginPath();K.arc(fx,fy,1.6*sc,0,7);K.fill();K.restore()}
 function drawPlayer(){if(PS.dead)return;if(PS.hurt>0&&Math.floor(PS.hurt*20)%2)return;if(PS.lookPending)setLook(PS.look);
-  drawPlayerBody();if(PS.look&&PS.look.g==='f'&&!sheetsFor(PS.look).fem){const d=PS.cast?(player.dir==='E'||player.dir==='W'?player.dir:player.lastH==='W'?'W':'E'):player.dir;femHair(player.x,player.y,PS.cast&&(player.dir==='N'||player.dir==='S')?player.dir:d,PS.look,SCALE)}}
+  drawPlayerBody();if(PS.look&&PS.look.g==='f'&&!sheetsFor(PS.look).fem&&!sheetsFor(PS.look).tmp){const d=PS.cast?(player.dir==='E'||player.dir==='W'?player.dir:player.lastH==='W'?'W':'E'):player.dir;femHair(player.x,player.y,PS.cast&&(player.dir==='N'||player.dir==='S')?player.dir:d,PS.look,SCALE)}}
 function drawPlayerBody(){
   ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(player.x,player.y+1,11,4,0,0,7);ctx.fill();
   if(PS.buffT>0){ctx.strokeStyle='rgba(255,200,80,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(player.x,player.y+1,16,6,0,0,7);ctx.stroke()}
@@ -750,7 +765,7 @@ function drawPlayerBody(){
 /* ผู้เล่นออนไลน์คนอื่น: ใช้ภาพเดิน 4 ทิศชุดเดียวกับตัวหลัก (ไม่ออกแบบใหม่) + ชื่อบนหัว */
 function drawOther(o){const row={S:0,N:1,W:2,E:3}[o.dir]??0,dw=CWc*SCALE,dh=CHc*SCALE,px=o.x-dw/2,py=o.y-(CHc-4)*SCALE;
   ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(o.x,o.y+1,11,4,0,0,7);ctx.fill();
-  ctx.imageSmoothingEnabled=true;const L=cleanLook(o.look),SS=sheetsFor(L);ctx.drawImage(SS.SPR,(o.moving?Math.floor(o.anim/0.14)%4:0)*CWc,row*CHc,CWc,CHc,px,py,dw,dh);if(L.g==='f'&&!SS.fem)femHair(o.x,o.y,o.dir||'S',L,SCALE);
+  ctx.imageSmoothingEnabled=true;const L=cleanLook(o.look),SS=sheetsFor(L);ctx.drawImage(SS.SPR,(o.moving?Math.floor(o.anim/0.14)%4:0)*CWc,row*CHc,CWc,CHc,px,py,dw,dh);if(L.g==='f'&&!SS.fem&&!SS.tmp)femHair(o.x,o.y,o.dir||'S',L,SCALE);
   ctx.textAlign='center';ctx.font='bold 11px sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';const s=o.name+' Lv'+o.lv;ctx.strokeText(s,o.x,py-2);ctx.fillStyle=window.HLNET&&HLNET.partyIds&&HLNET.partyIds.has(o.id)?'#8fe38f':'#bfe8ff';ctx.fillText(s,o.x,py-2)}
 /* ภาพมอนสเตอร์ในฉาก: วาดด้วยโค้ดตามแบบออกแบบ V7 (สี เขา งา ลาย ดวงตา) */
 /* ภาพมอนสเตอร์จากเจ้าของ (ChatGPT) — สร้างโดย tools/build_monster_sprites.py ฝังโดย tools/embed_monster_sprites.py
@@ -1075,8 +1090,8 @@ enterZone(CFG.player.home,ZONES[CFG.player.home].start[0],ZONES[CFG.player.home]
 let last=performance.now();
 function loop(n){const dt=Math.min((n-last)/1000,.05);last=n;update(dt);draw();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
-window.HL={femReady,get femDraws(){return femHair.n||0},HAIRS,OUTFITS,cleanLook,setLook,sheetsFor,femHair,get SPRcur(){return SPR},preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
-  for(let i=0;i<=11;i++)out.push({src:'icons/sk_'+i+'.png',label:'ไอคอนสกิล'});for(const f of['walk','idle','attack'])out.push({src:'sprites/player_f_'+f+'.webp',label:'ภาพตัวละครหญิง'});out.push({src:'icons/sk_p.png',label:'ไอคอนสกิล'});
+window.HL={CHAR_CAT,lookSets,femReady,get femDraws(){return femHair.n||0},HAIRS,OUTFITS,cleanLook,setLook,sheetsFor,femHair,get SPRcur(){return SPR},preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
+  for(let i=0;i<=11;i++)out.push({src:'icons/sk_'+i+'.png',label:'ไอคอนสกิล'});for(const g of['m','f']){const ls=lookSets({g,hs:0,of:0});if(ls)for(const f of['walk','idle','attack'])for(const[id,pt]of[[ls.h,'h'],[ls.b,'b']])out.push({src:'sprites/pc_'+id+'_'+pt+'_'+f+'.webp',label:'ภาพตัวละคร'})}out.push({src:'icons/sk_p.png',label:'ไอคอนสกิล'});
   for(const t of new Set((ZONES.field2.spawns||[]).map(s=>s.type))){const d=MON_SPR[t];if(!d)continue;if(d.walk)out.push({src:d.walk,label:'ภาพ'+t});if(d.act)out.push({src:d.act,label:'ภาพ'+t})}return out},CLASSES,CLS_ACTIVE,CLS_PATHS,curCls,skName,setClassLocal(c){if(!CLS_ACTIVE[c])return'invalid';if(!inSafe(player.x,player.y))return'not-safe';PS.cls=c;buildSkills();hudT=0;return'ok'},get inSafeNow(){return inSafe(player.x,player.y)},buildSkills,adminLocal,clearWarpCd(){warpCd=0},monShown,warp,openWorld,openAutoCfg,statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
 })();
 
@@ -1244,11 +1259,13 @@ function closeClassStart(){csEl.hidden=true;clearInterval(csT);csT=0}
 function drawLookPrev(){const cv=document.getElementById('lkcv');if(!cv||csEl.hidden)return;const k=cv.getContext('2d'),S=HL.sheetsFor(csLook).SPR,dirs=['S','E','N','W'],dir=dirs[Math.floor(csAnim/16)%4],row={S:0,N:1,W:2,E:3}[dir];
   k.clearRect(0,0,cv.width,cv.height);k.imageSmoothingEnabled=true;k.fillStyle='rgba(0,0,0,.25)';k.beginPath();k.ellipse(60,146,26,7,0,0,7);k.fill();
   try{k.drawImage(S,(csAnim%4)*96,row*124,96,124,12,22,96,124)}catch(e){}
-  if(csLook.g==='f'&&!HL.sheetsFor(csLook).fem)HL.femHair(60,22+118,dir,csLook,1,k);csAnim++}
+  if(csLook.g==='f'&&!HL.sheetsFor(csLook).fem&&!HL.sheetsFor(csLook).tmp)HL.femHair(60,22+118,dir,csLook,1,k);csAnim++}
 function lookHtml(){const L=csLook;return '<div class="lk"><canvas id="lkcv" width="120" height="156" aria-label="ตัวอย่างตัวละคร"></canvas><div class="lko">'
    +'<div class="lkr"><span>เพศ</span><div class="seg"><button data-g="m" class="'+(L.g==='m'?'on':'')+'" aria-pressed="'+(L.g==='m')+'">ชาย</button><button data-g="f" class="'+(L.g==='f'?'on':'')+'" aria-pressed="'+(L.g==='f')+'">หญิง</button></div></div>'
+   +((HL.CHAR_CAT[L.g]||{hair:[]}).hair.length>1?'<div class="lkr"><span>ทรงผม</span><div class="chips">'+HL.CHAR_CAT[L.g].hair.map((h,i)=>'<button data-hs="'+i+'" class="'+(L.hs===i?'on':'')+'" aria-pressed="'+(L.hs===i)+'"></button>').join('')+'</div></div>':'')
+   +((HL.CHAR_CAT[L.g]||{outfit:[]}).outfit.length>1?'<div class="lkr"><span>แบบชุด</span><div class="chips">'+HL.CHAR_CAT[L.g].outfit.map((h,i)=>'<button data-of="'+i+'" class="'+(L.of===i?'on':'')+'" aria-pressed="'+(L.of===i)+'"></button>').join('')+'</div></div>':'')
    +'<div class="lkr"><span>สีผม</span><div class="sws">'+HL.HAIRS.map((h,i)=>'<button class="sw1'+(L.hair===i?' on':'')+'" data-h="'+i+'" aria-label="สีผม '+h.n+'" aria-pressed="'+(L.hair===i)+'" style="background:'+h.sw+'"></button>').join('')+'</div><small>'+HL.HAIRS[L.hair].n+'</small></div>'
-   +'<div class="lkr"><span>ชุด</span><div class="sws">'+HL.OUTFITS.map((o,i)=>'<button class="sw2'+(L.outfit===i?' on':'')+'" data-o="'+i+'" aria-label="ชุด '+o.n+'" aria-pressed="'+(L.outfit===i)+'" style="background:linear-gradient(135deg,'+o.sw[0]+' 55%,'+o.sw[1]+' 55%)"></button>').join('')+'</div><small>'+HL.OUTFITS[L.outfit].n+'</small></div>'
+   +'<div class="lkr"><span>สีชุด</span><div class="sws">'+HL.OUTFITS.map((o,i)=>'<button class="sw2'+(L.outfit===i?' on':'')+'" data-o="'+i+'" aria-label="ชุด '+o.n+'" aria-pressed="'+(L.outfit===i)+'" style="background:linear-gradient(135deg,'+o.sw[0]+' 55%,'+o.sw[1]+' 55%)"></button>').join('')+'</div><small>'+HL.OUTFITS[L.outfit].n+'</small></div>'
    +'</div></div>'}
 function renderClassStart(){if(csEl.hidden)return;
   const edit=csMode==='edit';
@@ -1256,7 +1273,9 @@ function renderClassStart(){if(csEl.hidden)return;
    +HL.CLASSES.map((c,i)=>'<button class="csc'+(c===csPick?' on':'')+'" data-c="'+i+'" aria-pressed="'+(c===csPick)+'" aria-label="อาชีพ '+c+'"><i style="background:'+CLS_COL[i%8]+'">'+(CLS_SHORT[c]||'')+'</i><b></b><small class="d"></small><small class="p"></small></button>').join('')
    +'</div></div><div class="csft"><small>ท่ากดของอาชีพใหม่ยังเป็นแบบชั่วคราว · ภาพตัวละครใช้ภาพเดิมจนกว่าจะมีภาพของแต่ละอาชีพ</small><button class="csgo" id="csgo"></button></div>';
   csEl.querySelectorAll('.csc').forEach((b,i)=>{const c=HL.CLASSES[i];b.querySelector('b').textContent=c;b.querySelector('.d').textContent=CLS_DESC[c]||'';b.querySelector('.p').textContent=HL.CLS_PATHS[c].join(' · ');b.onclick=()=>{csPick=c;renderClassStart()}});
-  for(const b of csEl.querySelectorAll('[data-g]'))b.onclick=()=>{csLook.g=b.dataset.g;renderClassStart()};
+  for(const b of csEl.querySelectorAll('[data-g]'))b.onclick=()=>{csLook.g=b.dataset.g;csLook.hs=0;csLook.of=0;renderClassStart()};
+  {const C=HL.CHAR_CAT[csLook.g];csEl.querySelectorAll('[data-hs]').forEach(b=>{b.textContent=C.hair[+b.dataset.hs].n;b.setAttribute('aria-label','ทรงผม '+C.hair[+b.dataset.hs].n);b.onclick=()=>{csLook.hs=+b.dataset.hs;renderClassStart()}});
+   csEl.querySelectorAll('[data-of]').forEach(b=>{b.textContent=C.outfit[+b.dataset.of].n;b.setAttribute('aria-label','แบบชุด '+C.outfit[+b.dataset.of].n);b.onclick=()=>{csLook.of=+b.dataset.of;renderClassStart()}})}
   for(const b of csEl.querySelectorAll('[data-h]'))b.onclick=()=>{csLook.hair=+b.dataset.h;renderClassStart()};
   for(const b of csEl.querySelectorAll('[data-o]'))b.onclick=()=>{csLook.outfit=+b.dataset.o;renderClassStart()};
   drawLookPrev();

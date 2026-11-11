@@ -59,7 +59,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
     const SAx = () => [...srv.online.values()].find(p => p.c.name === 'Tester_A');
     const ok = await until(async () => !(await A.page.isVisible('#cstart')) && !(await B.page.isVisible('#cstart')) && SAx().c.clsset === 1);
     rec('กดเริ่ม → เซิร์ฟเวอร์บันทึกอาชีพ หน้าเลือกปิด เริ่มเล่นได้', ok, SAx().c.cls);
-    rec('หน้าตาที่เลือกตอนสร้างถูกบันทึกที่เซิร์ฟเวอร์ (หญิง ผมขาวเงิน ชุดม่วง-ทอง)', JSON.stringify(SAx().c.look) === '{"g":"f","hair":3,"outfit":3}', JSON.stringify(SAx().c.look));
+    rec('หน้าตาที่เลือกตอนสร้างถูกบันทึกที่เซิร์ฟเวอร์ (หญิง ผมขาวเงิน ชุดม่วง-ทอง)', JSON.stringify(SAx().c.look) === '{"g":"f","hair":3,"outfit":3,"hs":0,"of":0}', JSON.stringify(SAx().c.look));
     const seeA = await until(async () => { const v = await B.page.evaluate(id => (HLNET.plooks || {})[id], SAx().id); return v && v.g === 'f' && v.hair === 3; });
     rec('เครื่องอื่น (B) เห็นหน้าตาของ A ตามที่เลือก', seeA);
     await A.page.evaluate(() => HLNET.send({ t: 'look', look: { g: 'm', hair: 1, outfit: 4 } }));

@@ -452,6 +452,26 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     rec('บันทึกหน้าตาใหม่ → ใช้ทันที', await cp.evaluate(() => HL.PS.look.g === 'm' && HL.PS.look.hair === 5 && document.getElementById('cstart').hidden));
     await cp.evaluate(() => localStorage.removeItem('hl_look_off'));
     await cp.evaluate(() => localStorage.removeItem('hl_cls_off')); await cp.close(); }
+  // ===== V2-R35: ทรงผม/แบบชุด แยกชั้นหัว-ตัว =====
+  { const lp = await ctx.newPage(); lp.on('pageerror', e => errors.push('layers pageerror: ' + e.message));
+    await lp.goto(url + '?pick=1'); await lp.waitForSelector('#cstart:not([hidden]) #lkcv');
+    const base = await lp.evaluate(() => ({ m: HL.CHAR_CAT.m.hair.length && HL.CHAR_CAT.m.outfit.length, f: HL.CHAR_CAT.f.hair.length && HL.CHAR_CAT.f.outfit.length, chipsWhenOne: document.querySelectorAll('#cstart [data-hs],#cstart [data-of]').length }));
+    rec('ทะเบียนทรงผม/ชุด: มีชุดพื้นฐานทั้งชาย/หญิง, ตอนมีแบบเดียวไม่แสดงปุ่มเลือก', base.m && base.f && base.chipsWhenOne === 0, JSON.stringify(base));
+    const r = await lp.evaluate(async () => { const wait = async l => { for (let i = 0; i < 120; i++) { const s = HL.sheetsFor(l); if (!s.tmp) return s; await new Promise(r => setTimeout(r, 50)) } return HL.sheetsFor(l) };
+      HL.CHAR_CAT.m.hair.push({ id: 'f0', n: 'ทดสอบหัวหญิง' }); HL.CHAR_CAT.m.outfit.push({ id: 'f0', n: 'ทดสอบตัวหญิง' }); // ทดสอบประกอบข้ามชุด
+      const px = async l => { const s = await wait(l), c = document.createElement('canvas'); c.width = 384; c.height = 496; const k = c.getContext('2d'); k.drawImage(s.SPR, 0, 0); return { s, d: k.getImageData(0, 0, 384, 496).data } };
+      const A = await px({ g: 'm', hs: 0, of: 0, hair: 0, outfit: 0 }), B = await px({ g: 'm', hs: 1, of: 0, hair: 0, outfit: 0 }), C = await px({ g: 'm', hs: 0, of: 1, hair: 0, outfit: 0 });
+      let headDiffB = 0, bodyDiffB = 0, headDiffC = 0, bodyDiffC = 0, longHair = 0;
+      for (let i = 0; i < A.d.length; i += 4) { const y = ((i >> 2) / 384 | 0) % 124, dB = A.d[i] !== B.d[i] || A.d[i + 3] !== B.d[i + 3], dC = A.d[i] !== C.d[i] || A.d[i + 3] !== C.d[i + 3];
+        if (y < 40) { headDiffB += dB; headDiffC += dC } else if (y > 70) { bodyDiffB += dB && B.d[i + 3] !== 254; bodyDiffC += dC } if (y > 60 && B.d[i + 3] === 254) longHair++ }
+      return { layered: A.s.layered && B.s.layered && C.s.layered, headDiffB, bodyDiffB, headDiffC, bodyDiffC, longHair } });
+    rec('ประกอบชั้นภาพ: เปลี่ยนทรงผม → หัวเปลี่ยน ตัวเดิม (ผมยาวลงหลังได้), เปลี่ยนชุด → ตัวเปลี่ยน หัวเดิม', r.layered && r.headDiffB > 500 && r.bodyDiffB < 200 && r.longHair > 300 && r.bodyDiffC > 1000 && r.headDiffC < 200, JSON.stringify(r));
+    await lp.evaluate(() => window.__rr = 1); await lp.click('#cstart [data-g="f"]'); await lp.click('#cstart [data-g="m"]');
+    const chips = await lp.evaluate(() => ({ hs: [...document.querySelectorAll('#cstart [data-hs]')].map(b => b.textContent), of: [...document.querySelectorAll('#cstart [data-of]')].map(b => b.textContent) }));
+    rec('มีหลายแบบ → แสดงปุ่ม "ทรงผม" และ "แบบชุด" พร้อมชื่อ', chips.hs.length === 2 && chips.of.length === 2 && chips.hs[0] === 'สั้นผ้าคาดหัว' && chips.of[0] === 'ชุดม้งดั้งเดิม', JSON.stringify(chips));
+    await lp.click('#cstart [data-hs="1"]'); await lp.click('#cstart [data-of="1"]'); await lp.click('#csgo');
+    rec('เลือกทรงผม/ชุดแล้วเริ่มเกม → ใช้ในตัวละคร', await lp.evaluate(() => HL.PS.look.hs === 1 && HL.PS.look.of === 1 && HL.PS.look.g === 'm'));
+    await lp.evaluate(() => localStorage.removeItem('hl_look_off')); await lp.close(); }
   rec('หน้าเกมปกติ (ระบบทดสอบอัตโนมัติ) ข้ามหน้าโหลดได้', await page.evaluate(() => document.getElementById('splash').hidden && SND.splash.shown === false));
   rec('ไม่มี JavaScript error ระหว่างทดสอบ', errors.length === 0, errors.slice(0, 5).join(' | '));
   await browser.close(); srv.close();

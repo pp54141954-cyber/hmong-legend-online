@@ -189,7 +189,7 @@ const CFG={
  stats:{perLv:3,max:99,keys:['str','vit','agi','luk'],
   info:{str:['STR','พลัง','ATK +1 ต่อแต้ม'],vit:['VIT','อึด','HP +4 ต่อแต้ม · DEF +1 ทุก 4 แต้ม'],agi:['AGI','ว่องไว','ความเร็วเดิน +0.4% · ลดคูลดาวน์ +0.2% ต่อแต้ม'],luk:['LUK','โชค','คริติคอล +0.25% ต่อแต้ม']}},
  /* หน้าตาตัวละคร (V2-R30): จำนวนตัวเลือก — เซิร์ฟเวอร์ใช้ตรวจค่า */
- look:{hair:6,outfit:6},
+ look:{hair:6,outfit:6,hs:16,of:16},
  /* ชุดไอเทมเริ่มต้น (V2-R24): ให้ครั้งเดียวต่อตัวละคร ใส่อุปกรณ์ให้ทันที */
  starter:{eq:{weapon:'sword_wood',armor:'coat_cloth'},bag:[['potion_s',10],['potion_m',3]]},
  items:{

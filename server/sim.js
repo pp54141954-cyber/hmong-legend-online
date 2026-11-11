@@ -104,7 +104,7 @@ function createSim({ rand = Math.random } = {}) {
   // เปลี่ยนอาชีพ: เฉพาะในเขตปลอดภัย ไม่ตาย — ระดับสกิลของอาชีพเดิมเก็บไว้ (กลับมาแล้วได้คืน)
   // เลือกครั้งแรก (V2-R29): ตัวละครที่ยังไม่เคยเลือก (clsset=0) เลือกได้ทุกที่ครั้งเดียว — หลังจากนั้นเปลี่ยนได้เฉพาะในเขตปลอดภัย
   // หน้าตา (V2-R30): เพศ m/f, สีผม, ชุด — ตรวจช่วงค่าจาก CFG.look
-  const cleanLook = l => { l = l && typeof l === 'object' ? l : {}; const ok = (v, n) => Number.isInteger(v) && v >= 0 && v < n; return ok(+l.hair, CFG.look.hair) && ok(+l.outfit, CFG.look.outfit) && (l.g === 'm' || l.g === 'f') ? { g: l.g, hair: +l.hair, outfit: +l.outfit } : null; };
+  const cleanLook = l => { l = l && typeof l === 'object' ? l : {}; const ok = (v, n) => Number.isInteger(v) && v >= 0 && v < n; const opt = (v, n) => v === undefined || ok(+v, n); return ok(+l.hair, CFG.look.hair) && ok(+l.outfit, CFG.look.outfit) && opt(l.hs, CFG.look.hs) && opt(l.of, CFG.look.of) && (l.g === 'm' || l.g === 'f') ? { g: l.g, hair: +l.hair, outfit: +l.outfit, hs: +(l.hs || 0), of: +(l.of || 0) } : null; };
   function setLook(p, l) { const v = cleanLook(l); if (!v) return 'invalid'; p.c.look = v; p.dirty = true; p.personal.push({ k: 'look', look: v }); return 'ok'; }
   function setClass(p, cls, first) {
     cls = String(cls); if (!ROWS[cls]) return 'invalid';
