@@ -73,6 +73,8 @@ docker compose -f deploy/docker-compose.yml cp game:/data/backups ./backups
 
 ## บัญชีแอดมิน (V2-R27)
 
+**ตรวจว่าตั้งค่าแล้วหรือยัง:** เปิด `https://<ชื่อบริการ>.onrender.com/healthz` — ถ้า `"admins":0` = เซิร์ฟเวอร์ยังไม่ได้ค่า (ยังไม่กด Save หรือยังไม่ Deploy ใหม่) · ถ้า `"admins":1` แต่ไม่เห็นปุ่ม = ชื่อบัญชีไม่ตรงทุกตัว
+
 1. Render → บริการเกม → **Environment** → **Add Environment Variable**
 2. Key: `ADMIN_USERS` · Value: ชื่อบัญชีที่ใช้ล็อกอิน (หลายบัญชีคั่นด้วย `,`)
 3. กด Save → Render รีสตาร์ตเอง → ล็อกอินบัญชีนั้นจะเห็นปุ่ม **🛠 แอดมิน** ใต้ปุ่มแผนที่

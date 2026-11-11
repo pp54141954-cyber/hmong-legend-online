@@ -265,6 +265,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   await until(async () => (await st(B.page)).others.some(o => o.name === 'Tester_A'));
 
   // V2-R27: แอดมิน (เฉพาะบัญชีใน ADMIN_USERS) + อาชีพออนไลน์
+  { const hz = await (await fetch(url + 'healthz')).json(); rec('/healthz บอกจำนวนบัญชีแอดมินที่ตั้งไว้ (ไม่บอกชื่อ) + เวอร์ชัน', hz.admins === 1 && hz.ver && !JSON.stringify(hz).includes('Tester_A'), JSON.stringify(hz)); }
   { rec('บัญชีแอดมินเห็นปุ่ม 🛠, บัญชีทั่วไปไม่เห็น', await A.page.isVisible('#admb') && !(await B.page.isVisible('#admb')));
     await A.page.click('#admb'); await A.page.waitForSelector('#adp:not([hidden]) #ad-lv');
     const lv0 = SA().c.lv; await A.page.fill('#ad-lv', '25'); await A.page.click('#ad-lvb');
