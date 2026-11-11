@@ -685,7 +685,7 @@ function doHit(sk,mult,ox,oy,dir){let hits=0;ox=ox??player.x;oy=oy??player.y-14;
 const DV={E:[1,0],W:[-1,0],N:[0,-1],S:[0,1]};
 /* ปล่อยผลของสกิลหลังท่าร่าย */
 let lastAim=null;
-function release(sk){const ox=player.x,oy=player.y-14,dir=player.dir,[ux,uy]=DV[dir];if(sk.art)artFx(sk,ox,oy,dir);
+function release(sk){const ox=player.x,oy=player.y-14,dir=player.dir,[ux,uy]=DV[dir];if(sk.art&&!(PS.cast&&PS.cast.chart))artFx(sk,ox,oy,dir);
   const dashMove=(dist,sgn)=>{for(let k=0;k<dist;k+=4){const nx=player.x+ux*4*sgn,ny=player.y+uy*4*sgn;if(boxBlocked(nx,ny))break;player.x=nx;player.y=ny}};
   if(sk.shape==='move'){dashMove(sk.dist,1);fx.push({k:'trail',x:ox,y:oy,x2:player.x,y2:player.y-14,t:.25});return}
   if(sk.shape==='guard'){PS.guardT=sk.dur;PS.guardRed=sk.red;say((CLS_ACTIVE[curCls()][CFG.skills.indexOf(sk)]||sk.name)+': ลดความเสียหาย '+Math.round(sk.red*100)+'% '+sk.dur+' วินาที');return}
@@ -724,7 +724,7 @@ const CLS_PATHS={};for(const c of CLASSES)CLS_PATHS[c]=[...new Set(SKILL_TABLE.f
 const curCls=()=>{const c=netOn()?HLNET.cls:PS.cls;return CLS_ACTIVE[c]?c:'นักดาบ'};
 const skName=i=>CLS_ACTIVE[curCls()][i-1]||(CFG.skills[i-1]||{}).name;
 function useSkill(i){const sk=CFG.skillFor(curCls(),i);if(!sk||PS.dead)return'invalid';if(PS.job<sk.job||(netOn()&&!(HLNET.sk[skName(i)]>0)))return'locked';if((PS.cd[i]||0)>0)return'cooldown';if(PS.cast)return'busy';
-  PS.cd[i]=sk.cd*(netOn()?Math.max(.5,1-(HLNET.bon.cdr||0)):1);startCast(sk,i);sfx('skill',{shape:sk.shape});if(netOn())HLNET.act(i,player.dir);return'ok'}
+  PS.cd[i]=sk.cd*(netOn()?Math.max(.5,1-(HLNET.bon.cdr||0)):1);startCast(sk,i);PS.cast.chart=chartFx(curCls(),i);sfx('skill',{shape:sk.shape});if(netOn())HLNET.act(i,player.dir);return'ok'}
 function updCast(dt){const c=PS.cast;if(!c)return;c.t+=dt;if(!c.done&&c.t>=c.sk.poseT*.6){c.done=true;release(c.sk)}if(c.t>=c.sk.poseT)PS.cast=null}
 function updShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i],d=s.sk.speed*dt;s.x+=s.ux*d;s.y+=s.uy*d;s.dist+=d;if(Math.random()<.7)burst(s.x-s.ux*10+(Math.random()-.5)*s.uy*s.sk.width,s.y-s.uy*10+(Math.random()-.5)*s.ux*s.sk.width,s.sk.color||'#c89bff',1,40,.4,0);
   let stop=false;for(const m of mons){if(m.state==='dead'||s.hit.has(m))continue;if(Math.hypot(m.x-s.x,(m.y-m.c.size*.6)-s.y)<=s.sk.width/2+m.c.size){s.hit.add(m);damageMon(m,s.sk.mult);if(s.sk.mark){m.markT=s.sk.markDur;m.markBonus=s.sk.markBonus}if(s.sk.drain&&!netOn()){const a=Math.round(PS.maxHp*s.sk.drain);PS.hp=Math.min(PS.maxHp,PS.hp+a);addNum(player.x,player.y-60,'+'+a,'#6aff9a')}if(s.sk.shape==='shot'&&!s.sk.pierce){stop=true;break}}}
@@ -845,6 +845,14 @@ function drawPlayer(){if(PS.dead)return;if(PS.hurt>0&&Math.floor(PS.hurt*20)%2)r
   drawPlayerBody();if(PS.look&&PS.look.g==='f'&&!sheetsFor(PS.look).fem&&!sheetsFor(PS.look).tmp){const d=PS.cast?(player.dir==='E'||player.dir==='W'?player.dir:player.lastH==='W'?'W':'E'):player.dir;femHair(player.x,player.y,PS.cast&&(player.dir==='N'||player.dir==='S')?player.dir:d,PS.look,SCALE)}}
 /* ท่าทางอาชีพ (V2-R38): ภาพจากเจ้าของ tools/build_class_poses.py — ใช้ตอนโจมตี/ใช้สกิล ถ้ามีภาพของอาชีพ+เพศนั้น */
 const CLASS_POSE={"นักธนู":{"m":{"id":"archer_m","seq":{"basic":[5,6,8,10],"skill":[4,6,7,8,10,11]}}}};/*CLASS_POSE*/
+/* เอฟเฟกต์สกิลจากตารางท่าของเจ้าของ (tools/build_skill_fx.py) */
+const SKFXIMG={};const skfxImg=cls=>{const n=SKILL_FX.cls&&SKILL_FX.cls[cls];if(!n)return null;if(!SKFXIMG[n]){const im=new Image();im.src='sprites/skfx_'+n+'.webp';SKFXIMG[n]=im}const im=SKFXIMG[n];return im.complete&&im.naturalWidth?im:null};
+/* เล่นเอฟเฟกต์จากตาราง: แถว = ช่องสกิล-3, จังหวะ WIND-UP→ACTION→RELEASE→RECOVER (คอลัมน์ 1–4) วางที่เท้าตัวละคร */
+function chartFx(cls,i){const n=SKILL_FX.cls&&SKILL_FX.cls[cls];if(!n||i<3||i>11)return false;skfxImg(cls);const side=player.dir==='E'||player.dir==='W'?player.dir:(player.lastH||'E');
+  fx.push({k:'cchart',cls,row:i-3,x:player.x,y:player.y,sx:side==='W'?-1:1,t:1.05,T:1.05,follow:1});return true}
+function drawChart(f){const im=skfxImg(f.cls);if(!im)return;const F=SKILL_FX,p=1-f.t/f.T,fr=1+Math.min(3,Math.floor(p*4)),sc=107*SCALE/F.fig,x=f.follow?player.x:f.x,y=f.follow?player.y:f.y;
+  ctx.globalAlpha=Math.min(1,f.t*4);ctx.globalCompositeOperation='lighter';ctx.translate(x,y+2);ctx.scale(f.sx*sc,sc);ctx.drawImage(im,fr*F.cw,f.row*F.ch,F.cw,F.ch,-F.ax,-F.ay,F.cw,F.ch)}
+const SKILL_FX={"cw":320,"ch":200,"ax":70,"ay":172,"fig":92,"cls":{"นักธนู":"archer","นักฆ่า":"assassin","นักสู้":"fighter","ผู้สืบวิญญาณ":"spirit_heir","ผู้รักษา":"healer"}};/*SKILL_FX*/
 const POSEIMG={},POSEC={};
 function poseFor(cls,look){const P=CLASS_POSE[cls];if(!P)return null;const g=look&&look.g==='f'?'f':'m',e=P[g];if(!e)return null;
   if(!POSEIMG[e.id]){const im=new Image();im.src='sprites/pose_'+e.id+'.webp';POSEIMG[e.id]=im}const im=POSEIMG[e.id];if(!(im.complete&&im.naturalWidth))return null;
@@ -1049,7 +1057,7 @@ function drawGhost(x,y,sc,sx){const K=ctx;K.save();K.translate(x,y);K.scale(sx*s
 function drawBeast(x,y,sc,sx,p){const K=ctx;K.save();K.translate(x,y);K.scale(sx*sc,sc);const g=K.createLinearGradient(-30,-40,30,0);g.addColorStop(0,'rgba(106,255,192,.75)');g.addColorStop(1,'rgba(184,140,255,.75)');K.fillStyle=g;K.strokeStyle='#b88cff';K.lineWidth=2;
   K.beginPath();K.moveTo(-30,-12);K.quadraticCurveTo(-10,-26,16,-22);K.lineTo(26,-34);K.lineTo(30,-24);K.lineTo(38,-20);K.lineTo(30,-12);K.lineTo(20,-10);K.lineTo(18,2);K.lineTo(12,2);K.lineTo(10,-8);K.lineTo(-16,-6);K.lineTo(-18,2);K.lineTo(-24,2);K.lineTo(-24,-8);K.lineTo(-38,-18);K.closePath();K.fill();K.stroke();
   K.fillStyle='rgba(197,139,255,.9)';for(let k=0;k<5;k++){K.beginPath();K.moveTo(-8+k*6,-22);K.quadraticCurveTo(-12+k*6,-38-Math.sin(p*8+k)*4,-2+k*6,-30);K.fill()}K.fillStyle='#fff';K.beginPath();K.arc(30,-24,2,0,7);K.fill();K.restore()}
-function drawFxC(f){const c=f.col||'#fff';if(f.k==='cart'){drawArt(f);return true}
+function drawFxC(f){const c=f.col||'#fff';if(f.k==='cchart'){drawChart(f);return true}if(f.k==='cart'){drawArt(f);return true}
   if(f.k==='cheal'){const p=1-f.t/.8;ctx.globalAlpha=Math.min(1,f.t*3);ctx.strokeStyle=c;ctx.lineWidth=3;ctx.shadowColor=c;ctx.shadowBlur=14;ctx.beginPath();ctx.ellipse(f.x,f.y,f.r*(.3+p*.7),f.r*(.3+p*.7)*.35,0,0,7);ctx.stroke();
     ctx.globalAlpha=.25*(1-p);ctx.fillStyle=c;ctx.beginPath();ctx.ellipse(f.x,f.y,f.r*(.3+p*.7),f.r*(.3+p*.7)*.35,0,0,7);ctx.fill();
     ctx.globalAlpha=Math.min(1,f.t*3);ctx.fillStyle=c;for(let k=0;k<8;k++){const a=k/8*6.28+p*2,x=f.x+Math.cos(a)*30,y=f.y-20-p*50-Math.sin(a)*8;ctx.fillRect(x-1.5,y-5,3,10);ctx.fillRect(x-5,y-1.5,10,3)}return true}
@@ -1296,8 +1304,8 @@ enterZone(CFG.player.home,ZONES[CFG.player.home].start[0],ZONES[CFG.player.home]
 let last=performance.now();
 function loop(n){const dt=Math.min((n-last)/1000,.05);last=n;update(dt);draw();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
-window.HL={DV,CLASS_WEAPON,get castDraw(){return[drawClassCast.n||0,drawClassCast.w]},poseFor:(c,l)=>poseFor(c,l||PS.look),get CLASS_POSE(){return CLASS_POSE},skillFor:i=>CFG.skillFor(curCls(),i),basicNow:()=>CFG.basicFor(curCls()),get shotsN(){return shots.length},CHAR_CAT,lookSets,femReady,get femDraws(){return femHair.n||0},HAIRS,OUTFITS,cleanLook,setLook,sheetsFor,femHair,get SPRcur(){return SPR},preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
-  for(let i=0;i<=11;i++)out.push({src:'icons/sk_'+i+'.png',label:'ไอคอนสกิล'});for(const g of['m','f']){const ls=lookSets({g,hs:0,of:0});if(ls)for(const f of['walk','idle','attack'])for(const[id,pt]of[[ls.h,'h'],[ls.b,'b']])out.push({src:'sprites/pc_'+id+'_'+pt+'_'+f+'.webp',label:'ภาพตัวละคร'})}out.push({src:'icons/sk_p.png',label:'ไอคอนสกิล'});
+window.HL={DV,SKILL_FX,skfxReady:c=>!!skfxImg(c),get fxList(){return fx},CLASS_WEAPON,get castDraw(){return[drawClassCast.n||0,drawClassCast.w]},poseFor:(c,l)=>poseFor(c,l||PS.look),get CLASS_POSE(){return CLASS_POSE},skillFor:i=>CFG.skillFor(curCls(),i),basicNow:()=>CFG.basicFor(curCls()),get shotsN(){return shots.length},CHAR_CAT,lookSets,femReady,get femDraws(){return femHair.n||0},HAIRS,OUTFITS,cleanLook,setLook,sheetsFor,femHair,get SPRcur(){return SPR},preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
+  for(let i=0;i<=11;i++)out.push({src:'icons/sk_'+i+'.png',label:'ไอคอนสกิล'});for(const n of Object.values(SKILL_FX.cls||{}))out.push({src:'sprites/skfx_'+n+'.webp',label:'เอฟเฟกต์สกิล'});for(const g of['m','f']){const ls=lookSets({g,hs:0,of:0});if(ls)for(const f of['walk','idle','attack'])for(const[id,pt]of[[ls.h,'h'],[ls.b,'b']])out.push({src:'sprites/pc_'+id+'_'+pt+'_'+f+'.webp',label:'ภาพตัวละคร'})}out.push({src:'icons/sk_p.png',label:'ไอคอนสกิล'});
   for(const t of new Set((ZONES.field2.spawns||[]).map(s=>s.type))){const d=MON_SPR[t];if(!d)continue;if(d.walk)out.push({src:d.walk,label:'ภาพ'+t});if(d.act)out.push({src:d.act,label:'ภาพ'+t})}return out},CLASSES,CLS_ACTIVE,CLS_PATHS,curCls,skName,setClassLocal(c){if(!CLS_ACTIVE[c])return'invalid';if(!inSafe(player.x,player.y))return'not-safe';PS.cls=c;buildSkills();hudT=0;return'ok'},get inSafeNow(){return inSafe(player.x,player.y)},buildSkills,adminLocal,clearWarpCd(){warpCd=0},monShown,warp,openWorld,openAutoCfg,statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
 })();
 
