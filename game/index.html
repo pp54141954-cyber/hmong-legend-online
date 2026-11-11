@@ -69,6 +69,13 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .win .swr{display:flex;justify-content:space-between;align-items:center;padding:8px 0 0;margin-top:8px;border-top:1px solid #e6ebf2;font-size:13px}.win .swr small{display:block;font-size:10px;color:#7a8799}.win .sw{flex:none;width:50px;height:28px;padding:0;border:0;border-radius:14px;background:#c9d2de;position:relative}.win .sw i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .15s}.win .sw[aria-checked="true"]{background:#3b6fd0}.win .sw[aria-checked="true"] i{left:25px}
 #aop .pots{display:flex;flex-wrap:wrap;gap:5px}#aop .pots button{flex:1;padding:6px 4px;font-size:11px;color:#244a86;background:#e3ecfa;border:2px solid transparent;border-radius:9px}#aop .pots button.on{border-color:#2f5aa0;font-weight:800}
 #aop .wft{display:flex;align-items:center;gap:8px;padding:10px;background:#fff;border-top:1px solid #d9e1ec}#aop .wft span{flex:1;font-size:12px;font-weight:700;color:#2f9a4a}#aop .wft small{display:block;font-weight:400;color:#7a8799}#aop .go{flex:2;padding:12px;font-size:15px;font-weight:800;color:#fff;background:#3b6fd0;border:0;border-radius:12px;box-shadow:0 3px 0 #244a86}
+#clp .cur{display:flex;flex-direction:column}#clp .cur span{font-size:11px;color:#7a8799}#clp .cur b{font-size:18px}#clp .cur small{font-size:10px;color:#7a8799}#clp .warn{margin:0;padding:8px 10px;border-radius:10px;background:#fff3d6;color:#8a5a00;font-size:12px}
+#clp .cls{display:flex;flex-direction:column;gap:6px}#clp .cc{display:flex;align-items:center;gap:8px;background:#fff;border-radius:12px;padding:8px;box-shadow:0 1px 3px #0002}#clp .cc.on{outline:2px solid #46a758}#clp .cc i{flex:none;width:44px;height:40px;border-radius:10px;color:#fff;font-style:normal;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center}
+#clp .cc div{flex:1;min-width:0;display:flex;flex-direction:column}#clp .cc b{font-size:14px}#clp .cc small{font-size:10px;color:#7a8799}#clp .cc button{flex:none;padding:8px 12px;font-weight:800;color:#fff;background:#3b6fd0;border:0;border-radius:10px}#clp .cc button:disabled{opacity:.35}#clp .cc em{font-style:normal;font-size:11px;font-weight:800;color:#2f9a4a}
+#skp h3 .clsb{margin-left:auto;margin-right:6px;font-size:11px;color:#ffcf8a;border-color:#ffcf8a88}
+#admb{position:absolute;left:8px;top:calc(var(--toph,120px) + 66px);z-index:4;padding:5px 10px;font-size:12px;font-weight:800;color:#fff;background:#9b2226;border:0;border-radius:12px}#admb[hidden]{display:none}
+#adp .arow{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}#adp label{width:44px;font-size:12px}#adp input,#adp select{flex:1;min-width:0;padding:7px;border:1px solid #c9d2de;border-radius:8px;font:inherit;font-size:13px;background:#fff;color:#1c2b3a}#adp input[type=number]{max-width:80px}
+#adp .arow button{flex:1;padding:8px 6px;font-size:12px;font-weight:700;color:#244a86;background:#e3ecfa;border:0;border-radius:9px}#adp #ad-god[aria-pressed="true"]{background:#9b2226;color:#fff}
 #wmb{position:absolute;left:8px;top:calc(var(--toph,120px) + 30px);z-index:4;display:flex;align-items:center;gap:4px;padding:5px 10px;font-size:16px;color:#fff;background:linear-gradient(#2fa58a,#1f7a66);border:0;border-radius:12px;box-shadow:0 2px 0 #145446}#wmb span{font-size:12px;font-weight:700}
 #wmp .zc{display:flex;gap:8px;align-items:center;padding:6px}#wmp .zc.here{outline:2px solid #46a758}#wmp .zt{flex:none;width:84px;height:56px;border-radius:9px;overflow:hidden;background:#cfe3c4}#wmp .zt img{width:100%;height:100%;object-fit:cover}#wmp .zt .ph{width:100%;height:100%;background:repeating-linear-gradient(45deg,#7fb86a,#7fb86a 6px,#8cc477 6px,#8cc477 12px)}
 #wmp .zi{flex:1;min-width:0;display:flex;flex-direction:column}#wmp .zi b{font-size:14px}#wmp .zi small{font-size:10px;color:#7a8799;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#wmp .zi .zl{font-weight:800;font-size:11px}#wmp .zi .zb{color:#9b2226}
@@ -449,6 +456,12 @@ const Combat={
 const PS={buffT:0,buffBonus:0,guardT:0,guardRed:0,lv:1,exp:0,job:1,jexp:0,hp:0,maxHp:0,atk:0,dead:false,deadT:0,hurt:0,cd:{},page:0,kills:0,cast:null};
 function recalc(){const S=CFG.stats.bonus(PS.st);PS.maxHp=CFG.player.baseHP+(PS.lv-1)*CFG.player.hpPerLv+S.hp;PS.atk=CFG.player.baseAtk+(PS.lv-1)*CFG.player.atkPerLv+S.atk;PS.def=S.def}
 function statUpLocal(k,n){n=n||1;if(!CFG.stats.keys.includes(k)||CFG.stats.free(PS.lv,PS.st)<n||((PS.st||{})[k]||0)+n>CFG.stats.max)return false;PS.st=CFG.stats.clean(PS.st);PS.st[k]+=n;recalc();return true}
+function adminLocal(o){if(o.op==='lv'){const n=Math.floor(o.n);if(!(n>=1&&n<=CFG.player.maxLv))return'ค่าไม่ถูกต้อง';PS.lv=n;PS.exp=0;PS.st={};recalc();PS.hp=PS.maxHp}
+  else if(o.op==='job'){const n=Math.floor(o.n);if(!(n>=1&&n<=CFG.player.maxJob))return'ค่าไม่ถูกต้อง';PS.job=n;PS.jexp=0}
+  else if(o.op==='heal')PS.hp=PS.maxHp;else if(o.op==='warp'){if(!ZONES[o.zone])return'ค่าไม่ถูกต้อง';const s=ZONES[o.zone].start;enterZone(o.zone,s[0],s[1])}
+  else if(o.op==='clear'){for(const m of mons)if(!m.c.boss&&m.state!=='dead'){m.state='dead';m.dieT0=tNow;m.respT=m.c.respawn}}
+  else if(o.op==='time'){const w={day:x=>!x.night,night:x=>x.night&&!x.blood,blood:x=>x.blood,world:x=>x.world}[o.mode];if(!w)return'ค่าไม่ถูกต้อง';let d=0;while(d<4*3600&&!w(CFG.worldClock(clockNow()+d)))d+=10;clockOff+=d+5;wtT=0}
+  else return'ใช้ได้เมื่อออนไลน์';hudT=0;return'แอดมิน '+o.op+': สำเร็จ'}
 function statResetLocal(){PS.st={};recalc();PS.hp=Math.min(PS.hp,PS.maxHp)}
 recalc();PS.hp=PS.maxHp;
 const inSafe=(x,y)=>Z.D.safe(Math.floor(x/T),Math.floor(y/T));
@@ -502,7 +515,7 @@ const DV={E:[1,0],W:[-1,0],N:[0,-1],S:[0,1]};
 function release(sk){const ox=player.x,oy=player.y-14,dir=player.dir,[ux,uy]=DV[dir];
   const dashMove=(dist,sgn)=>{for(let k=0;k<dist;k+=4){const nx=player.x+ux*4*sgn,ny=player.y+uy*4*sgn;if(boxBlocked(nx,ny))break;player.x=nx;player.y=ny}};
   if(sk.shape==='move'){dashMove(sk.dist,1);fx.push({k:'trail',x:ox,y:oy,x2:player.x,y2:player.y-14,t:.25});return}
-  if(sk.shape==='guard'){PS.guardT=sk.dur;PS.guardRed=sk.red;say(sk.name+': ลดความเสียหาย '+Math.round(sk.red*100)+'% '+sk.dur+' วินาที');return}
+  if(sk.shape==='guard'){PS.guardT=sk.dur;PS.guardRed=sk.red;say((CLS_ACTIVE[curCls()][CFG.skills.indexOf(sk)]||sk.name)+': ลดความเสียหาย '+Math.round(sk.red*100)+'% '+sk.dur+' วินาที');return}
   if(sk.shape==='buff'){fx.push({k:'sigil',sk,t:.8});burst(player.x,player.y-6,'#ffd25a',30,70,1,110);PS.buffT=sk.dur;PS.buffBonus=sk.bonus;say(sk.name+': ดาเมจ +'+Math.round(sk.bonus*100)+'% '+sk.dur+' วินาที');return}
   if(sk.shape==='mark'){fx.push({k:'redarc',sk,t:.25,x:ox,y:oy,dir});fx.push({k:'bigseal',x:ox+ux*sk.range*.85,y:oy+uy*sk.range*.85,t:.7});burst(ox+ux*sk.range*.85,oy+uy*sk.range*.85,'#ff5a3a',18,160,.5,40);for(const m of mons){if(m.state==='dead')continue;if(!Combat.inShape(sk,sk.range+m.c.size,ox,oy,dir,m.x,m.y-m.c.size*.6))continue;fx.push({k:'seal',x:m.x,y:m.y-m.c.size*.8,t:.6});damageMon(m,sk.mult);m.markT=sk.markDur;m.markBonus=sk.markBonus}return}
   if(sk.shape==='dash'){fx.push({k:'ghost',x:player.x,fy:player.y,dir,t:.4,teal:1});fx.push({k:'streak',sk,t:.3,x:ox,y:oy,dir});doHit({shape:'line',range:sk.range,width:sk.width},sk.mult,ox,oy,dir);dashMove(sk.range,1);burst(player.x,player.y-14,'#5ff0dc',20,160,.45,30);return}
@@ -523,7 +536,12 @@ function release(sk){const ox=player.x,oy=player.y-14,dir=player.dir,[ux,uy]=DV[
   else{doHit(sk,sk.mult,ox,oy,dir);if(sk!==CFG.basic)fx.push({k:sk.fxk||sk.shape,sk,t:sk.fxk?.5:.22,x:ox,y:oy,dir});if(sk.fxk==='quake'){burst(ox,oy+14,'#ffb43a',46,280,.7,140);shake(7,.4)}}}
 function startCast(sk,key){PS.cast={sk,t:0,done:false,key};}
 function attack(){if(PS.dead||PS.cast||(PS.cd.b||0)>0)return false;PS.cd.b=CFG.basic.cd;startCast(CFG.basic,'b');if(netOn())HLNET.act('b',player.dir);return true}
-function useSkill(i){const sk=CFG.skills[i-1];if(!sk||PS.dead)return'invalid';if(PS.job<sk.job||(netOn()&&!(HLNET.sk[sk.name]>0)))return'locked';if((PS.cd[i]||0)>0)return'cooldown';if(PS.cast)return'busy';
+/* อาชีพ (V2-R27): 8 อาชีพจาก SKILL_TABLE — ช่อง 1–11 ใช้กลไกเดียวกับนักดาบ (ท่าแบบชั่วคราว) แต่ชื่อ/ระดับสกิลแยกตามอาชีพ */
+const CLASSES=[...new Set(SKILL_TABLE.map(r=>r[0]))],CLS_ACTIVE={};for(const c of CLASSES)CLS_ACTIVE[c]=SKILL_TABLE.filter(r=>r[0]===c&&r[3]==='a'&&r[2]!=='ท่าพื้นฐาน').map(r=>r[2]);
+const CLS_PATHS={};for(const c of CLASSES)CLS_PATHS[c]=[...new Set(SKILL_TABLE.filter(r=>r[0]===c&&r[1]!=='เริ่มต้น').map(r=>r[1]))];
+const curCls=()=>{const c=netOn()?HLNET.cls:PS.cls;return CLS_ACTIVE[c]?c:'นักดาบ'};
+const skName=i=>CLS_ACTIVE[curCls()][i-1]||(CFG.skills[i-1]||{}).name;
+function useSkill(i){const sk=CFG.skills[i-1];if(!sk||PS.dead)return'invalid';if(PS.job<sk.job||(netOn()&&!(HLNET.sk[skName(i)]>0)))return'locked';if((PS.cd[i]||0)>0)return'cooldown';if(PS.cast)return'busy';
   PS.cd[i]=sk.cd*(netOn()?Math.max(.5,1-(HLNET.bon.cdr||0)):1);startCast(sk,i);if(netOn())HLNET.act(i,player.dir);return'ok'}
 function updCast(dt){const c=PS.cast;if(!c)return;c.t+=dt;if(!c.done&&c.t>=c.sk.poseT*.6){c.done=true;release(c.sk)}if(c.t>=c.sk.poseT)PS.cast=null}
 function updShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i],d=s.sk.speed*dt;s.x+=s.ux*d;s.y+=s.uy*d;s.dist+=d;if(Math.random()<.7)burst(s.x-s.ux*10+(Math.random()-.5)*s.uy*s.sk.width,s.y-s.uy*10+(Math.random()-.5)*s.ux*s.sk.width,'#c89bff',1,40,.4,0);
@@ -794,8 +812,8 @@ const saveSlots=()=>{try{localStorage.setItem('hl_slots',JSON.stringify(SLOTS))}
 function setSlot(k,i){const j=SLOTS.indexOf(i);if(j>=0&&j!==k)SLOTS[j]=SLOTS[k];SLOTS[k]=i;saveSlots();buildSkills()}
 const skIcon=i=>'icons/sk_'+i+'.png';
 function buildSkills(){skEl.innerHTML='';for(let s=0;s<6;s++){const i=SLOTS[s],sk=CFG.skills[i-1],b=document.createElement('button');b.className='sk';
-  if(!sk){b.disabled=true;b.style.visibility='hidden';skEl.appendChild(b);continue}b.dataset.i=i;b.setAttribute('aria-label',sk.name);b.addEventListener('animationend',()=>b.classList.remove('ready'));b.innerHTML='<img alt="" draggable="false"><i class="cdn"></i><small></small>';b.querySelector('img').src=skIcon(i);b.querySelector('small').textContent=sk.name;
-  b.addEventListener('pointerdown',e=>{e.preventDefault();const r=useSkill(i);if(r==='locked')say(PS.job<sk.job?sk.name+' ปลดล็อกที่ Job '+sk.job:sk.name+' ต้องอัปสกิลก่อน (📜)')});skEl.appendChild(b)}hudT=0}
+  if(!sk){b.disabled=true;b.style.visibility='hidden';skEl.appendChild(b);continue}b.dataset.i=i;b.setAttribute('aria-label',skName(i));b.addEventListener('animationend',()=>b.classList.remove('ready'));b.innerHTML='<img alt="" draggable="false"><i class="cdn"></i><small></small>';b.querySelector('img').src=skIcon(i);b.querySelector('small').textContent=skName(i);
+  b.addEventListener('pointerdown',e=>{e.preventDefault();const r=useSkill(i);if(r==='locked')say(PS.job<sk.job?skName(i)+' ปลดล็อกที่ Job '+sk.job:sk.name+' ต้องอัปสกิลก่อน (📜)')});skEl.appendChild(b)}hudT=0}
 buildSkills();
 /* ปุ่ม AUTO (V2-R23) แทนปุ่มสลับชุด */
 $('ask').onclick=()=>openAutoCfg();queueMicrotask(()=>setAutoSk(AUTOSK.on));
@@ -811,7 +829,7 @@ function renderAutoCfg(){if(aop.hidden)return;const C=AUTO.cfg,types=[...new Set
    +(types.length?types.map(t=>{const m=CFG.monsters[t];return '<button class="tg'+(C.tg[t]===false?' off':'')+'" data-t="'+t+'" aria-pressed="'+(C.tg[t]!==false)+'">'+(MON_ART[t]?'<img alt="" src="'+MON_ART[t]+'">':'')+'<span><b></b><small>Lv '+m.lv+'</small></span></button>'}).join(''):'<p class="note">ไม่มีมอนสเตอร์ในแมพนี้</p>')
    +'</div><p class="note">ไม่ล่าบอสอัตโนมัติ</p></div>'
    +'<div class="card"><div class="ch"><b><i class="dt" style="background:#8e4ec6"></i>สกิลที่ Auto ใช้</b><span>ตามช่องลัด</span></div><div class="aks">'
-   +SLOTS.map((si,k)=>{const sk=CFG.skills[si-1],lk=!sk||PS.job<sk.job||(netOn()&&!(HLNET.sk[sk.name]>0)),ns=sk&&['move','guard','counter'].includes(sk.shape);
+   +SLOTS.map((si,k)=>{const sk=CFG.skills[si-1],lk=!sk||PS.job<sk.job||(netOn()&&!(HLNET.sk[skName(si)]>0)),ns=sk&&['move','guard','counter'].includes(sk.shape);
      return '<button class="ak'+(C.sk[k]&&!ns?' on':'')+(lk?' lk':'')+'" data-k="'+k+'" aria-pressed="'+!!C.sk[k]+'" aria-label="ช่อง '+(k+1)+' '+(sk?sk.name:'')+'"'+(ns?' disabled':'')+'><i>'+(k+1)+'</i><img alt="" src="'+skIcon(si)+'">'+(lk?'<em>🔒</em>':'')+'</button>'}).join('')
    +'</div><p class="note">ท่าเคลื่อนที่/ป้องกัน/สวนกลับ ไม่ใช้อัตโนมัติ · 🔒 = ต้องอัปสกิลก่อน (📜)</p>'
    +swHtml('ao-basic',C.basic,'โจมตีธรรมดา')+swHtml('ao-man',AUTOSK.on,'ใช้สกิลออโตตอนเล่นเอง','กดเดินเองแต่สกิลออกอัตโนมัติ')+'</div>'
@@ -862,16 +880,17 @@ const MON_IMG={};const monArt=ty=>{if(!MON_ART[ty])return null;if(!MON_IMG[ty]){
 let tgtShown=null;
 function pickTarget(){if(lastTarget&&lastTarget.state!=='dead'&&mons.includes(lastTarget)&&Math.hypot(lastTarget.x-player.x,lastTarget.y-player.y)<420)return lastTarget;
   let best=null,bd=1e9;for(const m of mons){if(m.state!=='chase')continue;const d=Math.hypot(m.x-player.x,m.y-player.y);if(d<bd){bd=d;best=m}}return best}
+const SHOW_TGT=false; /* การ์ดเป้าหมายมุมขวาบน: เจ้าของสั่งเอาออก (V2-R27) */
 function hud(dt){hudT-=dt;if(hudT>0)return;hudT=.1;{const tb=document.getElementById('top').getBoundingClientRect().bottom;if(tb!==hud.tb){hud.tb=tb;document.documentElement.style.setProperty('--toph',Math.round(tb)+'px')}}
-  {const t=pickTarget(),el=$('tgt');if(!t){el.style.display='none';tgtShown=null}else{el.style.display='flex';
+  {const t=SHOW_TGT?pickTarget():null,el=$('tgt');if(!t){el.style.display='none';tgtShown=null}else{el.style.display='flex';
     if(tgtShown!==t.type){tgtShown=t.type;const k=PORTRAIT[t.type],g2=$('tgtc').getContext('2d');g2.clearRect(0,0,112,112);const ma=monArt(t.type);if(ma&&ma.complete&&ma.naturalWidth)g2.drawImage(ma,0,0,112,112);else if(k!=null&&ATL.complete)g2.drawImage(ATL,(k%9)*96,Math.floor(k/9)*96,96,96,0,0,112,112);else tgtShown=null;$('tgtn').textContent=t.type}
     $('tgth').style.width=Math.max(0,100*t.hp/t.c.hp)+'%';$('tgtl').textContent='Lv '+(t.c.lv||1)+' · HP '+Math.max(0,Math.ceil(t.hp))+'/'+t.c.hp+' · ATK '+t.c.atk}}
-  $('st').textContent=(WT.blood?'🩸':WT.night?'🌙':'☀️')+' '+Z.D.name+' · Job '+PS.job+' · EXP '+PS.exp+'/'+CFG.expCurve(PS.lv);$('lvn').textContent=PS.lv;$('hpt').textContent=Math.ceil(PS.hp)+' / '+PS.maxHp;$('xpf').style.width=Math.min(100,100*PS.exp/CFG.expCurve(PS.lv))+'%';
+  $('st').textContent=(WT.blood?'🩸':WT.night?'🌙':'☀️')+' '+Z.D.name+' · '+curCls()+' Job '+PS.job+' · EXP '+PS.exp+'/'+CFG.expCurve(PS.lv);$('lvn').textContent=PS.lv;$('hpt').textContent=Math.ceil(PS.hp)+' / '+PS.maxHp;$('xpf').style.width=Math.min(100,100*PS.exp/CFG.expCurve(PS.lv))+'%';
   $('hpf').style.width=(100*PS.hp/PS.maxHp)+'%';
-  for(const b of skEl.children){const i=+b.dataset.i;if(!i)continue;const sk=CFG.skills[i-1],cd=PS.cd[i]||0,lk=PS.job<sk.job||(netOn()&&!(HLNET.sk[sk.name]>0));
+  for(const b of skEl.children){const i=+b.dataset.i;if(!i)continue;const sk=CFG.skills[i-1],cd=PS.cd[i]||0,lk=PS.job<sk.job||(netOn()&&!(HLNET.sk[skName(i)]>0));
     const was=b.classList.contains('cd');b.classList.toggle('lock',lk);b.classList.toggle('cd',cd>0);b.style.setProperty('--cd',cd>0?(100*cd/sk.cd).toFixed(1)+'%':'0%');
     if(was&&cd<=0){b.classList.remove('ready');void b.offsetWidth;b.classList.add('ready')} /* พร้อมใช้: กะพริบ */
-    const t=lk?'🔒':cd>0?(cd>=10?Math.ceil(cd):cd.toFixed(1)):'',sm=lk?(PS.job<sk.job?'Job '+sk.job:'อัปสกิล'):sk.name,ce=b.querySelector('.cdn'),se=b.querySelector('small');if(ce&&ce.textContent!==t)ce.textContent=t;if(se&&se.textContent!==sm)se.textContent=sm}}
+    const t=lk?'🔒':cd>0?(cd>=10?Math.ceil(cd):cd.toFixed(1)):'',sm=lk?(PS.job<sk.job?'Job '+sk.job:'อัปสกิล'):skName(i),ce=b.querySelector('.cdn'),se=b.querySelector('small');if(ce&&ce.textContent!==t)ce.textContent=t;if(se&&se.textContent!==sm)se.textContent=sm}}
 /* ===== ล่าอัตโนมัติ (V2-R23) =====
    หาเป้าหมายที่ใกล้ที่สุด (ไม่รวมบอส) → เดินตามเส้นทางบนช่องเดินได้ (BFS) → ตีพื้นฐาน + ใช้สกิลในช่องลัดที่พร้อม
    ทำงานผ่านคำสั่งเดียวกับผู้เล่น (ออนไลน์ส่งคำขอให้เซิร์ฟเวอร์ตัดสินเหมือนเดิม) — ลากจอย/กดลูกศร = ควบคุมเองทันที */
@@ -938,7 +957,7 @@ enterZone(CFG.player.home,ZONES[CFG.player.home].start[0],ZONES[CFG.player.home]
 let last=performance.now();
 function loop(n){const dt=Math.min((n-last)/1000,.05);last=n;update(dt);draw();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
-window.HL={clearWarpCd(){warpCd=0},monShown,warp,openWorld,openAutoCfg,statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
+window.HL={CLASSES,CLS_ACTIVE,CLS_PATHS,curCls,skName,setClassLocal(c){if(!CLS_ACTIVE[c])return'invalid';if(!inSafe(player.x,player.y))return'not-safe';PS.cls=c;buildSkills();hudT=0;return'ok'},get inSafeNow(){return inSafe(player.x,player.y)},buildSkills,adminLocal,clearWarpCd(){warpCd=0},monShown,warp,openWorld,openAutoCfg,statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
 })();
 
 </script>
@@ -1048,12 +1067,12 @@ const BONUS_LIVE=['พลังโจมตีกายภาพ','พลัง�
 /* หน้าสกิลแบบตาราง (V2-R23 ตามภาพตัวอย่างของเจ้าของ): 3 คอลัมน์ = 3 สาย, แถว = Job ที่ปลดล็อก, ช่องลัด 6 ช่องแตะเพื่อจัด */
 let slotPick=-1;
 function renderSkills(){if(skEl2.hidden)return;skEl2.innerHTML='';const P=HL.PS,on=NET.auth,lvOf=n=>on?(NET.sk[n]||0):(P.job>=1?1:0);
-  const h=document.createElement('h3');h.innerHTML='<span>สกิล · นักดาบ</span>';const x=document.createElement('button');x.textContent='ปิด';x.onclick=toggleSkills;h.appendChild(x);skEl2.appendChild(h);
+  const h=document.createElement('h3');h.innerHTML='<span>สกิล · '+HL.curCls()+'</span>';{const cb=document.createElement('button');cb.className='clsb';cb.textContent='เปลี่ยนอาชีพ';cb.onclick=openClass;h.appendChild(cb)}const x=document.createElement('button');x.textContent='ปิด';x.onclick=toggleSkills;h.appendChild(x);skEl2.appendChild(h);
   const top=document.createElement('div');top.className='sktop';
   const pt=document.createElement('div');pt.className='pts';pt.id='skpts';pt.innerHTML='<b>'+(on?NET.pts:'-')+'</b><span>แต้มสกิลคงเหลือ '+(on?NET.pts:'-')+'</span><small>Job '+P.job+' · ได้ 1 + 1 ต่อ Job เลเวลอัป (สูงสุด 50)</small>';
   top.appendChild(pt);skEl2.appendChild(top);
   if(!on){const n=document.createElement('div');n.className='note';n.textContent='การอัปสกิลใช้ได้เมื่อเล่นออนไลน์ — ช่องลัดจัดได้ทุกโหมด';skEl2.appendChild(n)}
-  const rows=HL.SKILL_TABLE_REF().filter(r=>r[0]==='นักดาบ'),idxOf=n=>HL.CFG.skills.findIndex(k=>k.name===n)+1;
+  const rows=HL.SKILL_TABLE_REF().filter(r=>r[0]===HL.curCls()),idxOf=n=>HL.CLS_ACTIVE[HL.curCls()].indexOf(n)+1;
   const node=(r,cls)=>{const[,pa,name,type,start,tier,job,max,bonus]=r,lv=lvOf(name),lock=P.job<job,b=String(bonus||'').trim(),live=!b||BONUS_LIVE.some(k=>b.startsWith(k)),si=idxOf(name);
     const d=document.createElement('div');d.className='nd '+(type==='a'?'act':'pas')+(lock?' lock':'')+(lv>=max?' max':'')+(cls||'');d.dataset.skill=name;
     const ic=document.createElement('div');ic.className='ic';{const im=document.createElement('img');im.alt='';im.src=type!=='a'?'icons/sk_p.png':'icons/sk_'+(si>0?si:0)+'.png';ic.appendChild(im)}if(type==='a'&&si>0){const k=HL.SLOTS.indexOf(si);if(k>=0){const bd=document.createElement('i');bd.textContent=k+1;ic.appendChild(bd)}}
@@ -1076,11 +1095,50 @@ function renderSkills(){if(skEl2.hidden)return;skEl2.innerHTML='';const P=HL.PS,
   /* ช่องลัด */
   const hb=document.createElement('div');hb.className='hot';const ht=document.createElement('div');ht.className='hott';ht.textContent=slotPick>=0?'แตะสกิลกด (⚔/★) ด้านบนเพื่อใส่ช่อง '+(slotPick+1):'ช่องลัด · แตะช่องแล้วแตะสกิลเพื่อจัด';hb.appendChild(ht);
   const hr=document.createElement('div');hr.className='hotr';
-  HL.SLOTS.forEach((si,k)=>{const sk=HL.CFG.skills[si-1],b=document.createElement('button');b.className='hs'+(k===slotPick?' pick':'');b.dataset.slot=k;b.setAttribute('aria-label','ช่องลัด '+(k+1)+' '+(sk?sk.name:'ว่าง'));
-    b.innerHTML='<img alt=""><i>'+(k+1)+'</i><span></span>';if(sk)b.querySelector('img').src='icons/sk_'+si+'.png';b.querySelector('span').textContent=sk?sk.name:'ว่าง';b.onclick=()=>{slotPick=slotPick===k?-1:k;renderSkills()};hr.appendChild(b)});
+  HL.SLOTS.forEach((si,k)=>{const sk=HL.CFG.skills[si-1],b=document.createElement('button');b.className='hs'+(k===slotPick?' pick':'');b.dataset.slot=k;b.setAttribute('aria-label','ช่องลัด '+(k+1)+' '+(sk?HL.skName(si):'ว่าง'));
+    b.innerHTML='<img alt=""><i>'+(k+1)+'</i><span></span>';if(sk)b.querySelector('img').src='icons/sk_'+si+'.png';b.querySelector('span').textContent=sk?HL.skName(si):'ว่าง';b.onclick=()=>{slotPick=slotPick===k?-1:k;renderSkills()};hr.appendChild(b)});
   hb.appendChild(hr);skEl2.appendChild(hb);
   const n=document.createElement('div');n.className='note';n.textContent='โบนัสติดตัวชื่อเดียวกันบวกกันข้ามสาย · * = ยังไม่มีระบบรองรับ';skEl2.appendChild(n)}
-function toggleSkills(){skEl2.hidden=!skEl2.hidden;skBtn.setAttribute('aria-expanded',String(!skEl2.hidden));if(!skEl2.hidden&&!bagEl.hidden)toggleBag();renderSkills()}
+/* หน้าต่างเลือกอาชีพ (V2-R27): เปลี่ยนได้ทุกเมื่อในเขตปลอดภัย (หมู่บ้าน) — เซิร์ฟเวอร์ตรวจอีกชั้น */
+const clEl=document.createElement('div');clEl.id='clp';clEl.className='win';clEl.hidden=true;clEl.setAttribute('role','dialog');clEl.setAttribute('aria-label','เลือกอาชีพ');document.getElementById('app').appendChild(clEl);
+const CLS_SHORT={'นักดาบ':'ดาบ','นักธนู':'ธนู','นักฆ่า':'มีด','นักสู้':'หมัด','ผู้สืบวิญญาณ':'วิญญาณ','ผู้รักษา':'รักษา','ผู้ใช้มนตรา':'มนตร์','ผู้พิทักษ์':'โล่'};
+const CLS_COL=['#c4222c','#2f9a4a','#5b3a8a','#b4531a','#2a6f8a','#d08a1a','#3b5fc4','#6b6f78'];
+function openClass(){if(clEl.hidden){if(!skEl2.hidden)toggleSkills();if(!bagEl.hidden)toggleBag()}clEl.hidden=!clEl.hidden;renderClass()}
+function renderClass(){if(clEl.hidden)return;const cur=HL.curCls(),safe=HL.inSafeNow;
+  clEl.innerHTML='<div class="whd"><b>อาชีพ</b><button class="x" aria-label="ปิด">×</button></div><div class="wbody"><div class="card cur"><span>อาชีพปัจจุบัน</span><b></b><small>Job '+HL.PS.job+' · ระดับสกิลแต่ละอาชีพเก็บแยกกัน เปลี่ยนกลับมาแล้วได้คืน</small></div>'
+   +(safe?'':'<p class="warn">เปลี่ยนอาชีพได้เฉพาะในหมู่บ้าน (เขตปลอดภัย)</p>')
+   +'<div class="cls">'+HL.CLASSES.map((c,i)=>'<div class="cc'+(c===cur?' on':'')+'"><i style="background:'+CLS_COL[i%8]+'">'+(CLS_SHORT[c]||c)+'</i><div><b></b><small></small></div>'+(c===cur?'<em>ใช้อยู่</em>':'<button data-c="'+i+'" aria-label="เปลี่ยนเป็น '+c+'"'+(safe?'':' disabled')+'>เลือก</button>')+'</div>').join('')+'</div>'
+   +'<p class="note">ท่ากดของอาชีพอื่นตอนนี้ใช้กลไกชั่วคราวแบบเดียวกับนักดาบ · ภาพตัวละครยังเป็นภาพเดิมจนกว่าจะได้ภาพของแต่ละอาชีพ</p></div>';
+  clEl.querySelector('.cur b').textContent=cur;
+  clEl.querySelectorAll('.cc').forEach((d,i)=>{const c=HL.CLASSES[i];d.querySelector('b').textContent=c;d.querySelector('small').textContent=HL.CLS_PATHS[c].join(' · ')});
+  clEl.querySelector('.x').onclick=openClass;
+  for(const b of clEl.querySelectorAll('.cc button'))b.onclick=()=>{const c=HL.CLASSES[+b.dataset.c];if(NET.auth)send({t:'cls',cls:c});else{const r=HL.setClassLocal(c);if(r==='ok'){HL.say('เปลี่ยนอาชีพเป็น '+c);renderClass()}}}}
+function onClassChanged(){HL.buildSkills();renderClass();renderSkills();if(!stEl.hidden)renderStat()}
+/* แผงแอดมิน (V2-R27): เฉพาะบัญชีที่อยู่ใน ADMIN_USERS บนเซิร์ฟเวอร์ — เซิร์ฟเวอร์ตรวจสิทธิ์ทุกคำสั่ง */
+const adEl=document.createElement('div');adEl.id='adp';adEl.className='win';adEl.hidden=true;adEl.setAttribute('role','dialog');adEl.setAttribute('aria-label','แผงแอดมิน');document.getElementById('app').appendChild(adEl);
+const adBtn=document.createElement('button');adBtn.id='admb';adBtn.textContent='🛠 แอดมิน';adBtn.hidden=location.protocol!=='file:'; /* ออฟไลน์ (เปิดไฟล์ในเครื่อง) ใช้ทดสอบได้ — ออนไลน์เห็นเฉพาะบัญชีแอดมิน */adBtn.onclick=()=>{adEl.hidden=!adEl.hidden;renderAdmin()};document.getElementById('app').appendChild(adBtn);
+let adGod=false;
+function adm(o){if(NET.auth)send(Object.assign({t:'adm'},o));else HL.say(HL.adminLocal(o))}
+function renderAdmin(){if(adEl.hidden)return;const C=HL.CFG,P=HL.PS;
+  adEl.innerHTML='<div class="whd"><b>แผงแอดมิน</b><button class="x" aria-label="ปิด">×</button></div><div class="wbody">'
+   +'<div class="card"><div class="ch"><b>ตัวละคร</b><span>'+(NET.auth?'บัญชี '+(NET.name||''):'ออฟไลน์')+'</span></div>'
+   +'<div class="arow"><label>เลเวล</label><input id="ad-lv" type="number" min="1" max="'+C.player.maxLv+'" value="'+P.lv+'"><button id="ad-lvb">ตั้ง</button></div>'
+   +'<div class="arow"><label>Job</label><input id="ad-job" type="number" min="1" max="'+C.player.maxJob+'" value="'+P.job+'"><button id="ad-jobb">ตั้ง</button></div>'
+   +'<div class="arow"><button id="ad-heal">ฟื้น HP เต็ม</button><button id="ad-god" aria-pressed="'+adGod+'">'+(adGod?'อมตะ: เปิด':'อมตะ: ปิด')+'</button></div></div>'
+   +'<div class="card"><div class="ch"><b>ไอเทม</b></div><div class="arow"><select id="ad-it">'+Object.entries(C.items).map(([k,v])=>'<option value="'+k+'">'+v.name+'</option>').join('')+'</select><input id="ad-n" type="number" min="1" max="99" value="1"><button id="ad-itb">ให้</button></div></div>'
+   +'<div class="card"><div class="ch"><b>โลก</b><span>'+HL.Z.D.name+'</span></div><div class="arow"><select id="ad-z">'+Object.keys(HL.ZONES).map(z=>'<option value="'+z+'">'+HL.ZONES[z].name+'</option>').join('')+'</select><button id="ad-zb">วาร์ป (ไม่มีคูลดาวน์)</button></div>'
+   +'<div class="arow"><button data-tm="day">☀️ กลางวัน</button><button data-tm="night">🌙 กลางคืน</button><button data-tm="blood">🩸 พระจันทร์เลือด</button><button data-tm="world">🐉 World Boss</button></div>'
+   +'<div class="arow"><button id="ad-clear">ล้างมอนสเตอร์ในโซน</button><button id="ad-boss">เรียกบอสในโซน</button></div></div>'
+   +'<p class="note">ทุกคำสั่งถูกบันทึกในล็อกเซิร์ฟเวอร์</p></div>';
+  const q=id=>adEl.querySelector(id);q('.x').onclick=()=>{adEl.hidden=true};q('#ad-z').value=HL.Z.id;
+  q('#ad-lvb').onclick=()=>adm({op:'lv',n:+q('#ad-lv').value});q('#ad-jobb').onclick=()=>adm({op:'job',n:+q('#ad-job').value});
+  q('#ad-heal').onclick=()=>adm({op:'heal'});q('#ad-god').onclick=()=>adm({op:'god'});
+  q('#ad-itb').onclick=()=>adm({op:'item',id:q('#ad-it').value,n:+q('#ad-n').value});
+  q('#ad-zb').onclick=()=>adm({op:'warp',zone:q('#ad-z').value});
+  for(const b of adEl.querySelectorAll('[data-tm]'))b.onclick=()=>adm({op:'time',mode:b.dataset.tm});
+  q('#ad-clear').onclick=()=>adm({op:'clear'});q('#ad-boss').onclick=()=>adm({op:'boss'})}
+const ADM_MSG={ok:'สำเร็จ',invalid:'ค่าไม่ถูกต้อง','bag-full':'กระเป๋าเต็ม','no-boss':'โซนนี้ไม่มีบอส'};
+function toggleSkills(){if(skEl2.hidden)clEl.hidden=true;skEl2.hidden=!skEl2.hidden;skBtn.setAttribute('aria-expanded',String(!skEl2.hidden));if(!skEl2.hidden&&!bagEl.hidden)toggleBag();renderSkills()}
 skBtn.onclick=toggleSkills;skEl2.addEventListener('keydown',e=>e.stopPropagation());
 const SLOTN={weapon:'อาวุธ',armor:'เสื้อ',acc:'เครื่องประดับ'};
 /* ---------- ไอคอนไอเทม (V2-R5): พิกเซลอาร์ต 16×16 วาดด้วยโค้ด ขยาย 2 เท่า สีตามโทนเกม ---------- */
@@ -1134,7 +1192,7 @@ function renderStat(){if(stEl.hidden)return;const P=HL.PS,C=HL.CFG,S=C.stats,on=
   const cell=(k,v,sub)=>'<div class="cell"><span>'+k+'</span><b>'+v+(sub?'<small>'+sub+'</small>':'')+'</b></div>';
   const atk=on?me.atk:P.atk,hp=on?me.maxHp:P.maxHp,def=on?me.def:(P.def||0);
   stEl.innerHTML='<div class="whd"><b>ตัวละคร</b><button class="x" aria-label="ปิด">×</button><div class="tabs"><button class="on" aria-pressed="true">สเตตัส</button><button data-tab="bag">กระเป๋า</button><button data-tab="sk">สกิล</button></div></div>'
-   +'<div class="wbody"><div class="card hd"><div class="lv"><small>Lv</small>'+P.lv+'</div><div class="nm"><b>'+esc(on?(NET.name||'ผู้เล่น'):'ผู้เล่น (ออฟไลน์)')+'</b> · นักดาบ Job '+P.job
+   +'<div class="wbody"><div class="card hd"><div class="lv"><small>Lv</small>'+P.lv+'</div><div class="nm"><b>'+esc(on?(NET.name||'ผู้เล่น'):'ผู้เล่น (ออฟไลน์)')+'</b> · '+HL.curCls()+' Job '+P.job
    +'<div class="bl"><span>EXP</span><div class="bar"><i style="width:'+(P.lv>=C.player.maxLv?100:Math.min(100,100*P.exp/xpN))+'%;background:#f2a93b"></i></div><small>'+(P.lv>=C.player.maxLv?'MAX':Math.floor(P.exp)+'/'+xpN)+'</small></div>'
    +'<div class="bl"><span>Job</span><div class="bar"><i style="width:'+(P.job>=C.player.maxJob?100:Math.min(100,100*(P.jexp||0)/jN))+'%;background:#4a8ad6"></i></div><small>'+(P.job>=C.player.maxJob?'MAX':Math.floor(P.jexp||0)+'/'+jN)+'</small></div></div></div>'
    +'<div class="card"><div class="ch"><b>สเตตัสพื้นฐาน</b><span id="sptsv">คงเหลือ '+free+'</span></div>'
@@ -1182,6 +1240,7 @@ function connect(){if(!token)return;stopped=false;NET.state='connecting';status(
   ws.onopen=()=>ws.send(JSON.stringify({t:'hello',token}));
   ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
     if(m.t==='welcome'){retry=0;NET.state='online';
+      NET.admin=!!m.admin;NET.cls=m.cls||'นักดาบ';$('admb').hidden=!NET.admin;
       if(!NET.joined){const s=m.state;NET.auth=!!m.auth;HL.PS.lv=s.lv;HL.PS.exp=s.exp;HL.PS.job=s.job;HL.PS.jexp=s.jexp;HL.recalc();HL.PS.hp=s.hp??HL.PS.maxHp;HL.enterZone(s.zone,s.x,s.y);HL.player.dir=s.dir;NET.joined=true;HL.say('ยินดีต้อนรับ '+m.name)}
       else{NET.stats.reconnects++;HL.say('เชื่อมต่อใหม่แล้ว')}
       lastSent='';NET.name=m.name;NET.id=m.id;status('ออนไลน์ · '+m.name)}
@@ -1192,6 +1251,8 @@ function connect(){if(!token)return;stopped=false;NET.state='connecting';status(
       for(const id of [...byId.keys()])if(!seen.has(id))byId.delete(id);NET.others=[...byId.values()];status('ออนไลน์ · '+NET.name+' · เห็น '+NET.others.length+' คน');
       if(NET.auth)applyWorld(m)}
     else if(m.t==='deny'){NET.stats.denied++;if(m.r==='debug-off')HL.say('ปุ่มทดสอบปิดอยู่บนเซิร์ฟเวอร์นี้');else if(m.k==='inv')HL.say(DENY[m.r]||'ทำไม่ได้');else if(m.k==='skill')HL.say(DENY_SK[m.r]||'อัปสกิลไม่ได้');else if(m.k==='party')HL.say(DENY_PT[m.r]||'ทำไม่ได้')}
+    else if(m.t==='adm'){if('god' in m){adGod=m.god}HL.say('แอดมิน '+m.op+': '+(ADM_MSG[m.r]||m.r));renderAdmin()}
+    else if(m.t==='deny'&&m.k==='cls'){HL.say(m.r==='not-safe'?'เปลี่ยนอาชีพได้เฉพาะในหมู่บ้าน':'เปลี่ยนอาชีพไม่ได้ ('+m.r+')')}
     else if(m.t==='warp'){HL.enterZone(m.zone,m.x,m.y);lastSent='';HL.say('วาร์ปไป '+(HL.ZONES[m.zone]||{}).name)}
     else if(m.t==='fix'){NET.stats.fixes++;if(HL.Z.id!==m.zone)HL.enterZone(m.zone,m.x,m.y);else{HL.player.x=m.x;HL.player.y=m.y}lastSent=''}
     else if(m.t==='err'){if(m.code==='auth'){token=null;store.set(null);stopped=true;$('net').hidden=false;$('neterr').textContent=m.msg}
@@ -1213,11 +1274,12 @@ function applyWorld(m){const CFG=HL.CFG,P=HL.PS;if(m.mf)monById.clear();for(cons
   HL.setMons([...monById.values()]);
   for(const e of m.ev||[]){const o=monById.get(e.id);if(!o)continue;
     if(e.k==='dmg'){NET.stats.dmgEv++;o.hurt=.25;HL.addNum(o.x,o.y-o.c.size*.6-18,e.dmg,e.crit?'#ffd34a':'#ffffff');if(e.by===NET.id)HL.setTarget(o)}}
-  const me=m.me;if(me){NET.me=me;let bagCh=false,skCh=false;if(me.bag){NET.bag=me.bag;NET.eq=me.eq;bagCh=true}if(me.sk){NET.sk=me.sk;NET.pts=me.pts;NET.bon=me.bon||{};skCh=true}if(me.st){NET.st=me.st;NET.spts=me.spts;updStatDot()}if(me.party){NET.party=me.party;NET.partyIds=new Set(me.party.m.map(r=>r[0]));renderParty()}const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
+  const me=m.me;if(me){NET.me=me;let bagCh=false,skCh=false;if(me.bag){NET.bag=me.bag;NET.eq=me.eq;bagCh=true}if(me.sk){NET.sk=me.sk;NET.pts=me.pts;NET.bon=me.bon||{};skCh=true}if(me.st){NET.st=me.st;NET.spts=me.spts;updStatDot()}if(me.cls&&me.cls!==NET.cls){NET.cls=me.cls;onClassChanged()}if(me.party){NET.party=me.party;NET.partyIds=new Set(me.party.m.map(r=>r[0]));renderParty()}const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
     for(const e of me.ev||[]){const pl=HL.player;
       if(e.k==='reward'){const o=monById.get(e.id);HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-40,'+'+e.exp+' EXP','#8fe38f')}
       else if(e.k==='hurt'){const mo=monById.get(e.by);if(mo){mo.atkT0=HL.tNow;mo.dir=pl.x<mo.x?'W':'E'}if(e.guard)HL.addNum(pl.x,pl.y-66,'ป้องกัน','#9fd6ff');HL.addNum(pl.x,pl.y-52,e.dmg,'#ff6b6b');P.hurt=.4}
       else if(e.k==='lv')HL.lvUp('lv',e.lv);
+      else if(e.k==='cls'){HL.say('เปลี่ยนอาชีพเป็น '+e.cls)}
       else if(e.k==='starter'){HL.say('ได้รับชุดเริ่มต้น: '+e.items.map(i=>(HL.CFG.items[i[0]]||{}).name+(i[1]>1?' ×'+i[1]:'')).join(', '))}
       else if(e.k==='job')HL.lvUp('job',e.job);
       else if(e.k==='dead'){P.dead=true;P.deadT=HL.CFG.player.respawnSec;P.cast=null;HL.say('พ่ายแพ้ · กลับหมู่บ้านใน '+HL.CFG.player.respawnSec+' วินาที')}

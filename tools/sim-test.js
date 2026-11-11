@@ -72,6 +72,41 @@ for (const [i, name, expectDx] of [[1, 'ท่าเคลื่อนที่'
   rec('ข้อมูลแต้มเกินที่มี (แก้ฐานข้อมูล) → รีเซ็ตเป็น 0', q.c.st.str === 0 && sim.statFree(q) === 3, JSON.stringify(q.c.st));
 }
 
+// V2-R27 อาชีพ + แอดมิน
+{
+  const sim = createSim({ rand: () => .5 }), V = W.ZONES.village2, F = W.ZONES.field2;
+  const p = { id: 1, c: { zone: 'village2', x: V.start[0], y: V.start[1], dir: 'S', lv: 30, exp: 0, job: 30, jexp: 0, starter: 1 } };
+  sim.addPlayer(p);
+  rec('อาชีพ: มี 8 อาชีพ ตัวละครเดิม = นักดาบ', sim.CLASSES.length === 8 && sim.clsOf(p) === 'นักดาบ', sim.CLASSES.join(','));
+  rec('อาชีพ: ชื่อปลอม → ปฏิเสธ', sim.setClass(p, 'hacker') === 'invalid');
+  const q = { id: 2, c: { zone: 'field2', x: F.start[0], y: F.start[1], dir: 'S', lv: 30, exp: 0, job: 30, jexp: 0, starter: 1 } }; sim.addPlayer(q);
+  rec('อาชีพ: นอกเขตปลอดภัย → เปลี่ยนไม่ได้', sim.setClass(q, 'นักธนู') === 'not-safe' && sim.clsOf(q) === 'นักดาบ');
+  sim.learn(p, 'ลงอาคมคมดาบ'); const swordPts = sim.freePoints(p);
+  rec('อาชีพ: ในหมู่บ้าน → เปลี่ยนเป็นนักธนูได้ + แจ้งผู้เล่น', sim.setClass(p, 'นักธนู') === 'ok' && p.c.cls === 'นักธนู' && p.personal.some(e => e.k === 'cls'));
+  rec('อาชีพ: แต้มสกิลของอาชีพใหม่เต็ม (ระดับสกิลแยกตามอาชีพ)', sim.freePoints(p) === swordPts + 1, sim.freePoints(p) + ' vs ' + swordPts);
+  rec('อาชีพ: ท่ากดช่อง 3 ของนักธนู (ศรเจาะจุดอ่อน) ยังไม่อัป → ล็อก', sim.act(p, 3, 100) === 'locked');
+  rec('อาชีพ: อัปสกิลนักดาบตอนเป็นนักธนู → ไม่ได้', sim.learn(p, 'ฟันแยกศิลา') === 'invalid');
+  rec('อาชีพ: อัปศรเจาะจุดอ่อน → ใช้ท่าช่อง 3 ได้ (กลไกชั่วคราว)', sim.learn(p, 'ศรเจาะจุดอ่อน') === 'ok' && sim.act(p, 3, 200) === 'ok');
+  const a0 = p.atk; sim.learn(p, 'สายตาพราน'); // สกิลติดตัวของนักธนู (ถ้ามี)
+  sim.setClass(p, 'นักดาบ');
+  rec('อาชีพ: กลับเป็นนักดาบ → ระดับสกิลเดิมยังอยู่', sim.clsOf(p) === 'นักดาบ' && sim.skLv(p, 'ลงอาคมคมดาบ') === 1 && sim.skLv(p, 'ศรเจาะจุดอ่อน') === 1);
+  // แอดมิน
+  rec('แอดมิน: ตั้งเลเวล 50 → แต้มสเตตัสคำนวณใหม่, HP เต็ม', sim.admin(p, 'lv', { n: 50 }) === 'ok' && p.c.lv === 50 && p.hp === p.maxHp && sim.statFree(p) === 147);
+  rec('แอดมิน: ค่าเลเวลเกิน → ปฏิเสธ', sim.admin(p, 'lv', { n: 999 }) === 'invalid' && p.c.lv === 50);
+  rec('แอดมิน: ให้ไอเทม', sim.admin(p, 'item', { id: 'sword_iron', n: 2 }) === 'ok' && p.c.bag.filter(s => s.id === 'sword_iron').length === 2);
+  rec('แอดมิน: ไอเทมปลอม → ปฏิเสธ', sim.admin(p, 'item', { id: 'gold_bar', n: 1 }) === 'invalid');
+  sim.admin(q, 'god', {}); const h = q.hp, z = sim.zones.field2, m = z.mons.find(m => !m.c.boss);
+  Object.assign(m, { x: q.c.x + 20, y: q.c.y, hx: q.c.x + 20, hy: q.c.y, state: 'idle', atkT: 0 }); run(sim, 3, 300);
+  rec('แอดมิน: โหมดอมตะ → ไม่เสีย HP', q.god && q.hp === h, q.hp + '/' + h);
+  rec('แอดมิน: ล้างมอนสเตอร์ในโซน', sim.admin(q, 'clear', {}) === 'ok' && z.mons.filter(m => !m.c.boss).every(m => m.state === 'dead'));
+  rec('แอดมิน: เปลี่ยนเวลาเป็นพระจันทร์เลือด', sim.admin(q, 'time', { mode: 'blood' }) === 'ok' && sim.WT.blood);
+  rec('แอดมิน: เปลี่ยนเวลาเป็นกลางวัน', sim.admin(q, 'time', { mode: 'day' }) === 'ok' && !sim.WT.night);
+  const pk = { id: 3, c: { zone: 'peak', x: 0, y: 0, dir: 'S', lv: 50, exp: 0, job: 30, jexp: 0, starter: 1 } }; sim.addPlayer(pk);
+  rec('แอดมิน: เรียกบอสในโซน (นอกเวลา) → บอสอยู่จนตาย', sim.admin(pk, 'boss', {}) === 'ok' && sim.zones.peak.mons.filter(m => m.c.boss).every(m => m.state === 'idle' && !m.away), sim.zones.peak.mons.filter(m => m.c.boss).map(m => m.type + ':' + m.state).join(','));
+  run(sim, 1, 400);
+  rec('แอดมิน: บอสที่เรียกไม่ถูกซ่อนตามเวลา', sim.zones.peak.mons.filter(m => m.c.boss).every(m => m.state !== 'dead'));
+}
+
 // มอนสเตอร์ไม่ไล่ผู้เล่นในเขตปลอดภัย
 {
   const sim = createSim();

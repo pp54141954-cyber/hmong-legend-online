@@ -98,7 +98,7 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     let diff = 0; for (let i = 0; i < a.length; i += 4) diff += Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]);
     return { shown: getComputedStyle(document.getElementById('tgt')).display, name: document.getElementById('tgtn').textContent, avgDiff: +(diff / (112 * 112 * 3)).toFixed(2) };
   }, live);
-  rec('ช่องเป้าหมายแสดงรูปใหม่ของมอนสเตอร์ที่กำลังตี', tgtPix.shown === 'flex' && tgtPix.name === live && tgtPix.avgDiff < 2, JSON.stringify(tgtPix));
+  rec('การ์ดเป้าหมายมุมขวาบนไม่แสดงแล้ว (เจ้าของสั่งเอาออก V2-R27)', tgtPix.shown === 'none', tgtPix.shown);
   await page.screenshot({ path: 'tools/last-target.png' });
   await page.evaluate(() => { const m = window.__p; m.hp = m.c.hp; m.state = 'return'; const s = HL.ZONES.village.start; HL.player.x = s[0]; HL.player.y = s[1]; HL.PS.hp = HL.PS.maxHp; });
 
@@ -239,7 +239,7 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     const saved = await page.evaluate(() => localStorage.getItem('hl_slots'));
     rec('ช่องลัดบันทึกในเครื่อง (localStorage)', saved === JSON.stringify(after.s), saved);
     await page.evaluate(b => b.forEach((v, k) => HL.setSlot(k, v)), before);
-    await page.click('#skp h3 button'); rec('ปิดหน้าสกิลได้', await page.evaluate(() => document.getElementById('skp').hidden)); }
+    await page.click('#skp h3 button:last-child'); rec('ปิดหน้าสกิลได้', await page.evaluate(() => document.getElementById('skp').hidden)); }
   // ===== V2-R24: ป้ายเลเวล, หน้าต่างสถานะ, หน้าต่างอัปเลเวล, สกิลออโต, ทางเดินบนน้ำ =====
   { const r = await page.evaluate(() => { const s = HL.ZONES.field2.start; HL.enterZone('field2', s[0], s[1]);
       const ww = [[32, 18, 42, 19], [5, 29, 29, 30], [13, 28, 18, 30]]; let bad = [];
@@ -338,12 +338,39 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     await page.click('#bag h3 button'); await page.click('#lvb'); await page.waitForSelector('#stp:not([hidden]) .srow');
     await page.click('#stp .tabs [data-tab="sk"]');
     rec('แท็บ "สกิล" → เปิดหน้าสกิล', await page.evaluate(() => document.getElementById('stp').hidden && !document.getElementById('skp').hidden));
-    await page.click('#skp h3 button'); await page.evaluate(() => HL.statResetLocal()); }
+    await page.click('#skp h3 button:last-child'); await page.evaluate(() => HL.statResetLocal()); }
   { const r = await page.evaluate(() => { const m = HL.mons.find(m => !m.c.boss); HL.setTarget(m); return null });
     await page.waitForTimeout(300);
     const t = await page.locator('#tgt').boundingBox(), c = await page.locator('#c').boundingBox();
     const jx = c.x + Math.max(86, c.width * .17), jy = c.y + c.height - Math.max(130, c.height * .16);
-    rec('การ์ดเป้าหมายไม่ทับจอย (ย้ายไปมุมขวาบน)', t && !(jx + 70 > t.x && jx - 70 < t.x + t.width && jy + 70 > t.y && jy - 70 < t.y + t.height) && t.y < c.height / 2, JSON.stringify(t)); }
+    rec('การ์ดเป้าหมายไม่แสดงแม้มีเป้า', t === null, JSON.stringify(t)); }
+  // ===== V2-R27: อาชีพ + แอดมิน (ออฟไลน์) =====
+  { await page.evaluate(() => { HL.AUTO.on = false; HL.PS.dead = false; HL.PS.cast = null; HL.PS.job = 30; const s = HL.ZONES.field2.start; HL.enterZone('field2', s[0], s[1]); });
+    await page.click('#skb'); await page.click('#skp h3 .clsb'); await page.waitForSelector('#clp:not([hidden]) .cc');
+    const o = await page.evaluate(() => ({ n: document.querySelectorAll('#clp .cc').length, dis: [...document.querySelectorAll('#clp .cc button')].every(b => b.disabled), warn: !!document.querySelector('#clp .warn') }));
+    rec('หน้าเลือกอาชีพ: 8 อาชีพ, นอกหมู่บ้านปุ่มเลือกถูกปิด + มีคำเตือน', o.n === 8 && o.dis && o.warn, JSON.stringify(o));
+    rec('นอกหมู่บ้านเปลี่ยนอาชีพไม่ได้', await page.evaluate(() => HL.setClassLocal('นักธนู') === 'not-safe' && HL.curCls() === 'นักดาบ'));
+    await page.click('#clp .x');
+    await page.evaluate(() => { const s = HL.ZONES.village2.start; HL.enterZone('village2', s[0], s[1]); });
+    await page.click('#skb'); await page.click('#skp h3 .clsb'); await page.waitForSelector('#clp:not([hidden]) .cc');
+    await page.click('#clp button[aria-label="เปลี่ยนเป็น นักธนู"]');
+    const c = await page.evaluate(() => ({ cls: HL.curCls(), bar: [...document.querySelectorAll('#skills .sk')].map(b => b.getAttribute('aria-label')), cur: document.querySelector('#clp .cur b').textContent }));
+    rec('ในหมู่บ้านเลือก "นักธนู" → ปุ่มสกิลเปลี่ยนเป็นท่าของนักธนู', c.cls === 'นักธนู' && c.cur === 'นักธนู' && c.bar.includes('ศรเจาะจุดอ่อน') && !c.bar.includes('ลงอาคมคมดาบ'), JSON.stringify(c));
+    await page.screenshot({ path: 'tools/last-class.png' });
+    await page.click('#clp .x'); await page.click('#skb');
+    const sp = await page.evaluate(() => ({ t: document.querySelector('#skp h3 span').textContent, ph: [...document.querySelectorAll('#skp .ph b')].map(e => e.textContent) }));
+    rec('หน้าสกิลแสดงสายของนักธนู', sp.t.includes('นักธนู') && sp.ph.join(',') === 'แม่นธนู,พรานกับดัก,ศรมนตรา', JSON.stringify(sp));
+    await page.click('#skp h3 button:last-child');
+    rec('สถานะบนจอบอกอาชีพ', (await page.textContent('#st')).includes('นักธนู'));
+    rec('ท่าชั่วคราวของอาชีพใหม่ใช้ได้ (กลไกเดียวกับนักดาบ)', await page.evaluate(() => { HL.PS.cd = {}; HL.PS.cast = null; return HL.useSkill(6) === 'ok' }));
+    await page.evaluate(() => HL.setClassLocal('นักดาบ')); }
+  { const r = await page.evaluate(() => { const o = []; o.push(HL.adminLocal({ op: 'lv', n: 40 }), HL.PS.lv); o.push(HL.adminLocal({ op: 'job', n: 20 }), HL.PS.job); o.push(HL.adminLocal({ op: 'lv', n: 0 }));
+      HL.adminLocal({ op: 'warp', zone: 'mine' }); o.push(HL.Z.id); HL.adminLocal({ op: 'clear' }); o.push(HL.mons.filter(m => !m.c.boss).every(m => m.state === 'dead')); return o });
+    rec('แอดมินออฟไลน์: ตั้งเลเวล/Job, ค่าผิดถูกปฏิเสธ, วาร์ป, ล้างมอนสเตอร์', r[1] === 40 && r[3] === 20 && r[4] === 'ค่าไม่ถูกต้อง' && r[5] === 'mine' && r[6], JSON.stringify(r));
+    await page.evaluate(() => HL.adminLocal({ op: 'time', mode: 'blood' })); await page.waitForTimeout(1300);
+    rec('แอดมินออฟไลน์: เปลี่ยนเวลาเป็นพระจันทร์เลือด', await page.evaluate(() => HL.WT.blood));
+    await page.evaluate(() => HL.adminLocal({ op: 'time', mode: 'day' })); await page.waitForTimeout(1300);
+    rec('ปุ่มแอดมินไม่แสดงบนเว็บ (ไม่ใช่บัญชีแอดมิน)', !(await page.isVisible('#admb'))); }
   await page.evaluate(() => { HL.AUTO.on = false; HL.PS.dead = false; HL.PS.hp = HL.PS.maxHp; const s = HL.ZONES.village.start; HL.enterZone('village', s[0], s[1]); });
 
   // ย้ายโซนผ่านปุ่มทดสอบ

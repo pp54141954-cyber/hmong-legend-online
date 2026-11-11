@@ -15,6 +15,7 @@ const CONF = {
   gameFile: process.env.GAME_FILE || path.join(__dirname, '..', 'game', 'index.html'),
   tickHz: 10,               // ส่ง snapshot 10 ครั้ง/วินาที
   simHz: 20,                // จำลองโลก 20 ครั้ง/วินาที
+  admins: (process.env.ADMIN_USERS || '').split(',').map(s => s.trim()).filter(Boolean), // ชื่อบัญชีผู้ดูแล (ตั้งใน Render → Environment) — ไม่ฝังในโค้ด
   allowDebug: process.env.ALLOW_DEBUG === '1', // ปุ่มทดสอบ (ตั้ง Job 30) ใช้ได้เฉพาะเซิร์ฟเวอร์ทดสอบ
   saveEverySec: 30,         // บันทึกลงฐานข้อมูลทุก 30 วินาที และตอนออก
   sessionTtlMs: 24 * 3600e3,
@@ -135,7 +136,8 @@ function createServer(opts = {}) {
         p.bagDirty = true; p.skDirty = true; p.netZone = null; // เข้าเกม/ต่อใหม่: ส่ง snapshot เต็ม // ส่งกระเป๋าและสกิลเต็มชุดใน snapshot แรกหลังเข้าเกม/ต่อใหม่
         const c = p.c;
         log('join', c.name, c.zone, Math.round(c.x), Math.round(c.y));
-        return send(ws, { t: 'welcome', id: p.id, name: c.name, auth: true, state: { zone: c.zone, x: c.x, y: c.y, dir: c.dir, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, hp: p.hp, maxHp: p.maxHp } });
+        p.admin = conf.admins.includes(c.name); if (p.admin) log('admin join', c.name);
+        return send(ws, { t: 'welcome', id: p.id, name: c.name, auth: true, admin: p.admin, cls: sim.clsOf(p), state: { zone: c.zone, x: c.x, y: c.y, dir: c.dir, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, hp: p.hp, maxHp: p.maxHp } });
       }
       if (m.t === 'mv') {
         if (p.dead) return;
@@ -174,6 +176,18 @@ function createServer(opts = {}) {
         p.warpAt = now; Object.assign(p.c, { zone, x: D.start[0], y: D.start[1] }); p.dirty = true; p.allow = 0;
         log('warp', p.c.name, zone);
         return send(ws, { t: 'warp', zone, x: D.start[0], y: D.start[1] });
+      }
+      if (m.t === 'cls') {
+        const r = sim.setClass(p, m.cls);
+        if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'cls', r }); }
+        return;
+      }
+      if (m.t === 'adm') { // คำสั่งแอดมิน: เฉพาะบัญชีใน ADMIN_USERS
+        if (!p.admin) { p.denied = (p.denied || 0) + 1; log('deny adm', p.c.name, m.op); return send(ws, { t: 'deny', k: 'adm', r: 'not-admin' }); }
+        if (m.op === 'warp') { const D = WORLD.ZONES[String(m.zone)]; if (!D) return send(ws, { t: 'adm', op: m.op, r: 'invalid' }); Object.assign(p.c, { zone: String(m.zone), x: D.start[0], y: D.start[1] }); p.dirty = true; p.allow = 0; log('adm', p.c.name, 'warp', m.zone); send(ws, { t: 'warp', zone: p.c.zone, x: p.c.x, y: p.c.y }); return send(ws, { t: 'adm', op: m.op, r: 'ok' }); }
+        const r = sim.admin(p, String(m.op), m);
+        log('adm', p.c.name, m.op, m.n ?? m.id ?? m.mode ?? '', r);
+        return send(ws, { t: 'adm', op: m.op, r, god: !!p.god });
       }
       if (m.t === 'stat') {
         const r = sim.statOp(p, String(m.op), String(m.k), m.n);
@@ -236,7 +250,7 @@ function createServer(opts = {}) {
       out.me = { zone: c.zone, x: R(c.x), y: R(c.y), hp: Math.ceil(p.hp), maxHp: p.maxHp, atk: p.atk, def: p.def, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, dead: p.dead,
         buffT: +p.buffT.toFixed(1), guardT: +p.guardT.toFixed(1), ...(p.personal.length ? { ev: p.personal } : {}),
         ...(p.bagDirty ? { bag: c.bag, eq: c.eq } : {}),
-        ...(p.skDirty ? { sk: c.sk, pts: sim.freePoints(p), bon: p.bon, st: c.st, spts: sim.statFree(p) } : {}),
+        ...(p.skDirty ? { sk: c.sk, pts: sim.freePoints(p), bon: p.bon, st: c.st, spts: sim.statFree(p), cls: sim.clsOf(p) } : {}),
         ...(p.partyDirty || (p.party && tickN % 10 === 0) ? { party: sim.partyView(p) } : {}) };
       send(p.ws, out);
       p.personal = []; p.bagDirty = false; p.skDirty = false; p.partyDirty = false; p.full = false;

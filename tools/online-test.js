@@ -23,7 +23,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
     rec('เซิร์ฟเวอร์ส่งภาพแผนที่ /maps/*.webp และภาพมอนสเตอร์ /sprites/*.webp และปฏิเสธชื่อแปลก/ไม่มีไฟล์', sp.status === 200 && ok.status === 200 && ok.headers.get('content-type') === 'image/webp' && (await ok.arrayBuffer()).byteLength > 100000 && bad.status === 404 && miss.status === 404, ok.status + '/' + bad.status + '/' + miss.status);
     await s1.close(); }
   // ทดสอบที่เหลือเริ่มที่หมู่บ้านเดิม (มีบ้าน/มอนสเตอร์ที่ฉากทดสอบใช้)
-  let srv = createServer({ dbFile, quiet: true, saveEverySec: 2, startZone: 'village' });
+  let srv = createServer({ dbFile, quiet: true, saveEverySec: 2, startZone: 'village', admins: ['Tester_A'] }); // V2-R27: A = แอดมิน (ADMIN_USERS)
   let port = await srv.listen(0);
   let url = 'http://127.0.0.1:' + port + '/';
   const browser = await chromium.launch();
@@ -158,7 +158,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   await A.page.evaluate(() => HLNET.send({ t: 'skill', op: 'up', name: 'ปลุกคมอาคม' }));
   rec('ส่งคำขออัปสกิลที่ยังล็อกตรง ๆ → เซิร์ฟเวอร์ปฏิเสธ', await until(async () => (await st(A.page)).stats.denied > dSk) && !SA().c.sk['ปลุกคมอาคม']);
   await A.page.screenshot({ path: 'tools/last-skills.png' });
-  await A.page.click('#skp h3 button');
+  await A.page.click('#skp h3 button:last-child');
 
   // 5.5 เดินทะลุบ้าน (เปิด "เดินได้ทุกที่" ในเครื่อง) → เซิร์ฟเวอร์ไม่ยอม
   const s55 = await st(A.page);
@@ -242,6 +242,29 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   rec('เซิร์ฟเวอร์รับการย้ายโซนผ่านจุดที่อนุญาต', srvZone === 'field', 'zone=' + srvZone);
   SA().warpAt = 0; /* ฉาก: ข้ามคูลดาวน์วาร์ปของปุ่มทดสอบ */ await A.page.click('#gear'); await A.page.click('#wp'); await A.page.click('#gear');
   await until(async () => (await st(B.page)).others.some(o => o.name === 'Tester_A'));
+
+  // V2-R27: แอดมิน (เฉพาะบัญชีใน ADMIN_USERS) + อาชีพออนไลน์
+  { rec('บัญชีแอดมินเห็นปุ่ม 🛠, บัญชีทั่วไปไม่เห็น', await A.page.isVisible('#admb') && !(await B.page.isVisible('#admb')));
+    await A.page.click('#admb'); await A.page.waitForSelector('#adp:not([hidden]) #ad-lv');
+    const lv0 = SA().c.lv; await A.page.fill('#ad-lv', '25'); await A.page.click('#ad-lvb');
+    rec('แอดมินตั้งเลเวลผ่านแผง → เซิร์ฟเวอร์เปลี่ยนจริง และจอตรงกัน', await until(async () => SA().c.lv === 25 && (await A.page.evaluate(() => HL.PS.lv)) === 25), lv0 + '→' + SA().c.lv);
+    await A.page.click('#ad-god'); rec('แอดมินเปิดโหมดอมตะ', await until(() => SA().god === true));
+    await A.page.click('#ad-god'); await until(() => !SA().god);
+    await A.page.click('#adp .x');
+    const SBp = () => [...srv.online.values()].find(p => p.c.name === 'Tester_B'), lvB = SBp().c.lv, d0 = SBp().denied || 0;
+    await B.page.evaluate(() => HLNET.send({ t: 'adm', op: 'lv', n: 99 }));
+    rec('บัญชีทั่วไปส่งคำสั่งแอดมินเอง → เซิร์ฟเวอร์ปฏิเสธ', await until(() => (SBp().denied || 0) > d0) && SBp().c.lv === lvB);
+    SA().c.lv = lv0; srv.sim.stats(SA()); SA().skDirty = true;
+    // อาชีพ: A อยู่ในหมู่บ้าน (เขตปลอดภัย) → เปลี่ยนเป็นนักธนูผ่านหน้าเลือกอาชีพ
+    const zBack = SA().c.zone; await A.page.evaluate(() => HLNET.send({ t: 'adm', op: 'warp', zone: 'village2' })); // ฉาก: แอดมินวาร์ปไปหมู่บ้านใหม่ (เขตปลอดภัย)
+    await until(async () => SA().c.zone === 'village2' && (await st(A.page)).zone === 'village2');
+    await A.page.click('#skb'); await A.page.click('#skp h3 .clsb'); await A.page.waitForSelector('#clp:not([hidden]) .cc');
+    await A.page.click('#clp button[aria-label="เปลี่ยนเป็น นักธนู"]');
+    const ok = await until(async () => SA().c.cls === 'นักธนู' && (await A.page.evaluate(() => HL.curCls())) === 'นักธนู' && (await A.page.evaluate(() => [...document.querySelectorAll('#skills .sk')].some(b => b.getAttribute('aria-label') === 'ศรเจาะจุดอ่อน'))));
+    rec('ออนไลน์: เปลี่ยนอาชีพในหมู่บ้าน → เซิร์ฟเวอร์บันทึก และปุ่มสกิลเปลี่ยนตาม', ok, SA().c.cls);
+    await A.page.evaluate(() => HLNET.send({ t: 'cls', cls: 'นักดาบ' })); await until(async () => SA().c.cls === 'นักดาบ' && (await A.page.evaluate(() => HL.curCls())) === 'นักดาบ');
+    await A.page.click('#clp .x');
+    await A.page.evaluate(z => HLNET.send({ t: 'adm', op: 'warp', zone: z }), zBack); await until(async () => SA().c.zone === zBack && (await st(A.page)).zone === zBack); }
 
   // V2-R26: วาร์ปผ่านแผนที่โลก (เซิร์ฟเวอร์ตรวจ) + ปิดช่องโหว่กระโดดโซนผ่าน mv
   { const a = SA(); a.warpAt = 0; await A.page.evaluate(() => HL.clearWarpCd()); const z0 = a.c.zone, to = z0 === 'bamboo' ? 'peak' : 'bamboo';

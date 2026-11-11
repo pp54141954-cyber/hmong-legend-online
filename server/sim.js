@@ -6,9 +6,17 @@ const { T, CFG, Combat, BLOCKT, ZONES, SKILL_TABLE } = W;
 
 // ---------- ตารางสกิลจาก CSV (data/Hmong_Legend_All_8_Class_Skills.csv = SKILL_TABLE ในเกม) ----------
 // แถว: [อาชีพ, สาย, ชื่อ, 'a'|'p', สกิลเริ่มต้น, ขั้น, Job ปลดล็อก, ระดับสูงสุด, โบนัสต่อระดับ]
-const CLASS = 'นักดาบ'; // รอบนี้มีอาชีพเดียวในเกม
-const SKROWS = SKILL_TABLE.filter(r => r[0] === CLASS).map(r => ({ cls: r[0], path: r[1], name: r[2], type: r[3], start: r[4], tier: r[5], job: r[6], max: r[7], bonus: String(r[8] || '').trim() }));
-const SKBYNAME = new Map(SKROWS.map(r => [r.name, r]));
+// อาชีพ (V2-R27): 8 อาชีพจาก SKILL_TABLE — เปลี่ยนได้ในเขตปลอดภัย, ระดับสกิลเก็บแยกตามชื่อสกิล (สกิลเริ่มต้นชื่อเดียวกันใช้ร่วมกัน)
+const CLASSES = [...new Set(SKILL_TABLE.map(r => r[0]))], CLASS = 'นักดาบ';
+const ROWS = {}, BYNAME = {}, ACTIVE = {};
+for (const cls of CLASSES) {
+  ROWS[cls] = SKILL_TABLE.filter(r => r[0] === cls).map(r => ({ cls: r[0], path: r[1], name: r[2], type: r[3], start: r[4], tier: r[5], job: r[6], max: r[7], bonus: String(r[8] || '').trim() }));
+  BYNAME[cls] = new Map(ROWS[cls].map(r => [r.name, r]));
+  ACTIVE[cls] = ROWS[cls].filter(r => r.type === 'a' && r.name !== 'ท่าพื้นฐาน').map(r => r.name); // ช่อง 1–11 เรียงเหมือน CFG.skills (ท่าแบบชั่วคราว = กลไกเดียวกับนักดาบ)
+}
+const SKROWS = ROWS[CLASS], SKBYNAME = BYNAME[CLASS];
+const clsOf = p => (ROWS[p.c.cls] ? p.c.cls : CLASS);
+const skName = (p, i) => ACTIVE[clsOf(p)][i - 1];
 // โบนัสต่อระดับ เช่น "พลังโจมตีกายภาพ 2 %" → {key:'พลังโจมตีกายภาพ', per:0.02}
 const parseBonus = b => { const m = /^(.*?)\s+([\d.]+)\s*(%|จุดเปอร์เซ็นต์)$/.exec(b); return m ? { key: m[1].trim(), per: +m[2] / 100 } : null; };
 // โบนัสที่เกมมีระบบรองรับแล้ว → ชื่อภายใน; ที่เหลือบันทึกระดับไว้แต่ยังไม่มีผล
@@ -70,12 +78,12 @@ function createSim({ rand = Math.random } = {}) {
   // ---------- สกิล / แต้มอัปสกิล ----------
   const skLv = (p, name) => (p.c.sk && p.c.sk[name]) || 0;
   // แต้มที่ใช้ = ระดับที่เพิ่มเกินระดับฟรี (สกิลเริ่มต้นได้ระดับ 1 ฟรี)
-  const spentPoints = p => SKROWS.reduce((n, r) => n + Math.max(0, skLv(p, r.name) - (r.start ? 1 : 0)), 0);
+  const spentPoints = p => ROWS[clsOf(p)].reduce((n, r) => n + Math.max(0, skLv(p, r.name) - (r.start ? 1 : 0)), 0);
   const freePoints = p => SKILL_POINTS(p.c.job) - spentPoints(p);
   // สกิลติดตัว: โบนัสชื่อเดียวกันบวกกันข้ามสาย (ตามคำอธิบายใน CSV)
   function skillBonus(p) {
     const B = { atkPct: 0, hpPct: 0, crit: 0, skillDmg: 0, dur: 0, radius: 0, spd: 0, cdr: 0, other: {} };
-    for (const r of SKROWS) {
+    for (const r of ROWS[clsOf(p)]) {
       const lv = skLv(p, r.name); if (r.type !== 'p' || !lv) continue;
       const b = parseBonus(r.bonus); if (!b) continue;
       const k = BONUS_KEYS[b.key];
@@ -93,8 +101,35 @@ function createSim({ rand = Math.random } = {}) {
     if (p.c.st[k] + n > CFG.stats.max) return 'max';
     p.c.st[k] += n; stats(p); p.skDirty = true; p.dirty = true; return 'ok';
   }
+  // เปลี่ยนอาชีพ: เฉพาะในเขตปลอดภัย ไม่ตาย — ระดับสกิลของอาชีพเดิมเก็บไว้ (กลับมาแล้วได้คืน)
+  function setClass(p, cls) {
+    cls = String(cls); if (!ROWS[cls]) return 'invalid';
+    if (cls === clsOf(p)) return 'same';
+    if (p.dead) return 'dead';
+    const D = ZONES[p.c.zone]; if (!D || !D.safe || !D.safe(p.c.x, p.c.y)) return 'not-safe';
+    p.c.cls = cls; stats(p); p.skDirty = true; p.dirty = true; p.personal.push({ k: 'cls', cls });
+    return 'ok';
+  }
+  // แอดมิน (ADMIN_USERS): ปรับค่าตัวเองเพื่อทดสอบ — server.js ตรวจสิทธิ์ก่อนเรียก
+  function admin(p, op, a) {
+    const c = p.c, P = CFG.player, n = Math.floor(+a.n);
+    if (op === 'lv') { if (!(n >= 1 && n <= P.maxLv)) return 'invalid'; c.lv = n; c.exp = 0; c.st = CFG.stats.clean({}); stats(p); p.hp = p.maxHp; p.skDirty = true; }
+    else if (op === 'job') { if (!(n >= 1 && n <= P.maxJob)) return 'invalid'; c.job = n; c.jexp = 0; p.skDirty = true; }
+    else if (op === 'item') { if (!CFG.items[a.id] || !(n >= 1 && n <= 99)) return 'invalid'; if (!addItem(p, a.id, n)) return 'bag-full'; }
+    else if (op === 'heal') { p.hp = p.maxHp; }
+    else if (op === 'god') { p.god = !p.god; }
+    else if (op === 'clear') { const z = zones[c.zone]; if (!z) return 'invalid'; for (const m of z.mons) if (!m.c.boss && m.state !== 'dead') { m.state = 'dead'; m.hp = 0; m.respT = m.c.respawn; m.target = null; } }
+    else if (op === 'boss') { const z = zones[c.zone]; if (!z) return 'invalid'; let k = 0; for (const m of z.mons) if (m.c.boss) { Object.assign(m, { state: 'idle', away: false, hp: m.c.hp, x: m.hx, y: m.hy, respT: 0, target: null, dmgBy: null, forced: true }); k++; } if (!k) return 'no-boss'; }
+    else if (op === 'time') {
+      const want = { day: w => !w.night, night: w => w.night && !w.blood, blood: w => w.blood, world: w => w.world }[a.mode]; if (!want) return 'invalid';
+      const now = Date.now() / 1000; let d = 0; while (d < 4 * 3600 && !want(CFG.worldClock(now + timeOff + d))) d += 10;
+      if (d >= 4 * 3600) return 'invalid'; timeOff += d + 5; WT = CFG.worldClock(now + timeOff);
+    }
+    else return 'invalid';
+    p.dirty = true; return 'ok';
+  }
   function learn(p, name) {
-    const r = SKBYNAME.get(String(name)); if (!r) return 'invalid';
+    const r = BYNAME[clsOf(p)].get(String(name)); if (!r) return 'invalid';
     if (p.c.job < r.job) return 'locked';
     if (skLv(p, name) >= r.max) return 'max';
     if (freePoints(p) <= 0) return 'no-points';
@@ -107,7 +142,8 @@ function createSim({ rand = Math.random } = {}) {
     p.c.eq = Object.assign({ weapon: null, armor: null, acc: null }, p.c.eq || {});
     p.c.sk = Object.assign({}, p.c.sk || {});
     p.c.st = CFG.stats.clean(p.c.st); if (CFG.stats.free(p.c.lv, p.c.st) < 0) p.c.st = CFG.stats.clean({}); // ข้อมูลเกินแต้มที่มี = รีเซ็ต
-    for (const r of SKROWS) if (r.start && !p.c.sk[r.name]) p.c.sk[r.name] = 1; // สกิลเริ่มต้นได้ระดับ 1 ฟรี
+    if (!ROWS[p.c.cls]) p.c.cls = CLASS;
+    for (const r of SKROWS) if (r.start && !p.c.sk[r.name]) p.c.sk[r.name] = 1; // สกิลเริ่มต้นได้ระดับ 1 ฟรี (ชื่อเดียวกันทุกอาชีพ)
     Object.assign(p, { hp: 0, dead: false, deadT: 0, cd: {}, castUntil: 0, buffT: 0, buffBonus: 0, guardT: 0, guardRed: 0, personal: [], potionAt: 0, bagDirty: true, skDirty: true });
     if (!p.c.starter && CFG.starter) { // ชุดไอเทมเริ่มต้น: ใส่อุปกรณ์ให้เลย (ช่องที่ว่าง) + ยาเข้ากระเป๋า
       const got = [];
@@ -306,7 +342,7 @@ function createSim({ rand = Math.random } = {}) {
     if (p.dead) return 'dead';
     const sk = key === 'b' ? CFG.basic : CFG.skills[key - 1];
     if (!sk) return 'invalid';
-    if (key !== 'b' && (p.c.job < sk.job || skLv(p, sk.name) < 1)) return 'locked'; // ต้องถึง Job และอัปสกิลแล้วอย่างน้อยระดับ 1
+    if (key !== 'b' && (p.c.job < sk.job || skLv(p, skName(p, key)) < 1)) return 'locked'; // ต้องถึง Job และอัปสกิลแล้วอย่างน้อยระดับ 1
     if ((p.cd[key] || 0) > now + LAG) return 'cooldown';
     if (p.castUntil > now + LAG) return 'busy';
     const B = p.bon || skillBonus(p);
@@ -323,6 +359,7 @@ function createSim({ rand = Math.random } = {}) {
   }
 
   function hitPlayer(p, m) {
+    if (p.god) return; // แอดมิน: โหมดอมตะ
     const r = Combat.damage(m.c.atk * WT.atk, 1, rand(), 1);
     r.dmg = Math.max(1, r.dmg - (p.def || 0)); // เกราะลดดาเมจแบบหักตรง (ค่าชั่วคราว)
     if (p.guardT > 0) r.dmg = Math.max(1, Math.round(r.dmg * (1 - p.guardRed)));
@@ -361,6 +398,7 @@ function createSim({ rand = Math.random } = {}) {
 
   function gateBoss(m) {
     if (!m.when) return;
+    if (m.forced) { if (m.state === 'dead') m.forced = false; else return; } // แอดมินเรียกบอส: อยู่จนตาย
     const on = CFG.bossActive(m.when, WT);
     if (on && m.away) {
       m.away = false; m.state = 'idle'; m.hp = m.c.hp; m.x = m.hx; m.y = m.hy; m.target = null; m.dmgBy = null;
@@ -387,6 +425,6 @@ function createSim({ rand = Math.random } = {}) {
     }
   }
 
-  return { party, partyView, parties, get WT() { return WT; }, setTimeOffset(s) { timeOff = s; }, zones, players, addPlayer, removePlayer, statOp, statFree, act, step, pathClear, stats, gain, addItem, inv, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
+  return { party, partyView, parties, get WT() { return WT; }, setTimeOffset(s) { timeOff = s; }, zones, players, addPlayer, removePlayer, statOp, statFree, setClass, admin, CLASSES, clsOf, act, step, pathClear, stats, gain, addItem, inv, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
 }
 module.exports = { createSim };
