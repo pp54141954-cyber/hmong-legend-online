@@ -1,5 +1,11 @@
 # ประวัติเวอร์ชัน
 
+## V2-R42 — 2026-11-11 (เอฟเฟกต์สกิล ผู้ใช้มนตรา + ผู้พิทักษ์)
+
+- ตาราง MAGE / GUARDIAN จากเจ้าของ (ตามชุดคำสั่ง `docs/prompts/skill_charts_mage_guardian.md`) → `game/sprites/skfx_mage.webp`, `skfx_guardian.webp`
+- ครบ 7 อาชีพ (นักดาบใช้เอฟเฟกต์เดิม); จางขอบช่องทุกเฟรม (แสงเต็มช่องไม่เป็นสี่เหลี่ยม); หุ่นสีเทาอ่อนของตาราง MAGE ตรวจจับได้
+- ทดสอบ: smoke 131/131, sim 119/119, online 96/96 · ภาพ `evidence/r42_mage_guardian_fx.png`
+
 ## V2-R41 — 2026-11-11 (เอฟเฟกต์สกิลจากตารางท่าของเจ้าของ)
 
 - สำรองไฟล์ก่อนแก้: `game/versions/r40-before-chart-fx.html`; ตารางต้นฉบับ `assets/design_refs/skills/v2/`

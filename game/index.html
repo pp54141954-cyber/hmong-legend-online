@@ -852,7 +852,7 @@ function chartFx(cls,i){const n=SKILL_FX.cls&&SKILL_FX.cls[cls];if(!n||i<3||i>11
   fx.push({k:'cchart',cls,row:i-3,x:player.x,y:player.y,sx:side==='W'?-1:1,t:1.05,T:1.05,follow:1});return true}
 function drawChart(f){const im=skfxImg(f.cls);if(!im)return;const F=SKILL_FX,p=1-f.t/f.T,fr=1+Math.min(3,Math.floor(p*4)),sc=107*SCALE/F.fig,x=f.follow?player.x:f.x,y=f.follow?player.y:f.y;
   ctx.globalAlpha=Math.min(1,f.t*4);ctx.globalCompositeOperation='lighter';ctx.translate(x,y+2);ctx.scale(f.sx*sc,sc);ctx.drawImage(im,fr*F.cw,f.row*F.ch,F.cw,F.ch,-F.ax,-F.ay,F.cw,F.ch)}
-const SKILL_FX={"cw":320,"ch":200,"ax":70,"ay":172,"fig":92,"cls":{"นักธนู":"archer","นักฆ่า":"assassin","นักสู้":"fighter","ผู้สืบวิญญาณ":"spirit_heir","ผู้รักษา":"healer"}};/*SKILL_FX*/
+const SKILL_FX={"cw":320,"ch":200,"ax":70,"ay":172,"fig":92,"cls":{"นักธนู":"archer","นักฆ่า":"assassin","นักสู้":"fighter","ผู้สืบวิญญาณ":"spirit_heir","ผู้รักษา":"healer","ผู้ใช้มนตรา":"mage","ผู้พิทักษ์":"guardian"}};/*SKILL_FX*/
 const POSEIMG={},POSEC={};
 function poseFor(cls,look){const P=CLASS_POSE[cls];if(!P)return null;const g=look&&look.g==='f'?'f':'m',e=P[g];if(!e)return null;
   if(!POSEIMG[e.id]){const im=new Image();im.src='sprites/pose_'+e.id+'.webp';POSEIMG[e.id]=im}const im=POSEIMG[e.id];if(!(im.complete&&im.naturalWidth))return null;

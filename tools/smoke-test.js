@@ -501,10 +501,10 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     const want = { 'นักดาบ': 'เดิม', 'นักธนู': 'bow', 'นักฆ่า': 'daggers', 'นักสู้': 'fists', 'ผู้สืบวิญญาณ': 'staff', 'ผู้รักษา': 'leafstaff', 'ผู้ใช้มนตรา': 'book', 'ผู้พิทักษ์': 'shield' };
     rec('ท่าใช้สกิลครบทุกอาชีพ: แต่ละอาชีพถืออาวุธของตัวเอง (นักดาบใช้ภาพเดิม)', Object.keys(want).every(k => r[k] === want[k]), JSON.stringify(r)); }
   { const r = await page.evaluate(async () => { for (let i = 0; i < 200 && !Object.keys(HL.SKILL_FX.cls).every(c => HL.skfxReady(c)); i++) await new Promise(r => setTimeout(r, 50));
-      const out = {}; for (const cls of ['นักธนู', 'นักฆ่า', 'นักสู้', 'ผู้สืบวิญญาณ', 'ผู้รักษา', 'ผู้ใช้มนตรา']) { HL.PS.cls = cls; HL.buildSkills(); HL.PS.job = 30; HL.PS.cd = {}; HL.PS.cast = null; HL.PS.dead = false; HL.fxList.length = 0; HL.useSkill(4);
+      const out = {}; for (const cls of ['นักธนู', 'นักฆ่า', 'นักสู้', 'ผู้สืบวิญญาณ', 'ผู้รักษา', 'ผู้ใช้มนตรา', 'ผู้พิทักษ์', 'นักดาบ']) { HL.PS.cls = cls; HL.buildSkills(); HL.PS.job = 30; HL.PS.cd = {}; HL.PS.cast = null; HL.PS.dead = false; HL.fxList.length = 0; HL.useSkill(4);
         out[cls] = HL.fxList.some(f => f.k === 'cchart' && f.row === 1); HL.PS.cast = null }
       HL.PS.cls = 'นักดาบ'; HL.buildSkills(); return out });
-    rec('เอฟเฟกต์สกิลจากตารางท่า (5 อาชีพ) เล่นเมื่อใช้สกิล, อาชีพที่ไม่มีตารางไม่เล่น', r['นักธนู'] && r['นักฆ่า'] && r['นักสู้'] && r['ผู้สืบวิญญาณ'] && r['ผู้รักษา'] && !r['ผู้ใช้มนตรา'], JSON.stringify(r)); }
+    rec('เอฟเฟกต์สกิลจากตารางท่า (7 อาชีพ) เล่นเมื่อใช้สกิล, นักดาบใช้เอฟเฟกต์เดิม', ['นักธนู', 'นักฆ่า', 'นักสู้', 'ผู้สืบวิญญาณ', 'ผู้รักษา', 'ผู้ใช้มนตรา', 'ผู้พิทักษ์'].every(c => r[c]) && !r['นักดาบ'], JSON.stringify(r)); }
   rec('หน้าเกมปกติ (ระบบทดสอบอัตโนมัติ) ข้ามหน้าโหลดได้', await page.evaluate(() => document.getElementById('splash').hidden && SND.splash.shown === false));
   rec('ไม่มี JavaScript error ระหว่างทดสอบ', errors.length === 0, errors.slice(0, 5).join(' | '));
   await browser.close(); srv.close();

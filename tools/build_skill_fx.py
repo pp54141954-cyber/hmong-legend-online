@@ -17,23 +17,28 @@ GRID = {
  'นักสู้':       ('fighter',     [115, 273, 427, 581, 737, 891, 1048, 1198, 1329, 1506], [57, 240, 418, 608, 831, 1020]),
  'ผู้สืบวิญญาณ': ('spirit_heir', [119, 286, 421, 565, 696, 824, 980, 1110, 1252, 1420], [56, 254, 446, 648, 878, 1084]),
  'ผู้รักษา':     ('healer',      [104, 238, 377, 511, 644, 770, 903, 1014, 1134, 1306], [66, 286, 498, 715, 949, 1180]),
+ 'ผู้ใช้มนตรา':  ('mage',        [129, 246, 363, 492, 605, 718, 831, 943, 1058, 1216], [87, 314, 539, 771, 1002, 1234]),
+ 'ผู้พิทักษ์':   ('guardian',    [115, 255, 396, 549, 692, 831, 970, 1109, 1251, 1419], [70, 252, 436, 613, 910, 1084]),
 }
 
 def fx_layer(cell, bg):
     a = cell.astype(int); lum = a.mean(2); sat = a.max(2) - a.min(2)
     col = sat > 40
     near = np.asarray(Image.fromarray((col * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(13))) > 0
-    keep = col | ((lum > 205) & near)                       # สีเรือง + แกนขาวติดสี (หุ่นเทาไม่ผ่าน)
+    keep = col | ((lum > 232) & near)                       # สีเรือง + แกนขาวติดสี (หุ่นเทาไม่ผ่าน)
     out = np.clip(a - bg[None, None, :] * 1.05, 0, 255)      # ลบสีพื้น → วาดแบบบวกแสง
     out[~keep] = 0
-    soft = np.clip((sat - 25) / 30, 0, 1); soft[(lum > 205) & near] = 1
+    soft = np.clip((sat - 25) / 30, 0, 1); soft[(lum > 232) & near] = 1
     out = out * np.maximum(soft, keep * .0)[..., None]
+    h, w = out.shape[:2]; e = 18                                 # จางขอบช่อง: แสงที่เต็มช่องไม่เป็นขอบสี่เหลี่ยม
+    fy = np.clip(np.minimum(np.arange(h), h - 1 - np.arange(h)) / e, 0, 1); fx = np.clip(np.minimum(np.arange(w), w - 1 - np.arange(w)) / e, 0, 1)
+    out = out * (fy[:, None] * fx[None, :])[..., None]
     return out.astype(np.uint8)
 
 def caster(cell):
     """หุ่นผู้ใช้สกิลในช่อง READY: กลุ่มพิกเซลเทาทางซ้ายสุด → (กึ่งกลาง x, เท้า y, ความสูง)"""
     a = cell.astype(int); lum = a.mean(2); sat = a.max(2) - a.min(2)
-    g = (sat < 26) & (lum > 55) & (lum < 175)
+    g = (sat < 26) & (lum > 55) & (lum < 215)  # ตาราง MAGE หุ่นสีเทาอ่อนกว่า
     xs = np.where(g.sum(0) > 6)[0]
     if not len(xs): return None
     runs, run = [], [xs[0]]                       # กลุ่มคอลัมน์ติดกัน; เลือกกลุ่มแรกที่กว้างพอเป็นหุ่น (ตัดเส้น/ขอบบาง ๆ)
