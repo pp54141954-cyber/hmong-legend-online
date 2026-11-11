@@ -294,9 +294,13 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     await page.screenshot({ path: 'tools/last-autocfg.png' });
     await page.click('#aop .x');
     let tg = null; for (let i = 0; i < 20 && !tg; i++) { await page.waitForTimeout(150); tg = await page.evaluate(() => HL.AUTO.tgt && HL.AUTO.tgt.type); }
-    rec('AUTO เลือกเป้าเฉพาะชนิดที่เปิดไว้', tg === types[0], tg + ' (เปิดไว้: ' + types[0] + ')');
+    rec('AUTO เลือกเป้าเฉพาะชนิดที่เปิดไว้', tg === types[0], tg + ' (เปิดไว้: ' + types[0] + ') ' + (tg === types[0] ? '' : await page.evaluate(t => JSON.stringify({ on: HL.AUTO.on, dead: HL.PS.dead, cast: !!HL.PS.cast, joy: HL.inputDir(), z: HL.Z.id, p: [Math.floor(HL.player.x / 32), Math.floor(HL.player.y / 32)], tg: HL.AUTO.cfg.tg, rab: HL.mons.filter(m => m.type === t).map(m => [m.state, Math.floor(m.x / 32), Math.floor(m.y / 32), (m.autoSkip || 0) > HL.tNow]) }), types[0])));
     await page.click('#pg'); await page.click('#ask'); for (const t of types.slice(1)) await page.click('#aop .tg[data-t="' + t + '"]'); await page.click('#aop .x');
     rec('ตั้งค่าเป้าหมายกลับครบ', await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('hl_auto')).tg).length === 0)); }
+  { const r = await page.evaluate(async () => { HL.AUTO.on = false; HL.PS.dead = false; HL.PS.cast = null; HL.enterZone('field2', 32.5 * 32, 31.5 * 32); HL.PS.maxHp = HL.PS.hp = 1e6; HL.AUTO.on = true; const y0 = HL.player.y;
+      await new Promise(r => setTimeout(r, 2500)); const o = { zone: HL.Z.id, moved: Math.round(y0 - HL.player.y) }; HL.AUTO.on = false; HL.recalc(); HL.PS.hp = HL.PS.maxHp; return o });
+    rec('AUTO เริ่มจากยืนบนช่องทางออก → เดินออกมาล่าได้ และไม่หลุดโซน', r.zone === 'field2' && r.moved > 10, JSON.stringify(r));
+    await page.evaluate(() => { HL.AUTO.on = false; HL.PS.cast = null; }); }
   // ===== V2-R26: ไอคอนสกิล, คูลดาวน์, ภาพมอนสเตอร์ตายไม่ค้าง, แผนที่โลก + วาร์ป =====
   { const ic = await page.evaluate(async () => { const im = [...document.querySelectorAll('#skills .sk img')]; await Promise.all(im.map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r }))); return im.map(i => i.naturalWidth) });
     rec('ปุ่มสกิลมีไอคอนครบ 6 ปุ่ม (โหลดได้)', ic.length === 6 && ic.every(w => w === 64), ic.join(','));
@@ -379,6 +383,41 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   rec('ไปทุ่งมอนสเตอร์ได้', (await pos()).zone === 'field');
 
   await page.screenshot({ path: process.env.SHOT || 'tools/last-run.png' });
+  // ===== V2-R28: หน้าโหลด + เพลง/เสียงประกอบ (หน้าใหม่ ?splash=1) =====
+  { const sp = await ctx.newPage(); sp.on('pageerror', e => errors.push('splash pageerror: ' + e.message));
+    await sp.goto(url + '?splash=1'); await sp.waitForTimeout(300);
+    const s0 = await sp.evaluate(() => ({ vis: !document.getElementById('splash').hidden, title: document.querySelector('#splash h1').textContent, go: !document.getElementById('splgo').hidden, tip: document.getElementById('spltip').textContent }));
+    rec('หน้าโหลด: แสดงตอนเข้าเกม มีชื่อเกม + เคล็ดลับ, ปุ่มเข้าเกมยังไม่ขึ้นระหว่างโหลด', s0.vis && s0.title === 'HMONG LEGEND' && s0.tip.startsWith('เคล็ดลับ') && (!s0.go || await sp.evaluate(() => SND.splash.done)), JSON.stringify(s0));
+    await sp.waitForFunction(() => SND.splash.done, null, { timeout: 15000 });
+    const s1 = await sp.evaluate(() => ({ pct: SND.splash.pct, txt: document.getElementById('splpct').textContent, aria: document.querySelector('#splash .bar').getAttribute('aria-valuenow'), go: !document.getElementById('splgo').hidden, n: HL.preloadList().length }));
+    rec('หน้าโหลด: โหลดภาพแผนที่/ไอคอน/มอนสเตอร์ครบ 100% แล้วขึ้นปุ่ม "แตะเพื่อเข้าเกม"', s1.pct === 100 && s1.txt === '100%' && s1.aria === '100' && s1.go && s1.n >= 15, JSON.stringify(s1));
+    await sp.click('#splsnd'); await sp.waitForTimeout(1500);
+    const a = await sp.evaluate(() => ({ st: SND.ctx && SND.ctx.state, tr: SND.track, notes: SND.stats.notes }));
+    rec('หน้าโหลด: แตะ "เปิดเสียง" → เพลงหน้าแรกเล่น (Web Audio ทำงาน)', a.st === 'running' && a.tr === 'title' && a.notes > 0, JSON.stringify(a));
+    await sp.click('#splgo', { force: true }); await sp.waitForTimeout(1500);
+    const g = await sp.evaluate(() => ({ hid: document.getElementById('splash').hidden, tr: SND.track, start: SND.stats.played.start }));
+    rec('แตะเพื่อเข้าเกม → หน้าโหลดหาย เปลี่ยนเป็นเพลงหมู่บ้าน', g.hid && g.tr === 'village' && g.start === 1, JSON.stringify(g));
+    await sp.evaluate(() => { HL.adminLocal({ op: 'time', mode: 'day' }); const s = HL.ZONES.field2.start; HL.enterZone('field2', s[0], s[1]); HL.PS.maxHp = HL.PS.hp = 1e6; }); // ฉาก: ไม่ให้ตายระหว่างรอเพลงเปลี่ยน
+    await sp.waitForTimeout(2600);
+    rec('ออกจากหมู่บ้าน (กลางวัน) → เพลงผจญภัย + เสียงวาร์ป', await sp.evaluate(() => SND.track === 'field' && SND.stats.played.warp >= 1), await sp.evaluate(() => SND.track));
+    await sp.evaluate(() => HL.adminLocal({ op: 'time', mode: 'night' })); await sp.waitForTimeout(2600);
+    rec('กลางคืนนอกหมู่บ้าน → เพลงกลางคืน', await sp.evaluate(() => SND.track === 'night'), await sp.evaluate(() => SND.track));
+    await sp.evaluate(() => HL.adminLocal({ op: 'time', mode: 'blood' })); await sp.waitForTimeout(2600);
+    rec('พระจันทร์เลือดนอกหมู่บ้าน → เพลงบอส', await sp.evaluate(() => SND.track === 'boss'), await sp.evaluate(() => SND.track));
+    await sp.evaluate(() => HL.adminLocal({ op: 'time', mode: 'day' }));
+    const fx = await sp.evaluate(async () => { const P = HL.PS; P.job = 30; P.cd = {}; P.cast = null; P.dead = false; const m = HL.mons.find(m => !m.c.boss && m.state !== 'dead'); m.x = HL.player.x + 20; m.y = HL.player.y + 6; m.hp = 1; HL.player.dir = 'E';
+      document.getElementById('atk').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); await new Promise(r => setTimeout(r, 400)); document.getElementById('atk').dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 300)); HL.PS.cd = {}; HL.PS.cast = null; HL.useSkill(3); HL.gain(HL.CFG.expCurve(HL.PS.lv) + 1, 0); return Object.assign({}, SND.stats.played) });
+    rec('เสียงเอฟเฟกต์: ฟันดาบ / โดนตี / มอนสเตอร์ตาย / สกิล / เลเวลอัป', fx.swing >= 1 && fx.hit >= 1 && fx.die >= 1 && fx.skill >= 1 && fx.lvup >= 1, JSON.stringify(fx));
+    await sp.click('#sndb'); await sp.waitForSelector('#sndp:not([hidden]) #snd-mus');
+    await sp.fill('#snd-mus', '0'); await sp.dispatchEvent('#snd-mus', 'input');
+    await sp.click('#snd-mute');
+    const v = await sp.evaluate(() => ({ st: JSON.parse(localStorage.getItem('hl_snd')), btn: document.getElementById('sndb').textContent }));
+    rec('ปุ่ม 🔊: ปรับระดับเพลง + ปิดเสียงทั้งหมด และจำค่าไว้ในเครื่อง', v.st.mus === 0 && v.st.mute === true && v.btn === '🔇', JSON.stringify(v));
+    await sp.screenshot({ path: 'tools/last-sound.png' });
+    await sp.click('#snd-mute'); await sp.fill('#snd-mus', '55'); await sp.dispatchEvent('#snd-mus', 'input');
+    await sp.close(); }
+  rec('หน้าเกมปกติ (ระบบทดสอบอัตโนมัติ) ข้ามหน้าโหลดได้', await page.evaluate(() => document.getElementById('splash').hidden && SND.splash.shown === false));
   rec('ไม่มี JavaScript error ระหว่างทดสอบ', errors.length === 0, errors.slice(0, 5).join(' | '));
   await browser.close(); srv.close();
   const fail = results.filter(r => !r.pass).length;

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Hmong Legend — รอบ 4 มอนสเตอร์ตามแบบ V7</title>
+<title>Hmong Legend — ตำนานม้ง</title>
 <style>
 :root{--bg:#e9e5d3;--ink:#1c2b22;--hud:#f6f3e7e6;--accent:#b4531a;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -483,13 +483,13 @@ function spawnMons(){mons=[];(CFG.bosses[Z.id]||[]).forEach(b=>{const c=CFG.mons
   for(const m of mons)gateBoss(m,WT);
   (Z.D.spawns||[]).forEach(sp=>{const c=CFG.monsters[sp.type];for(let i=0;i<sp.count*(Z.D.painted?CFG.spawnMul:1);i++){const o=CFG.spawnOff(i),[hx,hy]=findFree(sp.tx+o[0],sp.ty+o[1]);
   mons.push({type:sp.type,c,x:hx,y:hy,hx,hy,hp:c.hp,state:'idle',t:Math.random()*2,atkT:0,dir:'S',wx:hx,wy:hy,respT:0,hurt:0})}})}
-function enterZone(id,x,y){Z=getZone(id);preloadNear(id);for(const t of new Set([...(Z.D.spawns||[]).map(s=>s.type),...(CFG.bosses[id]||[]).map(b=>b.type)]))monSpr(t);player.x=x;player.y=y;if(netOn())mons=[];else spawnMons();fx.length=0;nums.length=0;shots.length=0;pending.length=0;PS.cast=null;switchCd=1;say('เข้าสู่ '+Z.D.name)}
+function enterZone(id,x,y){if(Z&&Z.id!==id)sfx('warp');Z=getZone(id);preloadNear(id);for(const t of new Set([...(Z.D.spawns||[]).map(s=>s.type),...(CFG.bosses[id]||[]).map(b=>b.type)]))monSpr(t);player.x=x;player.y=y;if(netOn())mons=[];else spawnMons();fx.length=0;nums.length=0;shots.length=0;pending.length=0;PS.cast=null;switchCd=1;say('เข้าสู่ '+Z.D.name)}
 const monBlocked=(m,x,y)=>{const r=m.c.size*.6;return pBlocked(x-r,y-3)||pBlocked(x+r,y-3)||pBlocked(x-r,y+3)||pBlocked(x+r,y+3)};
 function monMove(m,tx,ty,sp,dt){const dx=tx-m.x,dy=ty-m.y,d=Math.hypot(dx,dy);if(d<2)return true;const s=Math.min(d,sp*dt),nx=m.x+dx/d*s,ny=m.y+dy/d*s;
   if(!monBlocked(m,nx,m.y))m.x=nx;if(!monBlocked(m,m.x,ny))m.y=ny;m.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'E':'W'):(dy>0?'S':'N');return false}
 const addNum=(x,y,s,c)=>nums.push({x,y,s:String(s),c,t:.9});
-function hitPlayer(m){const r=Combat.damage(m.c.atk*WT.atk,1,Math.random(),1);if(PS.guardT>0){r.dmg=Math.max(1,Math.round(r.dmg*(1-PS.guardRed)));addNum(player.x,player.y-66,'ป้องกัน','#9fd6ff')}PS.hp-=r.dmg;PS.hurt=.4;addNum(player.x,player.y-52,r.dmg,'#ff6b6b');
-  if(PS.hp<=0){PS.hp=0;PS.dead=true;PS.deadT=CFG.player.respawnSec;PS.cast=null;say('พ่ายแพ้ · กลับหมู่บ้านใน '+CFG.player.respawnSec+' วินาที')}}
+function hitPlayer(m){sfx('hurt');const r=Combat.damage(m.c.atk*WT.atk,1,Math.random(),1);if(PS.guardT>0){r.dmg=Math.max(1,Math.round(r.dmg*(1-PS.guardRed)));addNum(player.x,player.y-66,'ป้องกัน','#9fd6ff')}PS.hp-=r.dmg;PS.hurt=.4;addNum(player.x,player.y-52,r.dmg,'#ff6b6b');
+  if(PS.hp<=0){PS.hp=0;PS.dead=true;PS.deadT=CFG.player.respawnSec;PS.cast=null;sfx('dead');say('พ่ายแพ้ · กลับหมู่บ้านใน '+CFG.player.respawnSec+' วินาที')}}
 function respawn(){PS.dead=false;PS.hp=PS.maxHp;const h=CFG.player.home,s=ZONES[h].start;enterZone(h,s[0],s[1])}
 function updMon(m,dt){
   if(m.state==='dead'){m.respT-=dt;if(m.respT<=0&&(!m.when||CFG.bossActive(m.when,WT))){m.state='idle';m.hp=m.c.hp;m.x=m.hx;m.y=m.hy}return}
@@ -504,9 +504,9 @@ function updMon(m,dt){
 function gain(e,j){
   if(PS.lv<CFG.player.maxLv){PS.exp+=e;while(PS.lv<CFG.player.maxLv&&PS.exp>=CFG.expCurve(PS.lv)){PS.exp-=CFG.expCurve(PS.lv);PS.lv++;recalc();PS.hp=PS.maxHp;lvUp('lv',PS.lv)}}
   if(PS.job<CFG.player.maxJob){PS.jexp+=j;while(PS.job<CFG.player.maxJob&&PS.jexp>=CFG.jobCurve(PS.job)){PS.jexp-=CFG.jobCurve(PS.job);PS.job++;lvUp('job',PS.job)}}}
-function kill(m){m.state='dead';m.dieT0=tNow;m.respT=m.c.respawn;PS.kills++;const e=Math.round(m.c.exp*WT.exp);gain(e,Math.round(m.c.job*WT.exp));addNum(m.x,m.y-40,'+'+e+' EXP','#8fe38f');if(m.c.boss)say('ปราบบอส '+m.type+' สำเร็จ!')}
+function kill(m){sfx('die');m.state='dead';m.dieT0=tNow;m.respT=m.c.respawn;PS.kills++;const e=Math.round(m.c.exp*WT.exp);gain(e,Math.round(m.c.job*WT.exp));addNum(m.x,m.y-40,'+'+e+' EXP','#8fe38f');if(m.c.boss)say('ปราบบอส '+m.type+' สำเร็จ!')}
 let lastTarget=null;
-function damageMon(m,mult){lastTarget=m;if(netOn())return;mult*=(PS.buffT>0?1+PS.buffBonus:1)*((m.markT||0)>0?1+m.markBonus:1);const ty=m.y-m.c.size*.6,r=Combat.damage(PS.atk,mult,Math.random(),Math.random());m.hp-=r.dmg;m.hurt=.25;addNum(m.x,ty-18,r.dmg,r.crit?'#ffd34a':'#ffffff');
+function damageMon(m,mult){lastTarget=m;if(netOn())return;mult*=(PS.buffT>0?1+PS.buffBonus:1)*((m.markT||0)>0?1+m.markBonus:1);const ty=m.y-m.c.size*.6,r=Combat.damage(PS.atk,mult,Math.random(),Math.random());m.hp-=r.dmg;m.hurt=.25;addNum(m.x,ty-18,r.dmg,r.crit?'#ffd34a':'#ffffff');sfx('hit',{crit:r.crit});
   if(m.state==='idle'||m.state==='return')m.state='chase';if(m.hp<=0)kill(m)}
 function doHit(sk,mult,ox,oy,dir){let hits=0;ox=ox??player.x;oy=oy??player.y-14;dir=dir||player.dir;
   for(const m of mons){if(m.state==='dead')continue;if(!Combat.inShape(sk,sk.range+m.c.size,ox,oy,dir,m.x,m.y-m.c.size*.6))continue;damageMon(m,mult);hits++}return hits}
@@ -535,14 +535,15 @@ function release(sk){const ox=player.x,oy=player.y-14,dir=player.dir,[ux,uy]=DV[
   else if(sk.shape==='multi'){for(let k=0;k<sk.hits;k++)pending.push({t:k*.1,f:()=>{doHit(sk,sk.mult);fx.push({k:'arc',sk,t:.15,x:player.x,y:player.y-14,dir:player.dir})}})}
   else{doHit(sk,sk.mult,ox,oy,dir);if(sk!==CFG.basic)fx.push({k:sk.fxk||sk.shape,sk,t:sk.fxk?.5:.22,x:ox,y:oy,dir});if(sk.fxk==='quake'){burst(ox,oy+14,'#ffb43a',46,280,.7,140);shake(7,.4)}}}
 function startCast(sk,key){PS.cast={sk,t:0,done:false,key};}
-function attack(){if(PS.dead||PS.cast||(PS.cd.b||0)>0)return false;PS.cd.b=CFG.basic.cd;startCast(CFG.basic,'b');if(netOn())HLNET.act('b',player.dir);return true}
+const sfx=(n,o)=>{try{window.SND&&SND.play(n,o)}catch(e){}};
+function attack(){if(PS.dead||PS.cast||(PS.cd.b||0)>0)return false;PS.cd.b=CFG.basic.cd;startCast(CFG.basic,'b');sfx('swing');if(netOn())HLNET.act('b',player.dir);return true}
 /* อาชีพ (V2-R27): 8 อาชีพจาก SKILL_TABLE — ช่อง 1–11 ใช้กลไกเดียวกับนักดาบ (ท่าแบบชั่วคราว) แต่ชื่อ/ระดับสกิลแยกตามอาชีพ */
 const CLASSES=[...new Set(SKILL_TABLE.map(r=>r[0]))],CLS_ACTIVE={};for(const c of CLASSES)CLS_ACTIVE[c]=SKILL_TABLE.filter(r=>r[0]===c&&r[3]==='a'&&r[2]!=='ท่าพื้นฐาน').map(r=>r[2]);
 const CLS_PATHS={};for(const c of CLASSES)CLS_PATHS[c]=[...new Set(SKILL_TABLE.filter(r=>r[0]===c&&r[1]!=='เริ่มต้น').map(r=>r[1]))];
 const curCls=()=>{const c=netOn()?HLNET.cls:PS.cls;return CLS_ACTIVE[c]?c:'นักดาบ'};
 const skName=i=>CLS_ACTIVE[curCls()][i-1]||(CFG.skills[i-1]||{}).name;
 function useSkill(i){const sk=CFG.skills[i-1];if(!sk||PS.dead)return'invalid';if(PS.job<sk.job||(netOn()&&!(HLNET.sk[skName(i)]>0)))return'locked';if((PS.cd[i]||0)>0)return'cooldown';if(PS.cast)return'busy';
-  PS.cd[i]=sk.cd*(netOn()?Math.max(.5,1-(HLNET.bon.cdr||0)):1);startCast(sk,i);if(netOn())HLNET.act(i,player.dir);return'ok'}
+  PS.cd[i]=sk.cd*(netOn()?Math.max(.5,1-(HLNET.bon.cdr||0)):1);startCast(sk,i);sfx('skill',{shape:sk.shape});if(netOn())HLNET.act(i,player.dir);return'ok'}
 function updCast(dt){const c=PS.cast;if(!c)return;c.t+=dt;if(!c.done&&c.t>=c.sk.poseT*.6){c.done=true;release(c.sk)}if(c.t>=c.sk.poseT)PS.cast=null}
 function updShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i],d=s.sk.speed*dt;s.x+=s.ux*d;s.y+=s.uy*d;s.dist+=d;if(Math.random()<.7)burst(s.x-s.ux*10+(Math.random()-.5)*s.uy*s.sk.width,s.y-s.uy*10+(Math.random()-.5)*s.ux*s.sk.width,'#c89bff',1,40,.4,0);
   for(const m of mons){if(m.state==='dead'||s.hit.has(m))continue;if(Math.hypot(m.x-s.x,(m.y-m.c.size*.6)-s.y)<=s.sk.width/2+m.c.size){s.hit.add(m);damageMon(m,s.sk.mult)}}
@@ -581,7 +582,8 @@ function step(dx,dy,dt,auto){const px0=player.x,py0=player.y,sp=CFG.player.speed
   if(dx){const nx=Math.max(8,Math.min(W-8,player.x+dx*sp));if(freeMode||!boxBlocked(nx,player.y))player.x=nx}
   if(dy){const ny=Math.max(8,Math.min(H-8,player.y+dy*sp));if(freeMode||!boxBlocked(player.x,ny))player.y=ny}
   const tx=Math.floor(player.x/T),ty=Math.floor(player.y/T),t=inb(tx,ty)?Z.g[ty][tx]:-1;
-  if(t===EX&&auto){player.x=px0;player.y=py0;AUTO.tgt=null;return} /* ออโตไม่พาออกนอกโซน */
+  if(t===EX&&auto){const ox=Math.floor(px0/T),oy=Math.floor(py0/T);if(!(inb(ox,oy)&&Z.g[oy][ox]===EX)){player.x=px0;player.y=py0;AUTO.tgt=null;return}} /* กันเฉพาะการก้าว 'เข้า' ทางออก — ยืนบนทางออกอยู่แล้วต้องเดินออกได้ */
+  if(t===EX&&auto)return; /* ออโตไม่พาออกนอกโซน */
   if(t===EX&&switchCd<=0){const ex=Z.D.exits.find(e=>tx>=e.x&&tx<e.x+e.w&&ty>=e.y&&ty<e.y+e.h);if(ex){enterZone(ex.to,(ex.tx+.5)*T,(ex.ty+.5)*T);return}say('ทางไปโซนถัดไป (ยังไม่เปิด)')}
   if(t===CV)say('ปากถ้ำ (ยังไม่เชื่อมกับโซนถ้ำ)');
 }
@@ -904,7 +906,7 @@ function bfsPath(sx,sy,tx,ty,maxN){if(sx===tx&&sy===ty)return[];const key=(x,y)=
 /* หน้าต่างอัปเลเวล (V2-R24): ขึ้นกลางจอ 2.8 วิ แตะเพื่อปิด — เลเวลกับ Job ขึ้นพร้อมกันรวมในหน้าต่างเดียว */
 const lvEl=document.createElement('div');lvEl.id='lvup';lvEl.hidden=true;lvEl.setAttribute('role','status');document.getElementById('app').appendChild(lvEl);let lvHide=0;const lvRows=[];
 lvEl.onclick=()=>{lvEl.hidden=true;lvRows.length=0};
-function lvUp(kind,v){const P=CFG.player,unlock=CFG.skills.filter(k=>k.job===v).map(k=>k.name);
+function lvUp(kind,v){sfx(kind==='lv'?'lvup':'jobup');const P=CFG.player,unlock=CFG.skills.filter(k=>k.job===v).map(k=>k.name);
   if(lvEl.hidden)lvRows.length=0;
   lvRows.push(kind==='lv'?{h:'เลเวลอัป!',b:'Lv '+(v-1)+' → <b>Lv '+v+'</b>',g:['HP สูงสุด +'+P.hpPerLv,'ATK +'+P.atkPerLv,'แต้มสเตตัส +'+CFG.stats.perLv+' (แตะวงเลเวล)','ฟื้น HP เต็ม']}
     :{h:'Job เลเวลอัป!',b:'Job '+(v-1)+' → <b>Job '+v+'</b>',g:['แต้มสกิล +1'].concat(unlock.length?['ปลดล็อก: '+unlock.join(', ')]:[])});
@@ -921,10 +923,12 @@ function autoSkill(dt){if(!AUTOSK.on||PS.cast||PS.dead||(AUTOSK.t-=dt)>0)return;
     if(sk.shape==='buff'){if(PS.buffT>0||bd>140)continue}else if(bd>(sk.range||60)+m.c.size)continue;
     const pd=player.dir;if(sk.shape!=='buff'){player.dir=Math.abs(ax)>Math.abs(ay)?(ax>0?'E':'W'):(ay>0?'S':'N');if(ax)player.lastH=ax>0?'E':'W'}
     if(useSkill(i)==='ok')return;player.dir=pd}}
+/* จุดเริ่มเส้นทาง: ถ้ากลางตัวผู้เล่นอยู่บนช่องกีดขวาง (ขอบทางเดิน) ใช้ช่องเดินได้ที่ใกล้ที่สุดในรัศมี 2 ช่อง */
+function autoStart(){const sx=Math.floor(player.x/T),sy=Math.floor(player.y/T);if(!tileBlocked(sx,sy))return[sx,sy];let b=[sx,sy],bd=1e9;for(let y=sy-2;y<=sy+2;y++)for(let x=sx-2;x<=sx+2;x++){if(tileBlocked(x,y))continue;const d=Math.hypot((x+.5)*T-player.x,(y+.5)*T-player.y);if(d<bd){bd=d;b=[x,y]}}return b}
 function autoStep(dt){if(!AUTO.on||PS.dead)return null;
   if((AUTO.potT-=dt)<=0&&netOn()&&AUTO.cfg.pot>0&&PS.hp<PS.maxHp*AUTO.cfg.pot/100){AUTO.potT=1.2;const i=(HLNET.bag||[]).findIndex(s=>CFG.items[s.id]&&CFG.items[s.id].type==='use');if(i>=0)HLNET.send({t:'inv',op:'use',slot:i})}
   if(inSafe(player.x,player.y)&&PS.hp<PS.maxHp*.5&&!AUTO.tgt)return[0,0]; /* พักฟื้นในเขตปลอดภัย */
-  const live=m=>m&&m.state!=='dead'&&mons.includes(m)&&!m.c.boss&&AUTO.cfg.tg[m.type]!==false;
+  const live=m=>m&&m.state!=='dead'&&mons.includes(m)&&!m.c.boss&&AUTO.cfg.tg[m.type]!==false&&!((m.autoSkip||0)>tNow);
   if(!live(AUTO.tgt)){let best=null,bd=1e9; /* ทั้งแผนที่ (เดิม 640 px) — เลือกเฉพาะบางชนิดแล้วอยู่ไกลก็เดินไปหา */for(const m of mons){if(!live(m))continue;const d=Math.hypot(m.x-player.x,m.y-player.y);if(d<bd){bd=d;best=m}}AUTO.tgt=best;AUTO.path=null;if(!best)return[0,0]}
   const m=AUTO.tgt,ty=m.y-m.c.size*.3,dx=m.x-player.x,dy=ty-player.y,d=Math.hypot(dx,dy),reach=CFG.basic.range+m.c.size*.6;
   /* หันไปทิศที่วงฟันโดนจริง (จุดเล็งเดียวกับ release: ต้นทาง y-14, เป้า y-size*.6) */
@@ -932,10 +936,10 @@ function autoStep(dt){if(!AUTO.on||PS.dead)return null;
   if(hd){player.dir=hd;if(dx)player.lastH=dx>0?'E':'W';
     if(!PS.cast){for(const[k,i]of SLOTS.entries()){const sk=CFG.skills[i-1];if(!AUTO.cfg.sk[k]||!sk||['move','guard','counter'].includes(sk.shape))continue;if(sk.shape==='buff'&&PS.buffT>0)continue;if(useSkill(i)==='ok')return[0,0]}if(AUTO.cfg.basic)attack()}return[0,0]}
   /* เดิน: ตรงไปถ้าไม่มีอะไรขวาง ไม่งั้นใช้เส้นทาง BFS */
-  if((AUTO.repath-=dt)<=0||!AUTO.path){AUTO.repath=.6;AUTO.path=bfsPath(Math.floor(player.x/T),Math.floor(player.y/T),Math.floor(m.x/T),Math.floor(m.y/T),2000);if(!AUTO.path){AUTO.tgt=null;return[0,0]}}
+  if((AUTO.repath-=dt)<=0||!AUTO.path){AUTO.repath=.6;AUTO.path=bfsPath(...autoStart(),Math.floor(m.x/T),Math.floor(m.y/T),2000);if(!AUTO.path){m.autoSkip=tNow+5;AUTO.tgt=null;return[0,0]}} /* ไปไม่ถึง: ข้ามตัวนี้ 5 วิ (เดิมยืนเฉยเลือกตัวเดิมซ้ำ) */
   while(AUTO.path.length&&Math.hypot((AUTO.path[0][0]+.5)*T-player.x,(AUTO.path[0][1]+.5)*T-player.y)<6)AUTO.path.shift();
   const nx=AUTO.path.length?(AUTO.path[0][0]+.5)*T:m.x,ny=AUTO.path.length?(AUTO.path[0][1]+.5)*T:ty,ex=nx-player.x,ey=ny-player.y,el=Math.hypot(ex,ey)||1;
-  if(Math.hypot(player.x-AUTO.lx,player.y-AUTO.ly)<.5){if((AUTO.stuck+=dt)>1.5){AUTO.tgt=null;AUTO.stuck=0}}else AUTO.stuck=0;AUTO.lx=player.x;AUTO.ly=player.y;
+  if(Math.hypot(player.x-AUTO.lx,player.y-AUTO.ly)<.5){if((AUTO.stuck+=dt)>1.5){m.autoSkip=tNow+3;AUTO.tgt=null;AUTO.stuck=0}}else AUTO.stuck=0;AUTO.lx=player.x;AUTO.ly=player.y;
   return[ex/el,ey/el]}
 let wtT=0;function update(dt){tNow+=dt;switchCd=Math.max(0,switchCd-dt);
   if((wtT-=dt)<=0){wtT=1;const prev=WT;WT=window.HLNET&&HLNET.auth&&HLNET.wt?HLNET.wt:CFG.worldClock(clockNow());
@@ -957,7 +961,9 @@ enterZone(CFG.player.home,ZONES[CFG.player.home].start[0],ZONES[CFG.player.home]
 let last=performance.now();
 function loop(n){const dt=Math.min((n-last)/1000,.05);last=n;update(dt);draw();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
-window.HL={CLASSES,CLS_ACTIVE,CLS_PATHS,curCls,skName,setClassLocal(c){if(!CLS_ACTIVE[c])return'invalid';if(!inSafe(player.x,player.y))return'not-safe';PS.cls=c;buildSkills();hudT=0;return'ok'},get inSafeNow(){return inSafe(player.x,player.y)},buildSkills,adminLocal,clearWarpCd(){warpCd=0},monShown,warp,openWorld,openAutoCfg,statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
+window.HL={preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
+  for(let i=0;i<=11;i++)out.push({src:'icons/sk_'+i+'.png',label:'ไอคอนสกิล'});out.push({src:'icons/sk_p.png',label:'ไอคอนสกิล'});
+  for(const t of new Set((ZONES.field2.spawns||[]).map(s=>s.type))){const d=MON_SPR[t];if(!d)continue;if(d.walk)out.push({src:d.walk,label:'ภาพ'+t});if(d.act)out.push({src:d.act,label:'ภาพ'+t})}return out},CLASSES,CLS_ACTIVE,CLS_PATHS,curCls,skName,setClassLocal(c){if(!CLS_ACTIVE[c])return'invalid';if(!inSafe(player.x,player.y))return'not-safe';PS.cls=c;buildSkills();hudT=0;return'ok'},get inSafeNow(){return inSafe(player.x,player.y)},buildSkills,adminLocal,clearWarpCd(){warpCd=0},monShown,warp,openWorld,openAutoCfg,statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
 })();
 
 </script>
@@ -1269,22 +1275,22 @@ function applyWorld(m){const CFG=HL.CFG,P=HL.PS;if(m.mf)monById.clear();for(cons
   for(const r of m.md||[]){const s={id:r[0],ty:MTYPES[r[1]],x:r[2],y:r[3],hp:r[4],st:MST[r[5]],d:'NSEW'[r[6]],mk:r[7]};let o=monById.get(s.id);const c=CFG.monsters[s.ty];if(!c)continue;
     if(!o){o={id:s.id,type:s.ty,c,x:s.x,y:s.y,hurt:0,markT:0};monById.set(s.id,o)}
     if(o.state==='dead'&&s.st!=='dead'){o.x=s.x;o.y=s.y;o.lx=undefined}
-    if(o.state&&o.state!=='dead'&&s.st==='dead')o.dieT0=HL.tNow;
+    if(o.state&&o.state!=='dead'&&s.st==='dead'){o.dieT0=HL.tNow;if(window.SND&&Math.hypot(o.x-HL.player.x,o.y-HL.player.y)<400)SND.play('die')}
     Object.assign(o,{tx:s.x,ty:s.y,hp:s.hp,state:s.st,dir:s.d});o.markT=s.mk?1:0}
   HL.setMons([...monById.values()]);
   for(const e of m.ev||[]){const o=monById.get(e.id);if(!o)continue;
-    if(e.k==='dmg'){NET.stats.dmgEv++;o.hurt=.25;HL.addNum(o.x,o.y-o.c.size*.6-18,e.dmg,e.crit?'#ffd34a':'#ffffff');if(e.by===NET.id)HL.setTarget(o)}}
+    if(e.k==='dmg'){NET.stats.dmgEv++;if(e.by===NET.id&&window.SND)SND.play('hit',{crit:e.crit});o.hurt=.25;HL.addNum(o.x,o.y-o.c.size*.6-18,e.dmg,e.crit?'#ffd34a':'#ffffff');if(e.by===NET.id)HL.setTarget(o)}}
   const me=m.me;if(me){NET.me=me;let bagCh=false,skCh=false;if(me.bag){NET.bag=me.bag;NET.eq=me.eq;bagCh=true}if(me.sk){NET.sk=me.sk;NET.pts=me.pts;NET.bon=me.bon||{};skCh=true}if(me.st){NET.st=me.st;NET.spts=me.spts;updStatDot()}if(me.cls&&me.cls!==NET.cls){NET.cls=me.cls;onClassChanged()}if(me.party){NET.party=me.party;NET.partyIds=new Set(me.party.m.map(r=>r[0]));renderParty()}const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
     for(const e of me.ev||[]){const pl=HL.player;
       if(e.k==='reward'){const o=monById.get(e.id);HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-40,'+'+e.exp+' EXP','#8fe38f')}
-      else if(e.k==='hurt'){const mo=monById.get(e.by);if(mo){mo.atkT0=HL.tNow;mo.dir=pl.x<mo.x?'W':'E'}if(e.guard)HL.addNum(pl.x,pl.y-66,'ป้องกัน','#9fd6ff');HL.addNum(pl.x,pl.y-52,e.dmg,'#ff6b6b');P.hurt=.4}
+      else if(e.k==='hurt'){const mo=monById.get(e.by);if(mo){mo.atkT0=HL.tNow;mo.dir=pl.x<mo.x?'W':'E'}if(e.guard)HL.addNum(pl.x,pl.y-66,'ป้องกัน','#9fd6ff');HL.addNum(pl.x,pl.y-52,e.dmg,'#ff6b6b');P.hurt=.4;window.SND&&SND.play('hurt')}
       else if(e.k==='lv')HL.lvUp('lv',e.lv);
       else if(e.k==='cls'){HL.say('เปลี่ยนอาชีพเป็น '+e.cls)}
       else if(e.k==='starter'){HL.say('ได้รับชุดเริ่มต้น: '+e.items.map(i=>(HL.CFG.items[i[0]]||{}).name+(i[1]>1?' ×'+i[1]:'')).join(', '))}
       else if(e.k==='job')HL.lvUp('job',e.job);
-      else if(e.k==='dead'){P.dead=true;P.deadT=HL.CFG.player.respawnSec;P.cast=null;HL.say('พ่ายแพ้ · กลับหมู่บ้านใน '+HL.CFG.player.respawnSec+' วินาที')}
+      else if(e.k==='dead'){window.SND&&SND.play('dead');P.dead=true;P.deadT=HL.CFG.player.respawnSec;P.cast=null;HL.say('พ่ายแพ้ · กลับหมู่บ้านใน '+HL.CFG.player.respawnSec+' วินาที')}
       else if(e.k==='respawn'){P.dead=false;HL.enterZone(e.zone,e.x,e.y);lastSent=''}
-      else if(e.k==='loot'){const it=HL.CFG.items[e.id],o=monById.get(e.from);NET.stats.loot=(NET.stats.loot||0)+e.n;if(it)HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-58,'+'+it.name+(e.n>1?' ×'+e.n:''),'#ffd27a')}
+      else if(e.k==='loot'){const it=HL.CFG.items[e.id],o=monById.get(e.from);NET.stats.loot=(NET.stats.loot||0)+e.n;window.SND&&SND.play('loot');if(it)HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-58,'+'+it.name+(e.n>1?' ×'+e.n:''),'#ffd27a')}
       else if(e.k==='pinvite'){HL.say(e.from+' ชวนคุณเข้าปาร์ตี้ — แตะ 👥 เพื่อตอบรับ')}
       else if(e.k==='pinfo'){HL.say(e.msg)}
       else if(e.k==='bossShare'){HL.say('รางวัลบอส: ดาเมจของคุณ '+e.pct+'%')}
@@ -1308,5 +1314,213 @@ requestAnimationFrame(loop);
 hello().then(ok=>{if(!ok)return;NET.state='ready';token=store.get();if(token)connect();else $('net').hidden=false});
 })();
 </script>
+<!--AUDIO_SPLASH_BEGIN-->
+<!-- ===== V2-R28: หน้าโหลดตอนเข้าเกม + เพลง/เสียงประกอบ (สังเคราะห์สดด้วย Web Audio — แต่งเอง ไม่มีไฟล์เสียง ไม่มีลิขสิทธิ์ผู้อื่น) =====
+     ต้นฉบับ: assets/ui/audio_splash.html → ฝังลงท้าย game/index.html โดย tools/embed_audio_splash.py -->
+<style>
+#splash{position:absolute;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:calc(28px + env(safe-area-inset-top,0px)) 20px calc(22px + env(safe-area-inset-bottom,0px));overflow:hidden;color:#f4efe2;
+  background:radial-gradient(ellipse at 50% 18%,#3b3f7a 0%,#1e1f4a 38%,#0d0f24 75%);transition:opacity .6s}
+#splash[hidden]{display:none}#splash.out{opacity:0;pointer-events:none}
+#splash .stars{position:absolute;inset:0;background-image:radial-gradient(1.5px 1.5px at 12% 18%,#fff8,transparent),radial-gradient(1px 1px at 28% 8%,#fff9,transparent),radial-gradient(1.5px 1.5px at 46% 22%,#ffe9a8aa,transparent),radial-gradient(1px 1px at 64% 12%,#fff8,transparent),radial-gradient(1.5px 1.5px at 82% 20%,#fff9,transparent),radial-gradient(1px 1px at 90% 6%,#fff7,transparent),radial-gradient(1px 1px at 6% 32%,#fff6,transparent),radial-gradient(1px 1px at 72% 34%,#fff6,transparent);animation:sptw 4s ease-in-out infinite alternate}
+@keyframes sptw{from{opacity:.55}to{opacity:1}}
+#splash .moon{position:absolute;top:9%;right:14%;width:58px;height:58px;border-radius:50%;background:radial-gradient(circle at 38% 38%,#fff7d6,#f2c14e 60%,#c98a2a);box-shadow:0 0 40px #f2c14e88}
+#splash svg.mt{position:absolute;left:0;right:0;bottom:0;width:100%;height:62%}
+#splash .mist{position:absolute;left:-10%;right:-10%;bottom:16%;height:18%;background:radial-gradient(ellipse at center,#c9d6ff22,transparent 70%);animation:spmist 9s ease-in-out infinite alternate}
+@keyframes spmist{from{transform:translateX(-4%)}to{transform:translateX(4%)}}
+#splash .top{margin-top:6vh}#splash .top,#splash .bot{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:100%;max-width:420px}
+#splash .emb{width:118px;height:118px;filter:drop-shadow(0 4px 14px #000a);animation:spfloat 4s ease-in-out infinite alternate}
+@keyframes spfloat{from{transform:translateY(0)}to{transform:translateY(-6px)}}
+#splash h1{margin:12px 0 0;text-align:center;font-size:clamp(30px,10vw,44px);letter-spacing:4px;font-weight:900;line-height:1;background:linear-gradient(#fff3c4,#f2c14e 55%,#b4531a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #3a1a08)}
+#splash .sub{margin-top:6px;font-size:15px;letter-spacing:3px;color:#ffcf8a}
+#splash .band{margin-top:12px;width:220px;height:10px;background:repeating-linear-gradient(90deg,#c4222c 0 10px,#f2c14e 10px 14px,#1e2a6b 14px 24px,#f4efe2 24px 28px);border-radius:3px;opacity:.9}
+#splash .bar{width:100%;height:16px;padding:3px;border-radius:9px;background:#0008;border:2px solid #f2c14e99;box-shadow:inset 0 0 6px #000}
+#splash .bar i{display:block;height:100%;width:0;border-radius:6px;background:repeating-linear-gradient(135deg,#f2c14e 0 8px,#e0a83a 8px 16px);transition:width .25s}
+#splash .ld{display:flex;justify-content:space-between;width:100%;margin-top:6px;font-size:12px;opacity:.85}
+#splash .tip{min-height:34px;margin-top:10px;font-size:12px;line-height:1.4;text-align:center;color:#d8dcf5;opacity:.9}
+#splash .go{margin-top:12px;padding:14px 34px;font-size:18px;font-weight:900;letter-spacing:1px;color:#3a1a08;background:linear-gradient(#ffe08a,#f2a93b);border:0;border-radius:16px;box-shadow:0 4px 0 #8e4a10,0 0 24px #f2c14e88;animation:sppulse 1.4s ease-in-out infinite}
+#splash .go[hidden]{display:none}@keyframes sppulse{50%{transform:scale(1.05)}}
+#splash .snd{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));left:14px;z-index:2;padding:6px 12px;font-size:13px;color:#f4efe2;background:#0006;border:1px solid #ffffff44;border-radius:12px}
+#splash .ver{margin-top:10px;font-size:10px;opacity:.5}
+#sndb{position:absolute;right:8px;top:calc(var(--toph,120px) + 30px);z-index:4;width:40px;height:34px;padding:0;font-size:17px;color:#fff;background:rgba(18,22,18,.74);border:1px solid #ffffff33;border-radius:12px}
+#sndp .row{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px}#sndp .row span{width:110px}#sndp input[type=range]{flex:1;accent-color:#3b6fd0}#sndp .row b{width:36px;text-align:right;font-size:12px}
+</style>
+<div id="splash" hidden aria-label="หน้าโหลดเกม">
+  <div class="stars"></div><div class="moon"></div>
+  <svg class="mt" viewBox="0 0 400 200" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 120 L40 80 L70 104 L110 52 L150 98 L190 66 L230 110 L270 58 L310 96 L350 70 L400 104 L400 200 L0 200Z" fill="#2a2d63"/>
+    <path d="M0 150 L50 112 L90 140 L140 96 L185 138 L230 104 L280 146 L330 108 L370 136 L400 120 L400 200 L0 200Z" fill="#1c1f4a"/>
+    <path d="M0 178 L60 150 L120 170 L170 146 L230 172 L290 150 L350 174 L400 158 L400 200 L0 200Z" fill="#11132f"/>
+    <g fill="#0b0c22"><path d="M48 176 l6 -22 l6 22z"/><path d="M58 178 l5 -16 l5 16z"/><path d="M312 178 l7 -26 l7 26z"/><path d="M324 180 l5 -18 l5 18z"/>
+      <!-- บ้านหลังคามุงจากบนเนิน (เงา) -->
+      <path d="M150 168 l18 -14 l18 14z"/><rect x="155" y="168" width="26" height="10"/><path d="M188 172 l14 -11 l14 11z"/><rect x="192" y="172" width="20" height="8"/><path d="M226 170 l16 -12 l16 12z"/><rect x="230" y="170" width="24" height="9"/></g>
+    <g fill="#f2c14e"><rect x="164" y="171" width="3" height="3"/><rect x="199" y="174" width="2" height="2"/><rect x="240" y="173" width="3" height="3"/></g>
+  </svg>
+  <div class="mist"></div>
+  <button class="snd" id="splsnd" aria-pressed="false">🔇 เปิดเสียง</button>
+  <div class="top">
+    <svg class="emb" viewBox="0 0 100 100" aria-hidden="true">
+      <!-- ลายผ้าปักแบบเรขาคณิต (ออกแบบใหม่ ไม่ใช่ลายของใคร) -->
+      <rect x="15" y="15" width="70" height="70" rx="6" transform="rotate(45 50 50)" fill="#1e2a6b" stroke="#f2c14e" stroke-width="3"/>
+      <rect x="27" y="27" width="46" height="46" rx="3" transform="rotate(45 50 50)" fill="#c4222c"/>
+      <rect x="37" y="37" width="26" height="26" transform="rotate(45 50 50)" fill="#f4efe2"/>
+      <rect x="44" y="44" width="12" height="12" transform="rotate(45 50 50)" fill="#1e2a6b"/>
+      <g fill="#f2c14e"><rect x="48" y="4" width="4" height="14"/><rect x="48" y="82" width="4" height="14"/><rect x="4" y="48" width="14" height="4"/><rect x="82" y="48" width="14" height="4"/></g>
+      <g fill="#f4efe2"><rect x="46" y="23" width="8" height="4"/><rect x="46" y="73" width="8" height="4"/><rect x="23" y="46" width="4" height="8"/><rect x="73" y="46" width="4" height="8"/></g>
+    </svg>
+    <h1>HMONG LEGEND</h1>
+    <div class="sub">ตำนานม้ง · ออนไลน์</div>
+    <div class="band"></div>
+  </div>
+  <div class="bot">
+    <div class="bar" role="progressbar" aria-label="ความคืบหน้าการโหลด" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="splbar"></i></div>
+    <div class="ld"><span id="splwhat">กำลังเตรียมโลก…</span><b id="splpct">0%</b></div>
+    <div class="tip" id="spltip"></div>
+    <button class="go" id="splgo" hidden>แตะเพื่อเข้าเกม</button>
+    <div class="ver">V2.0 · เพลงและเสียงแต่งขึ้นใหม่สำหรับเกมนี้</div>
+  </div>
+</div>
+<script>
+(function(){
+/* ================= เครื่องเสียง ================= */
+const ST=(()=>{try{return Object.assign({mus:.55,sfx:.75,mute:false},JSON.parse(localStorage.getItem('hl_snd')||'{}'))}catch(e){return{mus:.55,sfx:.75,mute:false}}})();
+const save=()=>{try{localStorage.setItem('hl_snd',JSON.stringify(ST))}catch(e){}};
+const SND=window.SND={st:ST,ctx:null,track:null,want:null,stats:{played:{},notes:0},play,unlock,setVol,setMute,pickTrack};
+let ctx,master,musBus,sfxBus,verb,noiseBuf,curGrp=null,curTrack=null,step8=0,nextT=0,schedTimer=0;
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+const NOTE={C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11};
+const n2m=s=>{const m=/^([A-G]#?)(\d)$/.exec(s);return m?12*(+m[2]+1)+NOTE[m[1]]:null};
+function unlock(){
+  if(!ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;ctx=SND.ctx=new AC();
+    master=ctx.createGain();master.connect(ctx.destination);musBus=ctx.createGain();sfxBus=ctx.createGain();musBus.connect(master);sfxBus.connect(master);
+    // เสียงก้อง (ดีเลย์สะท้อน) ให้ขลุ่ย/แคนฟังกว้างแบบหุบเขา
+    verb=ctx.createDelay(1);verb.delayTime.value=.27;const fb=ctx.createGain();fb.gain.value=.34;const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2400;const wet=ctx.createGain();wet.gain.value=.5;
+    verb.connect(lp);lp.connect(fb);fb.connect(verb);lp.connect(wet);wet.connect(musBus);
+    noiseBuf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    applyVol();schedTimer=setInterval(sched,40);setInterval(()=>pickTrack(),1000)}
+  if(ctx.state==='suspended')ctx.resume();return true}
+function applyVol(){if(!ctx)return;const t=ctx.currentTime;master.gain.setTargetAtTime(ST.mute?0:1,t,.05);musBus.gain.setTargetAtTime(ST.mus*.6,t,.1);sfxBus.gain.setTargetAtTime(ST.sfx,t,.05)}
+function setVol(k,v){ST[k]=Math.max(0,Math.min(1,+v));save();applyVol()}
+function setMute(m){ST.mute=!!m;save();applyVol();syncSndBtn()}
+/* ---------- เครื่องดนตรี ---------- */
+const env=(g,t,a,peak,hold,rel)=>{g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.setValueAtTime(peak,t+a+hold);g.gain.exponentialRampToValueAtTime(.0001,t+a+hold+rel)};
+function noise(t,dur,out,ftype,f,q,peak){const s=ctx.createBufferSource();s.buffer=noiseBuf;const bf=ctx.createBiquadFilter();bf.type=ftype;bf.frequency.value=f;bf.Q.value=q||1;const g=ctx.createGain();env(g,t,.003,peak,0,dur);s.connect(bf);bf.connect(g);g.connect(out);s.start(t,Math.random()*.5);s.stop(t+dur+.05);return{s,bf,g}}
+/* ขลุ่ย (raj): ไซน์ + สามเหลี่ยม + สั่นเสียง + ลมหายใจ */
+function flute(t,f,dur,out,vol){const o=ctx.createOscillator(),o2=ctx.createOscillator(),g=ctx.createGain(),lfo=ctx.createOscillator(),lg=ctx.createGain();
+  o.type='sine';o2.type='triangle';o.frequency.value=f;o2.frequency.value=f*2;const g2=ctx.createGain();g2.gain.value=.12;
+  lfo.frequency.value=5.2;lg.gain.setValueAtTime(0,t);lg.gain.linearRampToValueAtTime(f*.006,t+Math.min(.4,dur*.6));lfo.connect(lg);lg.connect(o.frequency);lg.connect(o2.frequency);
+  o.connect(g);o2.connect(g2);g2.connect(g);env(g,t,.07,vol,Math.max(.01,dur-.2),.22);g.connect(out);g.connect(verb);
+  noise(t,.12,out,'bandpass',f*2.2,2,vol*.18);for(const x of[o,o2,lfo]){x.start(t);x.stop(t+dur+.4)}}
+/* แคน (qeej): ฟันเลื่อยหลายลิ้น กรองช่วงกลาง เสียงคอร์ดลากยาว */
+function qeej(t,fs,dur,out,vol){const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1500;lp.Q.value=.7;const g=ctx.createGain();env(g,t,.12,vol,Math.max(.01,dur-.25),.3);lp.connect(g);g.connect(out);g.connect(verb);
+  for(const f of fs)for(const det of[-6,5]){const o=ctx.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=det;const og=ctx.createGain();og.gain.value=.22/fs.length;o.connect(og);og.connect(lp);o.start(t);o.stop(t+dur+.4)}}
+/* ดีด: สามเหลี่ยมเสียงสั้น */
+function pluck(t,f,dur,out,vol){const o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+Math.max(.25,dur));o.connect(g);g.connect(out);g.connect(verb);o.start(t);o.stop(t+dur+.3)}
+function bass(t,f,dur,out,vol){const o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.value=f;env(g,t,.02,vol,Math.max(.01,dur*.6),.2);o.connect(g);g.connect(out);o.start(t);o.stop(t+dur+.3)}
+/* กลอง: กลองหนังต่ำ, กลองทอม, เขย่า, ฆ้อง */
+function drum(t,kind,out,vol){if(kind==='k'||kind==='t'){const o=ctx.createOscillator(),g=ctx.createGain(),[a,b]=kind==='k'?[120,48]:[200,95];o.type='sine';o.frequency.setValueAtTime(a,t);o.frequency.exponentialRampToValueAtTime(b,t+.14);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+.32);o.connect(g);g.connect(out);o.start(t);o.stop(t+.35);noise(t,.03,out,'lowpass',900,1,vol*.25)}
+  else if(kind==='s')noise(t,.05,out,'highpass',6500,.7,vol*.35);
+  else if(kind==='g'){const g=ctx.createGain();g.gain.setValueAtTime(vol*.5,t);g.gain.exponentialRampToValueAtTime(.0001,t+2.4);g.connect(out);g.connect(verb);for(const r of[1,2.76,5.4,8.9]){const o=ctx.createOscillator();o.type='sine';o.frequency.value=98*r;const og=ctx.createGain();og.gain.value=.5/r;o.connect(og);og.connect(g);o.start(t);o.stop(t+2.5)}}}
+/* ---------- เพลง (แต่งเอง) : ทำนองเขียนเป็น "โน้ต:ความยาว(หน่วยเขบ็ต 1 ชั้น)" '-' = พัก ---------- */
+const parse=s=>{const out=[];let at=0;for(const tok of s.trim().split(/\s+/)){const[n,l]=tok.split(':');const len=+(l||1);if(n!=='-')out.push({at,m:n2m(n),len});at+=len}return{ev:out,len:at}};
+const TRACKS={
+  /* หน้าโหลด: ช้า แคนลากเสียงต่ำ ขลุ่ยเล่าเรื่อง (D ไมเนอร์เพนทาโทนิก) */
+  title:{bpm:72,mel:'A4:2 C5:1 D5:3 C5:1 A4:1 G4:4 -:2 F4:1 G4:1 A4:2 C5:2 A4:4 -:4 D5:2 F5:1 D5:1 C5:2 A4:2 G4:3 A4:1 F4:2 G4:2 D4:6 -:2',inst:'flute',
+    drone:[['D3','A3'],['D3','A3'],['C3','G3'],['D3','A3']],droneEvery:8,drums:''},
+  /* หมู่บ้าน: สบาย ๆ เมเจอร์เพนทาโทนิก (G) ขลุ่ย + ดีด + กลองเบา */
+  village:{bpm:88,mel:'D5:2 B4:1 A4:1 G4:2 A4:2 B4:2 D5:2 E5:4 D5:2 B4:1 D5:1 A4:4 -:2 G4:1 A4:1 B4:2 A4:1 G4:1 E4:2 G4:2 A4:3 B4:1 G4:6 -:2',inst:'flute',
+    drone:[['G3','D4'],['E3','B3'],['C3','G3'],['D3','A3']],droneEvery:8,arp:['G3','B3','D4','B3'],drums:'k---t---k-k-t---'},
+  /* ทุ่ง/ป่า: ผจญภัย A ไมเนอร์เพนทาโทนิก จังหวะเดินหน้า */
+  field:{bpm:112,mel:'A4:1 C5:1 D5:2 E5:1 D5:1 C5:2 A4:2 G4:2 A4:4 C5:1 D5:1 E5:2 G5:2 E5:1 D5:1 C5:2 D5:4 E5:2 D5:1 C5:1 A4:2 G4:2 E4:2 G4:2 A4:4 -:4',inst:'flute',
+    drone:[['A2','E3'],['F2','C3'],['G2','D3'],['E2','B2']],droneEvery:8,stab:true,bassline:['A2','A2','F2','G2'],drums:'k-s-t-s-k-k-t-s-'},
+  /* กลางคืน: เบาบาง เว้นช่องเยอะ ก้องไกล */
+  night:{bpm:66,mel:'E5:3 D5:1 B4:4 -:4 A4:2 B4:2 G4:6 -:2 E4:2 G4:2 A4:3 B4:1 A4:8 -:8',inst:'flute',
+    drone:[['E3','B3'],['C3','G3']],droneEvery:16,drums:'k---------------'},
+  /* บอส/พระจันทร์เลือด: เร็ว หนัก ฆ้องเปิดห้อง แคนกระแทก */
+  boss:{bpm:142,mel:'D5:1 D5:1 F5:1 D5:1 G5:2 F5:1 D5:1 C5:2 A4:2 C5:2 D5:2 D5:1 F5:1 A5:2 G5:1 F5:1 D5:2 C5:2 A4:4',inst:'qeejlead',
+    drone:[['D2','A2'],['D2','A2'],['A#1','F2'],['C2','G2']],droneEvery:4,stab:true,bassline:['D2','D2','A#1','C2'],drums:'k-skt-s-k-skt-ss',gong:16}
+};
+for(const k in TRACKS)TRACKS[k].p=parse(TRACKS[k].mel);
+/* ตัวจัดลำดับเวลา: ล่วงหน้า 0.25 วิ — เปลี่ยนเพลงแบบค่อย ๆ จางข้าม */
+function setTrack(name){if(!ctx||name===curTrack||!TRACKS[name])return;const t=ctx.currentTime;
+  if(curGrp){const g=curGrp;g.gain.setTargetAtTime(0,t,.5);setTimeout(()=>{try{g.disconnect()}catch(e){}},3000)}
+  curGrp=ctx.createGain();curGrp.gain.setValueAtTime(0,t);curGrp.gain.setTargetAtTime(1,t+.3,.6);curGrp.connect(musBus);curTrack=SND.track=name;step8=0;nextT=t+.12}
+function sched(){if(!ctx||!curGrp||ctx.state!=='running')return;const T=TRACKS[curTrack],sp=60/T.bpm/2,L=Math.max(T.p.len,32);
+  while(nextT<ctx.currentTime+.25){const s=step8%L,t=nextT,out=curGrp;
+    for(const e of T.p.ev)if(e.at===s%T.p.len&&e.m){const f=mtof(e.m);if(T.inst==='qeejlead')qeej(t,[f,f*1.5],e.len*sp*.9,out,.32);else flute(t,f,e.len*sp,out,.3);SND.stats.notes++}
+    if(s%T.droneEvery===0){const c=T.drone[Math.floor(s/T.droneEvery)%T.drone.length].map(n=>mtof(n2m(n)));qeej(t,c,T.droneEvery*sp*.98,out,T.stab?.16:.2)}
+    if(T.stab&&s%4===2){const c=T.drone[Math.floor(s/T.droneEvery)%T.drone.length].map(n=>mtof(n2m(n))*2);qeej(t,c,sp*1.2,out,.12)}
+    if(T.bassline&&s%2===0)bass(t,mtof(n2m(T.bassline[Math.floor(s/8)%T.bassline.length])),sp*1.6,out,.38);
+    if(T.arp&&s%2===0)pluck(t,mtof(n2m(T.arp[(s/2)%T.arp.length])),sp*2,out,.12);
+    const dc=T.drums&&T.drums[s%T.drums.length];if(dc&&dc!=='-')drum(t,dc,out,dc==='s'?.6:.5);
+    if(T.gong&&s%(T.gong*4)===0)drum(t,'g',out,.5);
+    nextT+=sp;step8++}}
+/* เลือกเพลงตามสถานการณ์: หน้าโหลด → title, บอสไล่ใกล้ ๆ/พระจันทร์เลือด → boss, หมู่บ้าน → village, กลางคืน → night, อื่น ๆ → field */
+function pickTrack(){if(!ctx)return null;const H=window.HL;let w='title';
+  if(H&&document.getElementById('splash').hidden){const p=H.player,inSafe=H.inSafeNow;
+    const boss=(H.mons||[]).some(m=>m.c&&m.c.boss&&m.state&&m.state!=='dead'&&!m.away&&Math.hypot(m.x-p.x,m.y-p.y)<520);
+    w=boss||(H.WT&&H.WT.blood&&!inSafe)?'boss':inSafe?'village':(H.WT&&H.WT.night)?'night':'field'}
+  SND.want=w;setTrack(w);return w}
+/* ---------- เสียงเอฟเฟกต์ ---------- */
+const lastAt={};
+function play(name,o){if(!ctx||ctx.state!=='running')return false;const now=ctx.currentTime;if(now-(lastAt[name]||0)<.035)return false;lastAt[name]=now;SND.stats.played[name]=(SND.stats.played[name]||0)+1;
+  const t=now+.005,out=sfxBus,O=(type,f0,f1,dur,vol)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);if(f1)o.frequency.exponentialRampToValueAtTime(f1,t+dur);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(out);o.start(t);o.stop(t+dur+.05)};
+  switch(name){
+    case'swing':{const n=noise(t,.13,out,'bandpass',900,1.4,.5);n.bf.frequency.exponentialRampToValueAtTime(3200,t+.12);break}
+    case'hit':O('sine',220,70,.12,.55);noise(t,.04,out,'highpass',2500,.8,.35);if(o&&o.crit)O('square',1400,900,.08,.12);break
+    case'die':O('square',420,110,.28,.12);noise(t,.2,out,'lowpass',700,1,.25);break
+    case'hurt':O('sine',160,55,.2,.6);noise(t,.08,out,'lowpass',500,1,.3);break
+    case'skill':{const sh=o&&o.shape;if(sh==='buff'){[0,4,7,12].forEach((s,i)=>{const tt=t+i*.06,f=mtof(74+s),oo=ctx.createOscillator(),g=ctx.createGain();oo.type='triangle';oo.frequency.value=f;g.gain.setValueAtTime(.18,tt);g.gain.exponentialRampToValueAtTime(.0001,tt+.4);oo.connect(g);g.connect(out);oo.start(tt);oo.stop(tt+.45)})}
+      else if(sh==='circle'||sh==='pillar'||sh==='spikes'){O('sine',110,40,.45,.7);noise(t,.35,out,'lowpass',400,1,.5)}
+      else if(sh==='dash'||sh==='move'||sh==='tri'){const n=noise(t,.22,out,'bandpass',600,1,.45);n.bf.frequency.exponentialRampToValueAtTime(4000,t+.2)}
+      else if(sh==='guard'||sh==='counter'){O('triangle',660,660,.25,.2);O('triangle',990,990,.25,.12)}
+      else{O('sawtooth',300,900,.18,.12);noise(t,.15,out,'bandpass',2000,2,.3)}break}
+    case'lvup':[0,3,7,12,15,19].forEach((s,i)=>{const tt=t+i*.07,oo=ctx.createOscillator(),g=ctx.createGain();oo.type='triangle';oo.frequency.value=mtof(62+s);g.gain.setValueAtTime(.22,tt);g.gain.exponentialRampToValueAtTime(.0001,tt+.6);oo.connect(g);g.connect(out);oo.start(tt);oo.stop(tt+.65)});break
+    case'jobup':[0,5,7,12].forEach((s,i)=>{const tt=t+i*.09,oo=ctx.createOscillator(),g=ctx.createGain();oo.type='sine';oo.frequency.value=mtof(67+s);g.gain.setValueAtTime(.22,tt);g.gain.exponentialRampToValueAtTime(.0001,tt+.7);oo.connect(g);g.connect(out);oo.start(tt);oo.stop(tt+.75)});break
+    case'loot':O('sine',1319,1319,.18,.2);setTimeout(()=>play('loot2'),70);break
+    case'loot2':O('sine',1976,1976,.25,.16);break
+    case'warp':{const n=noise(t,.6,out,'bandpass',300,3,.4);n.bf.frequency.exponentialRampToValueAtTime(5000,t+.55);O('sine',220,880,.55,.18);break}
+    case'click':O('square',1300,1100,.03,.06);break
+    case'dead':[0,-3,-7].forEach((s,i)=>{const tt=t+i*.18,oo=ctx.createOscillator(),g=ctx.createGain();oo.type='triangle';oo.frequency.value=mtof(57+s);g.gain.setValueAtTime(.25,tt);g.gain.exponentialRampToValueAtTime(.0001,tt+.9);oo.connect(g);g.connect(out);oo.start(tt);oo.stop(tt+1)});break
+    case'start':drum(t,'g',out,.6);break
+    default:return false}
+  return true}
+/* ปุ่ม UI ทุกปุ่ม (ยกเว้นปุ่มต่อสู้ที่มีเสียงของตัวเอง) */
+document.addEventListener('pointerdown',e=>{if(!ctx&&document.getElementById('splash').hidden){unlock();pickTrack()} /* ข้ามหน้าโหลด: แตะครั้งแรกเปิดเสียง */
+  const b=e.target.closest&&e.target.closest('button');if(b&&!b.closest('#skills')&&b.id!=='atk')play('click')},true);
+/* ---------- ปุ่มเสียงในเกม + แผงปรับเสียง ---------- */
+const app=document.getElementById('app'),sb=document.createElement('button');sb.id='sndb';sb.setAttribute('aria-label','เสียง');app.appendChild(sb);
+const sp=document.createElement('div');sp.id='sndp';sp.className='win';sp.hidden=true;sp.setAttribute('role','dialog');sp.setAttribute('aria-label','ตั้งค่าเสียง');app.appendChild(sp);
+function syncSndBtn(){sb.textContent=ST.mute?'🔇':'🔊';const s=document.getElementById('splsnd');if(s){s.textContent=ST.mute||!ctx?'🔇 เปิดเสียง':'🔊 เสียงเปิด';s.setAttribute('aria-pressed',String(!!ctx&&!ST.mute))}}
+function renderSnd(){sp.innerHTML='<div class="whd"><b>เสียง</b><button class="x" aria-label="ปิด">×</button></div><div class="wbody"><div class="card">'
+  +'<div class="row"><span>เพลงประกอบ</span><input id="snd-mus" type="range" min="0" max="100" value="'+Math.round(ST.mus*100)+'" aria-label="ระดับเพลง"><b>'+Math.round(ST.mus*100)+'%</b></div>'
+  +'<div class="row"><span>เสียงเอฟเฟกต์</span><input id="snd-sfx" type="range" min="0" max="100" value="'+Math.round(ST.sfx*100)+'" aria-label="ระดับเสียงเอฟเฟกต์"><b>'+Math.round(ST.sfx*100)+'%</b></div>'
+  +'<div class="swr"><span>ปิดเสียงทั้งหมด</span><button class="sw" id="snd-mute" role="switch" aria-checked="'+ST.mute+'" aria-label="ปิดเสียงทั้งหมด"><i></i></button></div>'
+  +'<p class="note">เพลงตอนนี้: '+({title:'หน้าแรก',village:'หมู่บ้าน',field:'ผจญภัย',night:'กลางคืน',boss:'บอส'}[curTrack]||'-')+' · เพลงและเสียงแต่งขึ้นใหม่ (แคน ขลุ่ย กลอง สังเคราะห์สด)</p></div></div>';
+  sp.querySelector('.x').onclick=()=>{sp.hidden=true};
+  for(const k of['mus','sfx'])sp.querySelector('#snd-'+k).oninput=e=>{setVol(k,e.target.value/100);e.target.nextElementSibling.textContent=e.target.value+'%';if(k==='sfx')play('click')};
+  sp.querySelector('#snd-mute').onclick=()=>{setMute(!ST.mute);renderSnd()}}
+sb.onclick=()=>{unlock();sp.hidden=!sp.hidden;if(!sp.hidden)renderSnd()};
+syncSndBtn();
+/* ================= หน้าโหลด ================= */
+const spl=document.getElementById('splash'),q=new URLSearchParams(location.search);
+// ระบบทดสอบอัตโนมัติข้ามหน้าโหลด (ยกเว้นสั่ง ?splash=1) — ผู้เล่นจริงเห็นทุกครั้ง
+const showSplash=q.get('splash')==='1'||(!navigator.webdriver&&q.get('splash')!=='0');
+const TIPS=['แตะวงเลเวลมุมซ้ายบนเพื่อลงแต้มสเตตัส','ปุ่ม ⚙ เหนือ AUTO ใช้เลือกมอนสเตอร์ที่จะล่าและสกิลที่ใช้','เปลี่ยนอาชีพได้ในหมู่บ้าน: หน้าสกิล → เปลี่ยนอาชีพ','ป้าย Lv สีแดงบนหัวมอนสเตอร์ = อันตราย','คืนพระจันทร์สีเลือด มอนสเตอร์ดุขึ้นแต่ EXP ×2','กด 🗺 แผนที่ เพื่อวาร์ประหว่างโซน','ตั้งทีมด้วยปุ่ม 👥 แบ่ง EXP และรางวัลบอส'];
+let tipI=Math.floor(Math.random()*TIPS.length);const tipEl=document.getElementById('spltip');const nextTip=()=>{tipEl.textContent='เคล็ดลับ: '+TIPS[tipI++%TIPS.length]};
+SND.splash={shown:showSplash,done:false,pct:0};
+if(showSplash){spl.hidden=false;nextTip();const tipT=setInterval(nextTip,3200);
+  document.getElementById('splsnd').onclick=e=>{e.stopPropagation();if(!ctx){unlock();setMute(false);pickTrack()}else setMute(!ST.mute)};
+  const H=window.HL,urls=(H&&H.preloadList?H.preloadList():[]);const total=urls.length+1;let done=0;
+  const what=document.getElementById('splwhat'),bar=document.getElementById('splbar'),pct=document.getElementById('splpct');
+  const tick=lbl=>{done++;const p=Math.round(100*done/total);SND.splash.pct=p;bar.style.width=p+'%';pct.textContent=p+'%';bar.parentNode.setAttribute('aria-valuenow',p);if(lbl)what.textContent=lbl;
+    if(done>=total){SND.splash.done=true;what.textContent='พร้อมแล้ว';document.getElementById('splgo').hidden=false}};
+  for(const u of urls){const im=new Image();let fin=false;const f=()=>{if(fin)return;fin=true;tick(u.label)};im.onload=f;im.onerror=f;setTimeout(f,8000);im.src=u.src}
+  setTimeout(()=>tick('เตรียมเสียงและโลกเกม'),300);
+  const go=()=>{if(!SND.splash.done)return;clearInterval(tipT);unlock();play('start');spl.classList.add('out');setTimeout(()=>{spl.hidden=true;pickTrack()},600)};
+  document.getElementById('splgo').onclick=e=>{e.stopPropagation();go()};
+}
+})();
+</script>
+<!--AUDIO_SPLASH_END-->
 </body>
 </html>
