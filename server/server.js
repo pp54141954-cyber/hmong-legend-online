@@ -38,6 +38,8 @@ for (const [id, D] of Object.entries(WORLD.ZONES)) (ENTRY[id] ||= []).push([D.st
 for (const D of Object.values(WORLD.ZONES)) for (const e of D.exits || []) (ENTRY[e.to] ||= []).push([(e.tx + .5) * T, (e.ty + .5) * T]);
 ENTRY.field.push([WORLD.ZONES.field.start[0] + 2 * T, WORLD.ZONES.field.start[1]]);
 const HOME = WORLD.CFG.player.home;
+// ย้ายโซนผ่าน mv ได้เฉพาะเมื่อยืนอยู่ใกล้ทางออกที่ไปโซนนั้น (เดิมกระโดดไปจุดเข้าโซนไหนก็ได้) — ย้ายไกลใช้วาร์ป
+const nearExitTo = (from, to, x, y) => (WORLD.ZONES[from].exits || []).some(e => e.to === to && x >= (e.x - 3) * T && x <= (e.x + e.w + 3) * T && y >= (e.y - 3) * T && y <= (e.y + e.h + 3) * T);
 const START = { zone: HOME, x: WORLD.ZONES[HOME].start[0], y: WORLD.ZONES[HOME].start[1] };
 const nearEntry = (zone, x, y) => (ENTRY[zone] || []).some(([ex, ey]) => Math.hypot(ex - x, ey - y) <= 3 * T);
 
@@ -74,11 +76,11 @@ function createServer(opts = {}) {
         return fs.createReadStream(conf.gameFile).pipe(res);
       }
       // ภาพแผนที่แยกไฟล์ (V2-R14): /maps/<ชื่อ>.webp เท่านั้น
-      const mm = /^\/(maps|sprites)\/([a-z0-9_]+)\.webp$/.exec(url.pathname); // ภาพแผนที่/มอนสเตอร์ (รับเฉพาะชื่อ a-z0-9_)
+      const mm = /^\/(maps|sprites)\/([a-z0-9_]+)\.(webp)$/.exec(url.pathname) || /^\/(icons)\/([a-z0-9_]+)\.(png)$/.exec(url.pathname); // ภาพแผนที่/มอนสเตอร์/ไอคอนสกิล (รับเฉพาะชื่อ a-z0-9_)
       if (req.method === 'GET' && mm) {
-        const f = path.join(path.dirname(conf.gameFile), mm[1], mm[2] + '.webp');
+        const f = path.join(path.dirname(conf.gameFile), mm[1], mm[2] + '.' + mm[3]);
         if (!fs.existsSync(f)) return json(res, 404, { error: 'not found' });
-        res.writeHead(200, { 'content-type': 'image/webp', 'cache-control': 'public, max-age=86400' });
+        res.writeHead(200, { 'content-type': 'image/' + mm[3], 'cache-control': 'public, max-age=86400' });
         return fs.createReadStream(f).pipe(res);
       }
       if (req.method === 'GET' && url.pathname === '/api/stats' && (conf.stats || process.env.STATS === '1')) {
@@ -141,7 +143,7 @@ function createServer(opts = {}) {
         p.allow = Math.min(conf.burst, p.allow + (now - p.lastT) / 1000 * conf.speed * (1 + (p.bon ? p.bon.spd : 0)) * 1.3); p.lastT = now;
         const inMap = Number.isFinite(x) && Number.isFinite(y) && x >= 0 && y >= 0 && x <= conf.W && y <= conf.H;
         const d = Math.hypot(x - c.x, y - c.y);
-        let ok = inMap && ENTRY[zone] && (zone === c.zone ? (d <= p.allow && sim.pathClear(zone, c.x, c.y, x, y)) || nearEntry(zone, x, y) : nearEntry(zone, x, y));
+        let ok = inMap && ENTRY[zone] && (zone === c.zone ? (d <= p.allow && sim.pathClear(zone, c.x, c.y, x, y)) : nearEntry(zone, x, y) && nearExitTo(c.zone, zone, c.x, c.y));
         if (!ok) { p.rejects = (p.rejects || 0) + 1; log('reject mv', c.name, zone, Math.round(x), Math.round(y), 'd=' + Math.round(d)); return send(ws, { t: 'fix', zone: c.zone, x: c.x, y: c.y }); }
         if (zone === c.zone && !nearEntry(zone, x, y)) p.allow -= d;
         c.zone = zone; c.x = x; c.y = y; c.dir = dir; p.moving = !!m.moving; p.dirty = true;
@@ -164,6 +166,14 @@ function createServer(opts = {}) {
         const r = m.op === 'up' ? sim.learn(p, m.name) : 'invalid';
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'skill', name: m.name, r }); }
         return;
+      }
+      if (m.t === 'warp') { // วาร์ป: เซิร์ฟเวอร์ตรวจโซน/สถานะ/คูลดาวน์ แล้วย้ายเอง
+        const zone = String(m.zone), D = WORLD.ZONES[zone];
+        const r = !D || zone === p.c.zone || !ENTRY[zone] ? 'invalid' : p.dead ? 'dead' : now - (p.warpAt || 0) < 5000 && !(m.dbg && conf.allowDebug) ? 'cooldown' : 'ok'; // ปุ่มทดสอบข้ามคูลดาวน์ได้เฉพาะเซิร์ฟเวอร์ทดสอบ
+        if (r !== 'ok') { p.denied = (p.denied || 0) + 1; return send(ws, { t: 'deny', k: 'warp', zone, r }); }
+        p.warpAt = now; Object.assign(p.c, { zone, x: D.start[0], y: D.start[1] }); p.dirty = true; p.allow = 0;
+        log('warp', p.c.name, zone);
+        return send(ws, { t: 'warp', zone, x: D.start[0], y: D.start[1] });
       }
       if (m.t === 'stat') {
         const r = sim.statOp(p, String(m.op), String(m.k), m.n);

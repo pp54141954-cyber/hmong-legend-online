@@ -13,8 +13,8 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   // เสิร์ฟผ่าน HTTP ให้เหมือนการเปิดจากลิงก์จริง
   // เสิร์ฟไฟล์เกม + ภาพแผนที่แยกไฟล์ (maps/*.webp) จากโฟลเดอร์เดียวกัน
   const srv = http.createServer((q, r) => {
-    const m = /^\/(maps|sprites)\/([a-z0-9_]+\.webp)$/.exec(q.url);
-    if (m) { const f = path.join(path.dirname(file), m[1], m[2]); if (!fs.existsSync(f)) { r.statusCode = 404; return r.end(); } r.setHeader('content-type', 'image/webp'); return fs.createReadStream(f).pipe(r); }
+    const m = /^\/(maps|sprites)\/([a-z0-9_]+\.webp)$/.exec(q.url) || /^\/(icons)\/([a-z0-9_]+\.png)$/.exec(q.url);
+    if (m) { const f = path.join(path.dirname(file), m[1], m[2]); if (!fs.existsSync(f)) { r.statusCode = 404; return r.end(); } r.setHeader('content-type', m[2].endsWith('.png') ? 'image/png' : 'image/webp'); return fs.createReadStream(f).pipe(r); }
     r.setHeader('content-type', 'text/html; charset=utf-8'); fs.createReadStream(file).pipe(r);
   }).listen(0);
   const url = 'http://127.0.0.1:' + srv.address().port + '/';
@@ -268,12 +268,56 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     await page.waitForTimeout(3000); rec('หน้าต่างอัปเลเวลปิดเองภายใน 3 วิ', await page.evaluate(() => HL.lvEl.hidden)); }
   { await page.evaluate(() => { HL.PS.job = 30; HL.PS.cd = {}; HL.PS.cast = null; const s = HL.ZONES.field2.start; HL.enterZone('field2', s[0], s[1]);
       const m = HL.mons.find(m => !m.c.boss); Object.assign(m.c, {}); m.x = HL.player.x + 30; m.y = HL.player.y + 10; m.hx = m.x; m.hy = m.y; m.state = 'idle'; });
-    rec('ปุ่มสกิลออโตเริ่มต้น = ปิด', (await page.getAttribute('#ask', 'aria-pressed')) === 'false');
-    await page.click('#ask');
+    await page.click('#ask'); await page.waitForSelector('#aop:not([hidden]) .aks');
+    rec('ปุ่ม ⚙ เปิดหน้าตั้งค่า AUTO: เป้าหมายในแมพ + สกิล 6 ช่อง + ยา + ปุ่มเริ่ม', await page.evaluate(() => document.querySelectorAll('#aop .tg').length >= 3 && document.querySelectorAll('#aop .ak').length === 6 && document.querySelectorAll('#aop .pots button').length === 5 && !!document.querySelector('#aop .go')));
+    rec('สกิลออโตตอนเล่นเอง: เริ่มต้น = ปิด', (await page.getAttribute('#ao-man', 'aria-checked')) === 'false');
+    await page.click('#ao-man');
     let used = []; for (let i = 0; i < 20 && !used.length; i++) { await page.waitForTimeout(150); used = await page.evaluate(() => Object.keys(HL.PS.cd).filter(k => k !== 'b' && HL.PS.cd[k] > 0)); }
-    rec('สกิลออโต: มอนสเตอร์อยู่ในระยะ → ใช้สกิลในช่องลัดเอง', (await page.getAttribute('#ask', 'aria-pressed')) === 'true' && used.length > 0, 'สกิลที่ใช้ ' + used.join(','));
+    rec('สกิลออโต: มอนสเตอร์อยู่ในระยะ → ใช้สกิลในช่องลัดเอง', (await page.getAttribute('#ao-man', 'aria-checked')) === 'true' && used.length > 0, 'สกิลที่ใช้ ' + used.join(','));
     rec('สกิลออโต: จำค่าไว้ในเครื่อง', await page.evaluate(() => localStorage.getItem('hl_autosk') === '1'));
-    await page.click('#ask'); rec('ปิดสกิลออโตได้', (await page.getAttribute('#ask', 'aria-pressed')) === 'false'); }
+    // ปิดทุกช่องในหน้าตั้งค่า → ไม่ใช้สกิล
+    await page.click('#ao-man'); await page.click('#ao-man');
+    for (const k of [0, 1, 2, 3, 4, 5]) { const on = await page.evaluate(k => document.querySelector('#aop .ak[data-k="' + k + '"]').classList.contains('on'), k); const dis = await page.evaluate(k => document.querySelector('#aop .ak[data-k="' + k + '"]').disabled, k); if (on && !dis) await page.click('#aop .ak[data-k="' + k + '"]'); }
+    await page.evaluate(() => { HL.PS.cd = {}; HL.PS.cast = null; });
+    await page.waitForTimeout(1200);
+    const none = await page.evaluate(() => Object.keys(HL.PS.cd).filter(k => k !== 'b' && HL.PS.cd[k] > 0));
+    rec('ตั้งค่า: ปิดสกิลทุกช่อง → สกิลออโตไม่ใช้สกิล', none.length === 0 && await page.evaluate(() => [...document.querySelectorAll('#aop .ak:not([disabled])')].every(b => !b.classList.contains('on'))), none.join(','));
+    for (const k of [0, 1, 2, 3]) await page.click('#aop .ak[data-k="' + k + '"]');
+    await page.click('#ao-man'); rec('ปิดสกิลออโตได้', (await page.getAttribute('#ao-man', 'aria-checked')) === 'false');
+    // เลือกเป้าหมาย: ตัดทุกชนิดยกเว้นหนึ่ง → AUTO ล่าเฉพาะชนิดนั้น
+    const types = await page.evaluate(() => [...document.querySelectorAll('#aop .tg')].map(b => b.dataset.t));
+    for (const t of types.slice(1)) await page.click('#aop .tg[data-t="' + t + '"]');
+    rec('แตะการ์ดเป้าหมาย → ขีดฆ่า (ไม่ล่า)', await page.evaluate(n => document.querySelectorAll('#aop .tg.off').length === n, types.length - 1));
+    await page.evaluate(t => { HL.PS.dead = false; HL.PS.hp = HL.PS.maxHp; HL.PS.cast = null; for (const m of HL.mons) if (m.type === t && m.state === 'dead') { m.state = 'idle'; m.hp = m.c.hp; m.x = m.hx; m.y = m.hy } }, types[0]); // ฉาก: ให้มีเป้าที่เลือกยังมีชีวิต
+    await page.click('#aop .go');
+    rec('ปุ่ม "เริ่ม AUTO" ในหน้าตั้งค่า → AUTO เปิด และปุ่มเปลี่ยนเป็น "หยุด AUTO"', (await page.getAttribute('#pg', 'aria-pressed')) === 'true' && (await page.textContent('#aop .go')) === 'หยุด AUTO');
+    await page.screenshot({ path: 'tools/last-autocfg.png' });
+    await page.click('#aop .x');
+    let tg = null; for (let i = 0; i < 20 && !tg; i++) { await page.waitForTimeout(150); tg = await page.evaluate(() => HL.AUTO.tgt && HL.AUTO.tgt.type); }
+    rec('AUTO เลือกเป้าเฉพาะชนิดที่เปิดไว้', tg === types[0], tg + ' (เปิดไว้: ' + types[0] + ')');
+    await page.click('#pg'); await page.click('#ask'); for (const t of types.slice(1)) await page.click('#aop .tg[data-t="' + t + '"]'); await page.click('#aop .x');
+    rec('ตั้งค่าเป้าหมายกลับครบ', await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('hl_auto')).tg).length === 0)); }
+  // ===== V2-R26: ไอคอนสกิล, คูลดาวน์, ภาพมอนสเตอร์ตายไม่ค้าง, แผนที่โลก + วาร์ป =====
+  { const ic = await page.evaluate(async () => { const im = [...document.querySelectorAll('#skills .sk img')]; await Promise.all(im.map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r }))); return im.map(i => i.naturalWidth) });
+    rec('ปุ่มสกิลมีไอคอนครบ 6 ปุ่ม (โหลดได้)', ic.length === 6 && ic.every(w => w === 64), ic.join(','));
+    await page.evaluate(() => { HL.AUTO.on = false; HL.PS.job = 30; HL.PS.cd = {}; HL.PS.cast = null; HL.PS.dead = false; HL.PS.hp = HL.PS.maxHp; const s = HL.ZONES.village2.start; HL.enterZone('village2', s[0], s[1]); }); // รอคูลดาวน์ในเขตปลอดภัย
+    const i0 = await page.evaluate(() => HL.SLOTS[0]); await page.evaluate(i => HL.useSkill(i), i0); await page.waitForTimeout(300);
+    const cd = await page.evaluate(() => { const b = document.querySelector('#skills .sk'); return { n: b.querySelector('.cdn').textContent, cls: b.className, sweep: b.style.getPropertyValue('--cd') } });
+    rec('คูลดาวน์: ตัวเลขนับถอยหลัง + วงมืดบนปุ่ม', /^\d/.test(cd.n) && cd.cls.includes('cd') && parseFloat(cd.sweep) > 0, JSON.stringify(cd));
+    await page.waitForFunction(() => !document.querySelector('#skills .sk').classList.contains('cd'), null, { timeout: 20000, polling: 30 });
+    const rdy = await page.evaluate(() => document.querySelector('#skills .sk').classList.contains('ready'));
+    rec('คูลดาวน์หมด → ปุ่มกะพริบพร้อมใช้ และตัวเลขหาย', rdy && (await page.evaluate(() => document.querySelector('#skills .sk .cdn').textContent)) === ''); }
+  { const r = await page.evaluate(() => { const m = { state: 'idle' }, a = { st: m.state, d: m.dieT0 };
+      m.state = 'dead'; delete m.dieT0; const fresh = HL.monShown(m); m.dieT0 = HL.tNow; const dying = HL.monShown(m); m.dieT0 = HL.tNow - 2; const old = HL.monShown(m);
+      m.state = a.st; m.dieT0 = a.d; return { fresh, dying, old } });
+    rec('มอนสเตอร์ตาย: แสดงท่าตายช่วงสั้นแล้วหาย, ตัวที่ตายอยู่แล้วไม่ค้างภาพ', !r.fresh && r.dying && !r.old, JSON.stringify(r)); }
+  { await page.click('#wmb'); await page.waitForSelector('#wmp:not([hidden]) .zc');
+    const w = await page.evaluate(() => ({ n: document.querySelectorAll('#wmp .zc').length, here: document.querySelector('#wmp .zc.here b').textContent, imgs: document.querySelectorAll('#wmp .zt img').length, lv: [...document.querySelectorAll('#wmp .zl')].map(e => e.textContent) }));
+    rec('แผนที่โลก: 7 โซน รูปย่อ + ช่วงเลเวล + บอก "อยู่ที่นี่"', w.n === 7 && w.imgs >= 6 && w.here === await page.evaluate(() => HL.Z.D.name), JSON.stringify(w));
+    await page.screenshot({ path: 'tools/last-world.png' });
+    await page.click('#wmp .wp[data-z="bamboo"]');
+    rec('กดวาร์ป → ไปโซนป่าไผ่ทันที (ออฟไลน์)', await page.evaluate(() => HL.Z.id === 'bamboo' && document.getElementById('wmp').hidden));
+    rec('วาร์ปซ้ำเร็วเกิน → รอคูลดาวน์', await page.evaluate(() => HL.warp('peak') === 'cooldown' && HL.Z.id === 'bamboo')); }
   { await page.evaluate(() => { HL.statResetLocal(); HL.PS.lv = 4; HL.recalc(); HL.PS.hp = HL.PS.maxHp; HL.lvEl.hidden = true; });
     await page.waitForTimeout(200);
     rec('มีแต้มเหลือ → จุดแดงบนวงเลเวล', await page.evaluate(() => { document.getElementById('lvb').click(); return document.getElementById('lvb').classList.contains('dot') }));

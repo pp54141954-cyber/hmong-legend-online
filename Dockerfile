@@ -11,6 +11,7 @@ COPY shared/ shared/
 COPY game/index.html game/
 COPY game/maps/ game/maps/
 COPY game/sprites/ game/sprites/
+COPY game/icons/ game/icons/
 COPY tools/backup-db.js tools/
 RUN mkdir -p /data && chown node:node /data
 USER node

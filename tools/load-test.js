@@ -39,9 +39,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
     ws.on('message', raw => {
       const m = JSON.parse(raw);
       if (m.t === 'welcome') {
-        // ย้ายเข้าโซนทดสอบผ่านจุดเข้าโซนที่อนุญาต (จุดเริ่มของโซน)
+        // ย้ายเข้าโซนทดสอบด้วยวาร์ป (V2-R26: เซิร์ฟเวอร์ไม่รับการกระโดดโซนผ่าน mv)
         const s = W.ZONES[zone].start; bot.x = s[0]; bot.y = s[1]; bot.tx = Math.floor(bot.x / T); bot.ty = Math.floor(bot.y / T);
-        ws.send(JSON.stringify({ t: 'mv', zone, x: bot.x, y: bot.y, dir: 'S', moving: false })); bot.ready = true;
+        if (m.state.zone === zone) { ws.send(JSON.stringify({ t: 'mv', zone, x: m.state.x, y: m.state.y, dir: 'S', moving: false })); bot.x = m.state.x; bot.y = m.state.y; bot.tx = Math.floor(bot.x / T); bot.ty = Math.floor(bot.y / T); bot.ready = true; }
+        else ws.send(JSON.stringify({ t: 'warp', zone }));
+      } else if (m.t === 'warp') { bot.x = m.x; bot.y = m.y; bot.tx = Math.floor(m.x / T); bot.ty = Math.floor(m.y / T); bot.ready = true;
       } else if (m.t === 'snap') {
         st.snaps++;
         // ความหน่วงตอบสนอง: เวลาที่ส่งตำแหน่ง → จนเห็นตำแหน่งนั้นใน snapshot ของตัวเอง

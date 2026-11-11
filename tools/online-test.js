@@ -217,7 +217,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
     await sleep(200);
   }
   // 5.9 มอนสเตอร์ไล่ตีผู้เล่น → HP ลด → ตาย → เกิดใหม่ที่หมู่บ้าน (ในทุ่งมอนสเตอร์)
-  await A.page.click('#gear'); await A.page.click('#wp'); await A.page.click('#gear');
+  SA().warpAt = 0; /* ฉาก: ข้ามคูลดาวน์วาร์ปของปุ่มทดสอบ */ await A.page.click('#gear'); await A.page.click('#wp'); await A.page.click('#gear');
   await until(async () => SA().c.zone === 'field');
   await sleep(300);
   const pf = SA(), zf = srv.sim.zones.field, wolf = zf.mons.find(m => m.type === 'หมาป่า' && m.state !== 'dead');
@@ -234,14 +234,30 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   await until(async () => (await st(B.page)).others.some(o => o.name === 'Tester_A'));
 
   // 6) ย้ายโซน: B ไม่เห็น A แล้ว
-  await A.page.click('#gear'); await A.page.click('#wp'); await A.page.click('#gear');
+  SA().warpAt = 0; /* ฉาก: ข้ามคูลดาวน์วาร์ปของปุ่มทดสอบ */ await A.page.click('#gear'); await A.page.click('#wp'); await A.page.click('#gear');
   const gone = await until(async () => (await st(A.page)).zone === 'field' && !(await st(B.page)).others.some(o => o.name === 'Tester_A'));
   rec('A ย้ายไปทุ่งมอนสเตอร์ B ไม่เห็น A แล้ว', gone);
   await until(() => [...srv.online.values()].find(p => p.c.name === 'Tester_A').c.zone === 'field', 3000); // A อาจเริ่มจากหมู่บ้านใหม่ (เกิดหลังตาย) ซึ่ง B มองไม่เห็นอยู่แล้ว
   const srvZone = [...srv.online.values()].find(p => p.c.name === 'Tester_A').c.zone;
   rec('เซิร์ฟเวอร์รับการย้ายโซนผ่านจุดที่อนุญาต', srvZone === 'field', 'zone=' + srvZone);
-  await A.page.click('#gear'); await A.page.click('#wp'); await A.page.click('#gear');
+  SA().warpAt = 0; /* ฉาก: ข้ามคูลดาวน์วาร์ปของปุ่มทดสอบ */ await A.page.click('#gear'); await A.page.click('#wp'); await A.page.click('#gear');
   await until(async () => (await st(B.page)).others.some(o => o.name === 'Tester_A'));
+
+  // V2-R26: วาร์ปผ่านแผนที่โลก (เซิร์ฟเวอร์ตรวจ) + ปิดช่องโหว่กระโดดโซนผ่าน mv
+  { const a = SA(); a.warpAt = 0; await A.page.evaluate(() => HL.clearWarpCd()); const z0 = a.c.zone, to = z0 === 'bamboo' ? 'peak' : 'bamboo';
+    await A.page.click('#wmb'); await A.page.waitForSelector('#wmp:not([hidden]) .wp[data-z="' + to + '"]');
+    await A.page.click('#wmp .wp[data-z="' + to + '"]');
+    const ok = await until(async () => SA().c.zone === to && (await st(A.page)).zone === to && Math.hypot(SA().c.x - W.ZONES[to].start[0], SA().c.y - W.ZONES[to].start[1]) < 40);
+    rec('วาร์ปผ่านแผนที่โลก → เซิร์ฟเวอร์ย้ายตัวไปจุดเริ่มโซน และจอตรงกัน', ok, z0 + ' → ' + SA().c.zone);
+    const d0 = SA().denied || 0; A.page.evaluate(() => HLNET.send({ t: 'warp', zone: 'mine' }));
+    rec('วาร์ปซ้ำภายใน 5 วิ → เซิร์ฟเวอร์ปฏิเสธ (cooldown)', await until(async () => (SA().denied || 0) > d0) && SA().c.zone === to);
+    SA().warpAt = 0; const d1 = SA().denied || 0; A.page.evaluate(() => HLNET.send({ t: 'warp', zone: 'nowhere' }));
+    rec('วาร์ปไปโซนที่ไม่มี → ปฏิเสธ', await until(async () => (SA().denied || 0) > d1) && SA().c.zone === to);
+    const f0 = A.page.evaluate(() => HLNET.stats.fixes), p = W.ZONES.peak.start, fx0 = await f0;
+    await A.page.evaluate(([x, y]) => HLNET.send({ t: 'mv', zone: 'peak', x, y, dir: 'S', moving: false }), [p[0], p[1]]);
+    rec('ส่ง mv กระโดดไปจุดเริ่มโซนอื่นตรง ๆ (ไม่ผ่านทางออก) → เซิร์ฟเวอร์ไม่รับ', await until(async () => (await A.page.evaluate(() => HLNET.stats.fixes)) > fx0) && SA().c.zone === to, 'zone=' + SA().c.zone);
+    SA().warpAt = 0; await A.page.evaluate(() => { HL.warp('village', 1) }); await until(() => SA().c.zone === 'village');
+    await until(async () => (await st(B.page)).others.some(o => o.name === 'Tester_A')); }
 
   // V2-R16: เวลาโลกจากเซิร์ฟเวอร์ + World Boss + ประกาศ
   { const C = W.CFG.time;
@@ -268,6 +284,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
     // ฉาก: วาง B ไว้ใกล้ A (ฝั่งเซิร์ฟเวอร์) และวางมอนสเตอร์ HP 1 หน้า A
     Object.assign(b.c, { zone: a.c.zone, x: a.c.x + 40, y: a.c.y });
     Object.assign(m, { x: a.c.x + 20, y: a.c.y, hx: a.c.x + 20, hy: a.c.y, wx: a.c.x + 20, wy: a.c.y, t: 99, hp: 1, state: 'idle' });
+    a.c.exp = 0; b.c.exp = 0; // ฉาก: เริ่ม EXP 0 ไม่ให้เลเวลอัประหว่างวัด
     const ea = a.c.exp, eb = b.c.exp, la = a.c.lv, lb = b.c.lv; srv.sim.setRand(() => .5);
     await A.page.evaluate(() => { HL.player.dir = 'E'; }); await sleep(200);
     await A.page.locator('#atk').dispatchEvent('pointerdown'); await sleep(100); await A.page.locator('#atk').dispatchEvent('pointerup');
