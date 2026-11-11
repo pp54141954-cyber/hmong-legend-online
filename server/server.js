@@ -15,7 +15,7 @@ const CONF = {
   gameFile: process.env.GAME_FILE || path.join(__dirname, '..', 'game', 'index.html'),
   tickHz: 10,               // ส่ง snapshot 10 ครั้ง/วินาที
   simHz: 20,                // จำลองโลก 20 ครั้ง/วินาที
-  admins: (process.env.ADMIN_USERS || '').split(',').map(s => s.trim()).filter(Boolean), // ชื่อบัญชีผู้ดูแล (ตั้งใน Render → Environment) — ไม่ฝังในโค้ด
+  admins: (process.env.ADMIN_USERS || '').split(/[,\n;]/).map(s => normName(s)).filter(Boolean), // ชื่อบัญชีผู้ดูแล (ตั้งใน Render → Environment) — ไม่ฝังในโค้ด
   allowDebug: process.env.ALLOW_DEBUG === '1', // ปุ่มทดสอบ (ตั้ง Job 30) ใช้ได้เฉพาะเซิร์ฟเวอร์ทดสอบ
   saveEverySec: 30,         // บันทึกลงฐานข้อมูลทุก 30 วินาที และตอนออก
   sessionTtlMs: 24 * 3600e3,
@@ -44,8 +44,11 @@ const nearExitTo = (from, to, x, y) => (WORLD.ZONES[from].exits || []).some(e =>
 const START = { zone: HOME, x: WORLD.ZONES[HOME].start[0], y: WORLD.ZONES[HOME].start[1] };
 const nearEntry = (zone, x, y) => (ENTRY[zone] || []).some(([ex, ey]) => Math.hypot(ex - x, ey - y) <= 3 * T);
 
+// ชื่อสำหรับเทียบสิทธิ์แอดมิน: ตัดอักขระที่มองไม่เห็น/ช่องว่าง (มักติดมาจากคีย์บอร์ดมือถือ) + ไม่สนตัวพิมพ์ใหญ่เล็ก
+// ปลอดภัยเพราะชื่อบัญชีในฐานข้อมูลไม่ซ้ำแบบไม่สนตัวพิมพ์ (COLLATE NOCASE) — แต่ 0 (ศูนย์) กับ O (โอ) ยังถือเป็นคนละตัว
+function normName(s) { return String(s || '').normalize('NFKC').replace(/[\u0000-\u001f\u007f\u00a0\u200b-\u200f\u2028-\u202f\u2060\ufeff\s]/g, '').toLowerCase(); }
 function createServer(opts = {}) {
-  const conf = { ...CONF, ...opts };
+  const conf = { ...CONF, ...opts }; conf.admins = (conf.admins || []).map(normName).filter(Boolean);
   fs.mkdirSync(path.dirname(conf.dbFile), { recursive: true });
   const db = DB.open(conf.dbFile);
   const online = new Map(); // account_id -> player
@@ -71,7 +74,7 @@ function createServer(opts = {}) {
     const url = new URL(req.url, 'http://x');
     for (const [k, v] of Object.entries(SEC_HEADERS)) res.setHeader(k, v);
     try {
-      if (req.method === 'GET' && url.pathname === '/healthz') return json(res, 200, { ok: true, ver: 'V2-R32', online: online.size, uptime: Math.round(process.uptime()), admins: conf.admins.length }); // admins = จำนวนชื่อใน ADMIN_USERS (ไม่เปิดเผยชื่อ) ใช้ตรวจว่าตั้งค่าบน Render แล้ว
+      if (req.method === 'GET' && url.pathname === '/healthz') return json(res, 200, { ok: true, ver: 'V2-R33', online: online.size, uptime: Math.round(process.uptime()), admins: conf.admins.length }); // admins = จำนวนชื่อใน ADMIN_USERS (ไม่เปิดเผยชื่อ) ใช้ตรวจว่าตั้งค่าบน Render แล้ว
       if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
         return fs.createReadStream(conf.gameFile).pipe(res);
@@ -136,7 +139,7 @@ function createServer(opts = {}) {
         p.bagDirty = true; p.skDirty = true; p.netZone = null; // เข้าเกม/ต่อใหม่: ส่ง snapshot เต็ม // ส่งกระเป๋าและสกิลเต็มชุดใน snapshot แรกหลังเข้าเกม/ต่อใหม่
         const c = p.c;
         log('join', c.name, c.zone, Math.round(c.x), Math.round(c.y));
-        p.admin = conf.admins.includes(c.name); if (p.admin) log('admin join', c.name);
+        p.admin = conf.admins.includes(normName(c.name)); if (p.admin) log('admin join', c.name);
         return send(ws, { t: 'welcome', id: p.id, name: c.name, auth: true, admin: p.admin, cls: sim.clsOf(p), pickCls: !c.clsset, look: c.look, state: { zone: c.zone, x: c.x, y: c.y, dir: c.dir, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, hp: p.hp, maxHp: p.maxHp } });
       }
       if (m.t === 'mv') {

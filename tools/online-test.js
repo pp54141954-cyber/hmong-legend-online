@@ -23,7 +23,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
     rec('เซิร์ฟเวอร์ส่งภาพแผนที่ /maps/*.webp และภาพมอนสเตอร์ /sprites/*.webp และปฏิเสธชื่อแปลก/ไม่มีไฟล์', sp.status === 200 && ok.status === 200 && ok.headers.get('content-type') === 'image/webp' && (await ok.arrayBuffer()).byteLength > 100000 && bad.status === 404 && miss.status === 404, ok.status + '/' + bad.status + '/' + miss.status);
     await s1.close(); }
   // ทดสอบที่เหลือเริ่มที่หมู่บ้านเดิม (มีบ้าน/มอนสเตอร์ที่ฉากทดสอบใช้)
-  let srv = createServer({ dbFile, quiet: true, saveEverySec: 2, startZone: 'village', admins: ['Tester_A'] }); // V2-R27: A = แอดมิน (ADMIN_USERS)
+  let srv = createServer({ dbFile, quiet: true, saveEverySec: 2, startZone: 'village', admins: [' tester_a\u200b'] }); // ตั้งแบบตัวเล็ก + อักขระมองไม่เห็น: ต้องยังตรงกับ Tester_A // V2-R27: A = แอดมิน (ADMIN_USERS)
   let port = await srv.listen(0);
   let url = 'http://127.0.0.1:' + port + '/';
   const browser = await chromium.launch();
@@ -266,6 +266,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
 
   // V2-R27: แอดมิน (เฉพาะบัญชีใน ADMIN_USERS) + อาชีพออนไลน์
   { const hz = await (await fetch(url + 'healthz')).json(); rec('/healthz บอกจำนวนบัญชีแอดมินที่ตั้งไว้ (ไม่บอกชื่อ) + เวอร์ชัน', hz.admins === 1 && hz.ver && !JSON.stringify(hz).includes('Tester_A'), JSON.stringify(hz)); }
+  rec('เมนู ⚙ บอกชื่อบัญชีและสิทธิ์ (A = แอดมิน, B = ผู้เล่น)', (await A.page.textContent('#acctinfo')).includes('แอดมิน') && (await B.page.textContent('#acctinfo')).includes('ผู้เล่น') && (await A.page.textContent('#acctinfo code')) === 'Tester_A');
   { rec('บัญชีแอดมินเห็นปุ่ม 🛠, บัญชีทั่วไปไม่เห็น', await A.page.isVisible('#admb') && !(await B.page.isVisible('#admb')));
     await A.page.click('#admb'); await A.page.waitForSelector('#adp:not([hidden]) #ad-lv');
     const lv0 = SA().c.lv; await A.page.fill('#ad-lv', '25'); await A.page.click('#ad-lvb');

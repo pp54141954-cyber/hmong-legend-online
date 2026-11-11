@@ -86,6 +86,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 #clp .cls{display:flex;flex-direction:column;gap:6px}#clp .cc{display:flex;align-items:center;gap:8px;background:#fff;border-radius:12px;padding:8px;box-shadow:0 1px 3px #0002}#clp .cc.on{outline:2px solid #46a758}#clp .cc i{flex:none;width:44px;height:40px;border-radius:10px;color:#fff;font-style:normal;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center}
 #clp .cc div{flex:1;min-width:0;display:flex;flex-direction:column}#clp .cc b{font-size:14px}#clp .cc small{font-size:10px;color:#7a8799}#clp .cc button{flex:none;padding:8px 12px;font-weight:800;color:#fff;background:#3b6fd0;border:0;border-radius:10px}#clp .cc button:disabled{opacity:.35}#clp .cc em{font-style:normal;font-size:11px;font-weight:800;color:#2f9a4a}
 #skp h3 .clsb{margin-left:auto;margin-right:6px;font-size:11px;color:#ffcf8a;border-color:#ffcf8a88}
+#acctinfo{font-size:12px;padding:6px 8px;border-radius:8px;background:#ffffff14}#acctinfo code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;letter-spacing:1px;color:#ffcf8a}#acctinfo b{color:#8fe38f}
 #admb{position:absolute;left:8px;top:calc(var(--toph,120px) + 66px);z-index:4;padding:5px 10px;font-size:12px;font-weight:800;color:#fff;background:#9b2226;border:0;border-radius:12px}#admb[hidden]{display:none}
 #adp .arow{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}#adp label{width:44px;font-size:12px}#adp input,#adp select{flex:1;min-width:0;padding:7px;border:1px solid #c9d2de;border-radius:8px;font:inherit;font-size:13px;background:#fff;color:#1c2b3a}#adp input[type=number]{max-width:80px}
 #adp .arow button{flex:1;padding:8px 6px;font-size:12px;font-weight:700;color:#244a86;background:#e3ecfa;border:0;border-radius:9px}#adp #ad-god[aria-pressed="true"]{background:#9b2226;color:#fff}
@@ -1328,7 +1329,7 @@ function connect(){if(!token)return;stopped=false;NET.state='connecting';status(
   ws.onopen=()=>ws.send(JSON.stringify({t:'hello',token}));
   ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
     if(m.t==='welcome'){retry=0;NET.state='online';
-      NET.admin=!!m.admin;NET.cls=m.cls||'นักดาบ';$('admb').hidden=!NET.admin;HL.setLook(m.look);if(m.pickCls){csPick=null;csLook=null;openClassStart('start')}else closeClassStart();
+      NET.admin=!!m.admin;NET.cls=m.cls||'นักดาบ';$('admb').hidden=!NET.admin;{let r=document.getElementById('acctinfo');if(!r){r=document.createElement('div');r.id='acctinfo';document.getElementById('menu').prepend(r)}r.innerHTML='บัญชี <code></code> · สิทธิ์: <b>'+(NET.admin?'แอดมิน':'ผู้เล่น')+'</b>';r.querySelector('code').textContent=m.name}HL.setLook(m.look);if(m.pickCls){csPick=null;csLook=null;openClassStart('start')}else closeClassStart();
       if(!NET.joined){const s=m.state;NET.auth=!!m.auth;HL.PS.lv=s.lv;HL.PS.exp=s.exp;HL.PS.job=s.job;HL.PS.jexp=s.jexp;HL.recalc();HL.PS.hp=s.hp??HL.PS.maxHp;HL.enterZone(s.zone,s.x,s.y);HL.player.dir=s.dir;NET.joined=true;HL.say('ยินดีต้อนรับ '+m.name)}
       else{NET.stats.reconnects++;HL.say('เชื่อมต่อใหม่แล้ว')}
       lastSent='';NET.name=m.name;NET.id=m.id;status('ออนไลน์ · '+m.name)}
