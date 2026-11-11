@@ -79,6 +79,10 @@ for (const [i, name, expectDx] of [[1, 'ท่าเคลื่อนที่'
   sim.addPlayer(p);
   rec('อาชีพ: มี 8 อาชีพ ตัวละครเดิม = นักดาบ', sim.CLASSES.length === 8 && sim.clsOf(p) === 'นักดาบ', sim.CLASSES.join(','));
   rec('อาชีพ: ชื่อปลอม → ปฏิเสธ', sim.setClass(p, 'hacker') === 'invalid');
+  { const n = { id: 9, c: { zone: 'field2', x: F.start[0], y: F.start[1], dir: 'S', lv: 1, exp: 0, job: 1, jexp: 0, starter: 1 } }; sim.addPlayer(n);
+    rec('เลือกอาชีพครั้งแรก: ตัวละครใหม่เลือกได้แม้อยู่นอกหมู่บ้าน', sim.setClass(n, 'ผู้รักษา', true) === 'ok' && n.c.cls === 'ผู้รักษา' && n.c.clsset === 1 && n.personal.some(e => e.k === 'cls' && e.first));
+    rec('เลือกอาชีพครั้งแรกซ้ำ → ปฏิเสธ (ใช้ข้ามกฎหมู่บ้านไม่ได้)', sim.setClass(n, 'นักฆ่า', true) === 'already' && n.c.cls === 'ผู้รักษา');
+    rec('หลังเลือกแล้ว เปลี่ยนนอกหมู่บ้านไม่ได้', sim.setClass(n, 'นักฆ่า') === 'not-safe'); }
   const q = { id: 2, c: { zone: 'field2', x: F.start[0], y: F.start[1], dir: 'S', lv: 30, exp: 0, job: 30, jexp: 0, starter: 1 } }; sim.addPlayer(q);
   rec('อาชีพ: นอกเขตปลอดภัย → เปลี่ยนไม่ได้', sim.setClass(q, 'นักธนู') === 'not-safe' && sim.clsOf(q) === 'นักดาบ');
   sim.learn(p, 'ลงอาคมคมดาบ'); const swordPts = sim.freePoints(p);

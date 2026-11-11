@@ -417,6 +417,16 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     await sp.screenshot({ path: 'tools/last-sound.png' });
     await sp.click('#snd-mute'); await sp.fill('#snd-mus', '55'); await sp.dispatchEvent('#snd-mus', 'input');
     await sp.close(); }
+  { const cp = await ctx.newPage(); cp.on('pageerror', e => errors.push('pick pageerror: ' + e.message));
+    await cp.goto(url + '?pick=1'); await cp.waitForSelector('#cstart:not([hidden]) .csc');
+    const o = await cp.evaluate(() => ({ n: document.querySelectorAll('#cstart .csc').length, on: document.querySelector('#cstart .csc.on b').textContent, d: document.querySelector('#cstart .csc .d').textContent }));
+    rec('หน้าเลือกอาชีพตอนเริ่มเกม: 8 อาชีพ มีคำอธิบาย เลือกไว้ก่อน = นักดาบ', o.n === 8 && o.on === 'นักดาบ' && o.d.length > 5, JSON.stringify(o));
+    await cp.click('#cstart button[aria-label="อาชีพ ผู้ใช้มนตรา"]');
+    await cp.screenshot({ path: 'tools/last-cstart.png' });
+    await cp.click('#csgo');
+    const r = await cp.evaluate(() => ({ hid: document.getElementById('cstart').hidden, cls: HL.curCls(), saved: localStorage.getItem('hl_cls_off'), bar: document.querySelector('#skills .sk').getAttribute('aria-label'), exp: HL.skName(HL.SLOTS[0]), mage: HL.CLS_ACTIVE['ผู้ใช้มนตรา'] }));
+    rec('เลือก "ผู้ใช้มนตรา" → เริ่มเกมเป็นอาชีพนั้น ปุ่มสกิลเปลี่ยนตาม', r.hid && r.cls === 'ผู้ใช้มนตรา' && r.saved === 'ผู้ใช้มนตรา' && r.bar === r.exp && r.mage.includes(r.bar), JSON.stringify(r));
+    await cp.evaluate(() => localStorage.removeItem('hl_cls_off')); await cp.close(); }
   rec('หน้าเกมปกติ (ระบบทดสอบอัตโนมัติ) ข้ามหน้าโหลดได้', await page.evaluate(() => document.getElementById('splash').hidden && SND.splash.shown === false));
   rec('ไม่มี JavaScript error ระหว่างทดสอบ', errors.length === 0, errors.slice(0, 5).join(' | '));
   await browser.close(); srv.close();

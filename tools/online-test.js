@@ -48,6 +48,18 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   await signup(B.page, 'Tester_B', 'secret456', 'register');
   const joined = await until(async () => (await st(A.page)).joined && (await st(B.page)).joined);
   rec('สองเครื่องสมัครและเข้าเกมได้', joined);
+  // V2-R29: บัญชีใหม่ต้องเลือกอาชีพก่อนเริ่ม
+  { const shown = await until(async () => await A.page.isVisible('#cstart') && await B.page.isVisible('#cstart'));
+    const n = await A.page.evaluate(() => document.querySelectorAll('#cstart .csc').length);
+    rec('บัญชีใหม่: ขึ้นหน้าเลือกอาชีพตอนเริ่มเกม (8 อาชีพ)', shown && n === 8, n + ' อาชีพ');
+    await A.page.click('#cstart button[aria-label="อาชีพ นักธนู"]');
+    rec('แตะการ์ดอาชีพ → ปุ่มเริ่มบอกชื่ออาชีพที่เลือก', (await A.page.textContent('#csgo')) === 'เริ่มผจญภัยเป็น นักธนู');
+    await A.page.click('#cstart button[aria-label="อาชีพ นักดาบ"]'); await A.page.click('#csgo'); await B.page.click('#csgo');
+    const SAx = () => [...srv.online.values()].find(p => p.c.name === 'Tester_A');
+    const ok = await until(async () => !(await A.page.isVisible('#cstart')) && !(await B.page.isVisible('#cstart')) && SAx().c.clsset === 1);
+    rec('กดเริ่ม → เซิร์ฟเวอร์บันทึกอาชีพ หน้าเลือกปิด เริ่มเล่นได้', ok, SAx().c.cls);
+    const d0 = SAx().denied || 0; await A.page.evaluate(() => HLNET.send({ t: 'cls', cls: 'นักฆ่า', first: 1 }));
+    rec('ส่ง "เลือกครั้งแรก" ซ้ำ (ข้ามกฎหมู่บ้าน) → เซิร์ฟเวอร์ปฏิเสธ', await until(() => (SAx().denied || 0) > d0) && SAx().c.cls === 'นักดาบ'); }
 
   // 2) เห็นกันและกัน
   const see = await until(async () => (await st(B.page)).others.some(o => o.name === 'Tester_A') && (await st(A.page)).others.some(o => o.name === 'Tester_B'));
@@ -335,6 +347,8 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   srv = createServer({ dbFile, quiet: true, startZone: 'village' }); port = await srv.listen(0); url = 'http://127.0.0.1:' + port + '/';
   const A2 = await open('Pixel 7');
   await signup(A2.page, 'Tester_A', 'secret123', 'login');
+  await until(async () => (await st(A2.page)).joined); await sleep(500);
+  rec('ล็อกอินครั้งต่อไป: ไม่ถามอาชีพซ้ำ', !(await A2.page.isVisible('#cstart')));
   await until(async () => (await st(A2.page)).joined);
   const re = await st(A2.page);
   const posOk = re.zone === saved.zone && Math.hypot(re.x - saved.x, re.y - saved.y) < 4;

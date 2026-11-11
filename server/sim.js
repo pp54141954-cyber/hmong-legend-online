@@ -102,12 +102,15 @@ function createSim({ rand = Math.random } = {}) {
     p.c.st[k] += n; stats(p); p.skDirty = true; p.dirty = true; return 'ok';
   }
   // เปลี่ยนอาชีพ: เฉพาะในเขตปลอดภัย ไม่ตาย — ระดับสกิลของอาชีพเดิมเก็บไว้ (กลับมาแล้วได้คืน)
-  function setClass(p, cls) {
+  // เลือกครั้งแรก (V2-R29): ตัวละครที่ยังไม่เคยเลือก (clsset=0) เลือกได้ทุกที่ครั้งเดียว — หลังจากนั้นเปลี่ยนได้เฉพาะในเขตปลอดภัย
+  function setClass(p, cls, first) {
     cls = String(cls); if (!ROWS[cls]) return 'invalid';
-    if (cls === clsOf(p)) return 'same';
+    const firstPick = !!first && !p.c.clsset;
+    if (first && !firstPick) return 'already';
+    if (cls === clsOf(p) && !firstPick) return 'same';
     if (p.dead) return 'dead';
-    const D = ZONES[p.c.zone]; if (!D || !D.safe || !D.safe(p.c.x, p.c.y)) return 'not-safe';
-    p.c.cls = cls; stats(p); p.skDirty = true; p.dirty = true; p.personal.push({ k: 'cls', cls });
+    const D = ZONES[p.c.zone]; if (!firstPick && (!D || !D.safe || !D.safe(p.c.x, p.c.y))) return 'not-safe';
+    p.c.cls = cls; p.c.clsset = 1; stats(p); p.skDirty = true; p.dirty = true; p.personal.push({ k: 'cls', cls, first: firstPick });
     return 'ok';
   }
   // แอดมิน (ADMIN_USERS): ปรับค่าตัวเองเพื่อทดสอบ — server.js ตรวจสิทธิ์ก่อนเรียก

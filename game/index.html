@@ -69,6 +69,13 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .win .swr{display:flex;justify-content:space-between;align-items:center;padding:8px 0 0;margin-top:8px;border-top:1px solid #e6ebf2;font-size:13px}.win .swr small{display:block;font-size:10px;color:#7a8799}.win .sw{flex:none;width:50px;height:28px;padding:0;border:0;border-radius:14px;background:#c9d2de;position:relative}.win .sw i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left .15s}.win .sw[aria-checked="true"]{background:#3b6fd0}.win .sw[aria-checked="true"] i{left:25px}
 #aop .pots{display:flex;flex-wrap:wrap;gap:5px}#aop .pots button{flex:1;padding:6px 4px;font-size:11px;color:#244a86;background:#e3ecfa;border:2px solid transparent;border-radius:9px}#aop .pots button.on{border-color:#2f5aa0;font-weight:800}
 #aop .wft{display:flex;align-items:center;gap:8px;padding:10px;background:#fff;border-top:1px solid #d9e1ec}#aop .wft span{flex:1;font-size:12px;font-weight:700;color:#2f9a4a}#aop .wft small{display:block;font-weight:400;color:#7a8799}#aop .go{flex:2;padding:12px;font-size:15px;font-weight:800;color:#fff;background:#3b6fd0;border:0;border-radius:12px;box-shadow:0 3px 0 #244a86}
+#cstart{position:absolute;inset:0;z-index:35;display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 0%,#3b3f7a,#14163a 60%,#0d0f24);color:#f4efe2;padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px))}#cstart[hidden]{display:none}
+#cstart .cshd{text-align:center;padding:6px 0 10px}#cstart .cshd b{display:block;font-size:24px;color:#ffcf8a;letter-spacing:2px}#cstart .cshd small{font-size:12px;opacity:.8}
+#cstart .csg{flex:1;overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start;max-width:560px;width:100%;margin:0 auto}
+#cstart .csc{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px;text-align:left;color:#1c2b3a;background:#eef2f8;border:3px solid transparent;border-radius:14px;min-width:0}#cstart .csc.on{border-color:#f2c14e;background:#fff;box-shadow:0 0 16px #f2c14e88}
+#cstart .csc i{width:46px;height:30px;border-radius:9px;color:#fff;font-style:normal;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center}#cstart .csc b{font-size:15px}#cstart .csc .d{font-size:11px;line-height:1.3}#cstart .csc .p{font-size:9px;color:#7a8799;line-height:1.3}
+#cstart .csft{display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:10px;max-width:560px;width:100%;margin:0 auto}#cstart .csft small{font-size:10px;opacity:.6;text-align:center}
+#cstart .csgo{width:100%;padding:14px;font-size:17px;font-weight:900;color:#3a1a08;background:linear-gradient(#ffe08a,#f2a93b);border:0;border-radius:14px;box-shadow:0 4px 0 #8e4a10}
 #clp .cur{display:flex;flex-direction:column}#clp .cur span{font-size:11px;color:#7a8799}#clp .cur b{font-size:18px}#clp .cur small{font-size:10px;color:#7a8799}#clp .warn{margin:0;padding:8px 10px;border-radius:10px;background:#fff3d6;color:#8a5a00;font-size:12px}
 #clp .cls{display:flex;flex-direction:column;gap:6px}#clp .cc{display:flex;align-items:center;gap:8px;background:#fff;border-radius:12px;padding:8px;box-shadow:0 1px 3px #0002}#clp .cc.on{outline:2px solid #46a758}#clp .cc i{flex:none;width:44px;height:40px;border-radius:10px;color:#fff;font-style:normal;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center}
 #clp .cc div{flex:1;min-width:0;display:flex;flex-direction:column}#clp .cc b{font-size:14px}#clp .cc small{font-size:10px;color:#7a8799}#clp .cc button{flex:none;padding:8px 12px;font-weight:800;color:#fff;background:#3b6fd0;border:0;border-radius:10px}#clp .cc button:disabled{opacity:.35}#clp .cc em{font-style:normal;font-size:11px;font-weight:800;color:#2f9a4a}
@@ -1120,6 +1127,22 @@ function renderClass(){if(clEl.hidden)return;const cur=HL.curCls(),safe=HL.inSaf
   clEl.querySelector('.x').onclick=openClass;
   for(const b of clEl.querySelectorAll('.cc button'))b.onclick=()=>{const c=HL.CLASSES[+b.dataset.c];if(NET.auth)send({t:'cls',cls:c});else{const r=HL.setClassLocal(c);if(r==='ok'){HL.say('เปลี่ยนอาชีพเป็น '+c);renderClass()}}}}
 function onClassChanged(){HL.buildSkills();renderClass();renderSkills();if(!stEl.hidden)renderStat()}
+/* เลือกอาชีพตอนเริ่มเกม (V2-R29): ตัวละครใหม่/ที่ยังไม่เคยเลือก เห็นครั้งเดียว — เลือกแล้วเริ่มเล่น เปลี่ยนภายหลังได้ในหมู่บ้าน */
+const CLS_DESC={'นักดาบ':'ดาบประชิดตัว สมดุลทั้งบุกและรับ','นักธนู':'โจมตีระยะไกล วางกับดัก ศรอาคม','นักฆ่า':'ว่องไว ลอบโจมตี ใช้พิษ','นักสู้':'หมัดหนัก ทนทาน แปลงร่างสัตว์ร้าย','ผู้สืบวิญญาณ':'เรียกวิญญาณบรรพชนและอสูรช่วยรบ','ผู้รักษา':'ฟื้นฟูทีม ให้พร แสงพิพากษา','ผู้ใช้มนตรา':'เวทโจมตีวงกว้าง คำสาป ผนึก','ผู้พิทักษ์':'โล่แกร่ง ปกป้องเพื่อนร่วมทีม'};
+const csEl=document.createElement('div');csEl.id='cstart';csEl.hidden=true;csEl.setAttribute('role','dialog');csEl.setAttribute('aria-label','เลือกอาชีพเริ่มต้น');document.getElementById('app').appendChild(csEl);
+let csPick=null;
+function openClassStart(){csPick=csPick||HL.curCls();csEl.hidden=false;renderClassStart()}
+function renderClassStart(){if(csEl.hidden)return;
+  csEl.innerHTML='<div class="cshd"><b>เลือกอาชีพ</b><small>เลือก 1 ใน 8 อาชีพเพื่อเริ่มผจญภัย · เปลี่ยนภายหลังได้ในหมู่บ้าน</small></div><div class="csg">'
+   +HL.CLASSES.map((c,i)=>'<button class="csc'+(c===csPick?' on':'')+'" data-c="'+i+'" aria-pressed="'+(c===csPick)+'" aria-label="อาชีพ '+c+'"><i style="background:'+CLS_COL[i%8]+'">'+(CLS_SHORT[c]||'')+'</i><b></b><small class="d"></small><small class="p"></small></button>').join('')
+   +'</div><div class="csft"><small>ท่ากดของอาชีพใหม่ยังเป็นแบบชั่วคราว · ภาพตัวละครใช้ภาพเดิมจนกว่าจะมีภาพของแต่ละอาชีพ</small><button class="csgo" id="csgo"></button></div>';
+  csEl.querySelectorAll('.csc').forEach((b,i)=>{const c=HL.CLASSES[i];b.querySelector('b').textContent=c;b.querySelector('.d').textContent=CLS_DESC[c]||'';b.querySelector('.p').textContent=HL.CLS_PATHS[c].join(' · ');b.onclick=()=>{csPick=c;renderClassStart()}});
+  const go=csEl.querySelector('#csgo');go.textContent='เริ่มผจญภัยเป็น '+csPick;
+  go.onclick=()=>{if(NET.auth){send({t:'cls',cls:csPick,first:1})}else{HL.PS.cls=csPick;try{localStorage.setItem('hl_cls_off',csPick)}catch(e){}HL.buildSkills();csEl.hidden=true;HL.say('เริ่มผจญภัยเป็น '+csPick)}}}
+// ออฟไลน์ (เปิดไฟล์ในเครื่อง): ถามครั้งแรก จำในเครื่อง — ระบบทดสอบอัตโนมัติข้าม (ยกเว้น ?pick=1)
+{const qs=new URLSearchParams(location.search);let saved=null;try{saved=localStorage.getItem('hl_cls_off')}catch(e){}
+  if(saved&&HL.CLS_ACTIVE[saved]){HL.PS.cls=saved;HL.buildSkills()}
+  if(!/^https?:$/.test(location.protocol)||qs.get('pick')==='1')if(qs.get('pick')==='1'||(!saved&&!navigator.webdriver))openClassStart()}
 /* แผงแอดมิน (V2-R27): เฉพาะบัญชีที่อยู่ใน ADMIN_USERS บนเซิร์ฟเวอร์ — เซิร์ฟเวอร์ตรวจสิทธิ์ทุกคำสั่ง */
 const adEl=document.createElement('div');adEl.id='adp';adEl.className='win';adEl.hidden=true;adEl.setAttribute('role','dialog');adEl.setAttribute('aria-label','แผงแอดมิน');document.getElementById('app').appendChild(adEl);
 const adBtn=document.createElement('button');adBtn.id='admb';adBtn.textContent='🛠 แอดมิน';adBtn.hidden=location.protocol!=='file:'; /* ออฟไลน์ (เปิดไฟล์ในเครื่อง) ใช้ทดสอบได้ — ออนไลน์เห็นเฉพาะบัญชีแอดมิน */adBtn.onclick=()=>{adEl.hidden=!adEl.hidden;renderAdmin()};document.getElementById('app').appendChild(adBtn);
@@ -1246,7 +1269,7 @@ function connect(){if(!token)return;stopped=false;NET.state='connecting';status(
   ws.onopen=()=>ws.send(JSON.stringify({t:'hello',token}));
   ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
     if(m.t==='welcome'){retry=0;NET.state='online';
-      NET.admin=!!m.admin;NET.cls=m.cls||'นักดาบ';$('admb').hidden=!NET.admin;
+      NET.admin=!!m.admin;NET.cls=m.cls||'นักดาบ';$('admb').hidden=!NET.admin;if(m.pickCls){csPick=null;openClassStart()}else csEl.hidden=true;
       if(!NET.joined){const s=m.state;NET.auth=!!m.auth;HL.PS.lv=s.lv;HL.PS.exp=s.exp;HL.PS.job=s.job;HL.PS.jexp=s.jexp;HL.recalc();HL.PS.hp=s.hp??HL.PS.maxHp;HL.enterZone(s.zone,s.x,s.y);HL.player.dir=s.dir;NET.joined=true;HL.say('ยินดีต้อนรับ '+m.name)}
       else{NET.stats.reconnects++;HL.say('เชื่อมต่อใหม่แล้ว')}
       lastSent='';NET.name=m.name;NET.id=m.id;status('ออนไลน์ · '+m.name)}
@@ -1285,7 +1308,7 @@ function applyWorld(m){const CFG=HL.CFG,P=HL.PS;if(m.mf)monById.clear();for(cons
       if(e.k==='reward'){const o=monById.get(e.id);HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-40,'+'+e.exp+' EXP','#8fe38f')}
       else if(e.k==='hurt'){const mo=monById.get(e.by);if(mo){mo.atkT0=HL.tNow;mo.dir=pl.x<mo.x?'W':'E'}if(e.guard)HL.addNum(pl.x,pl.y-66,'ป้องกัน','#9fd6ff');HL.addNum(pl.x,pl.y-52,e.dmg,'#ff6b6b');P.hurt=.4;window.SND&&SND.play('hurt')}
       else if(e.k==='lv')HL.lvUp('lv',e.lv);
-      else if(e.k==='cls'){HL.say('เปลี่ยนอาชีพเป็น '+e.cls)}
+      else if(e.k==='cls'){if(e.first){csEl.hidden=true;HL.say('เริ่มผจญภัยเป็น '+e.cls)}else HL.say('เปลี่ยนอาชีพเป็น '+e.cls)}
       else if(e.k==='starter'){HL.say('ได้รับชุดเริ่มต้น: '+e.items.map(i=>(HL.CFG.items[i[0]]||{}).name+(i[1]>1?' ×'+i[1]:'')).join(', '))}
       else if(e.k==='job')HL.lvUp('job',e.job);
       else if(e.k==='dead'){window.SND&&SND.play('dead');P.dead=true;P.deadT=HL.CFG.player.respawnSec;P.cast=null;HL.say('พ่ายแพ้ · กลับหมู่บ้านใน '+HL.CFG.player.respawnSec+' วินาที')}

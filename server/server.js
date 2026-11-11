@@ -137,7 +137,7 @@ function createServer(opts = {}) {
         const c = p.c;
         log('join', c.name, c.zone, Math.round(c.x), Math.round(c.y));
         p.admin = conf.admins.includes(c.name); if (p.admin) log('admin join', c.name);
-        return send(ws, { t: 'welcome', id: p.id, name: c.name, auth: true, admin: p.admin, cls: sim.clsOf(p), state: { zone: c.zone, x: c.x, y: c.y, dir: c.dir, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, hp: p.hp, maxHp: p.maxHp } });
+        return send(ws, { t: 'welcome', id: p.id, name: c.name, auth: true, admin: p.admin, cls: sim.clsOf(p), pickCls: !c.clsset, state: { zone: c.zone, x: c.x, y: c.y, dir: c.dir, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, hp: p.hp, maxHp: p.maxHp } });
       }
       if (m.t === 'mv') {
         if (p.dead) return;
@@ -178,7 +178,7 @@ function createServer(opts = {}) {
         return send(ws, { t: 'warp', zone, x: D.start[0], y: D.start[1] });
       }
       if (m.t === 'cls') {
-        const r = sim.setClass(p, m.cls);
+        const r = sim.setClass(p, m.cls, !!m.first);
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'cls', r }); }
         return;
       }
