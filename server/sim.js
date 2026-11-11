@@ -336,6 +336,18 @@ function createSim({ rand = Math.random } = {}) {
       }
       case 'pillar': { const tx = ox + ux * sk.dist, ty = oy + uy * sk.dist + 14; later(z, .12, () => { for (const m of alive(z)) if (Math.hypot(m.x - tx, m.y - ty) <= sk.radius + m.c.size) damageMon(p, z, m, sk.mult); }); return; }
       case 'wave': z.shots.push({ p, x: ox, y: oy, ux, uy, sk, dist: 0, hit: new Set() }); return;
+      case 'shot': { const n = sk.n || 1; for (let k = 0; k < n; k++) { const sp = (k - (n - 1) / 2) * .16, c = Math.cos(sp), s2 = Math.sin(sp); z.shots.push({ p, x: ox, y: oy, ux: ux * c - uy * s2, uy: uy * c + ux * s2, sk, dist: 0, hit: new Set() }); } return; }
+      case 'trap': { const tx = ox + ux * sk.dist, ty = oy + uy * sk.dist + 14; later(z, sk.delay, () => { for (const m of alive(z)) if (Math.hypot(m.x - tx, m.y - ty) <= sk.radius + m.c.size) damageMon(p, z, m, sk.mult); }); return; }
+      case 'rain': { const cx = ox + ux * sk.dist, cy = oy + uy * sk.dist + 14;
+        for (let k = 0; k < sk.n; k++) { const a = k * 2.4, r = k ? sk.spread * Math.sqrt(k / sk.n) : 0, tx = cx + Math.cos(a) * r, ty = cy + Math.sin(a) * r * .6; later(z, .08 + k * .09, () => { for (const m of alive(z)) if (Math.hypot(m.x - tx, m.y - ty) <= sk.radius + m.c.size) damageMon(p, z, m, sk.mult); }); }
+        return; }
+      case 'heal': { // ฟื้น HP ตัวเอง + สมาชิกปาร์ตี้ในรัศมี (โซนเดียวกัน ยังไม่ตาย)
+        const pt = partyOf(p), who = pt ? [...pt.members].filter(q => players.has(q) && !q.dead && q.c.zone === p.c.zone && Math.hypot(q.c.x - sx, q.c.y - sy) <= sk.radius) : [p];
+        if (!who.includes(p)) who.push(p);
+        for (const q of who) { const amt = Math.round(q.maxHp * sk.heal); q.hp = Math.min(q.maxHp, q.hp + amt); q.personal.push({ k: 'heal', amt, by: p.id }); if (sk.guard) { q.guardT = sk.dur; q.guardRed = sk.guard; } if (sk.buff) { q.buffT = sk.dur; q.buffBonus = sk.buff; } q.dirty = true; }
+        return; }
+      case 'line': return doHit(p, z, sk, sk.mult, ox, oy, dir);
+      case 'multi': for (let k = 0; k < sk.hits; k++) later(z, k * .1, () => doHit(p, z, sk, sk.mult, p.c.x, p.c.y - 14, p.c.dir)); return;
       case 'spikes':
         for (let k = 0; k < sk.n; k++) later(z, k * .09, () => { const cx = ox + ux * (40 + k * sk.step), cy = oy + uy * (40 + k * sk.step) + 8; for (const m of alive(z)) if (Math.hypot(m.x - cx, m.y - cy) <= sk.radius + m.c.size) damageMon(p, z, m, sk.mult); });
         return;
@@ -347,7 +359,7 @@ function createSim({ rand = Math.random } = {}) {
   // คำขอโจมตี/ใช้สกิลจากเครื่องผู้เล่น — ตรวจทุกเงื่อนไขก่อน
   function act(p, key, now) {
     if (p.dead) return 'dead';
-    const sk = key === 'b' ? CFG.basic : CFG.skills[key - 1];
+    const sk = key === 'b' ? CFG.basicFor(clsOf(p)) : CFG.skillFor(clsOf(p), key);
     if (!sk) return 'invalid';
     if (key !== 'b' && (p.c.job < sk.job || skLv(p, skName(p, key)) < 1)) return 'locked'; // ต้องถึง Job และอัปสกิลแล้วอย่างน้อยระดับ 1
     if ((p.cd[key] || 0) > now + LAG) return 'cooldown';
@@ -425,8 +437,12 @@ function createSim({ rand = Math.random } = {}) {
       for (let i = z.pending.length - 1; i >= 0; i--) { z.pending[i].t -= dt; if (z.pending[i].t <= 0) { const f = z.pending[i].f; z.pending.splice(i, 1); f(); } }
       for (let i = z.shots.length - 1; i >= 0; i--) {
         const s = z.shots[i], d = s.sk.speed * dt; s.x += s.ux * d; s.y += s.uy * d; s.dist += d;
-        for (const m of alive(z)) { if (s.hit.has(m)) continue; if (Math.hypot(m.x - s.x, (m.y - m.c.size * .6) - s.y) <= s.sk.width / 2 + m.c.size) { s.hit.add(m); damageMon(s.p, z, m, s.sk.mult); } }
-        if (s.dist >= s.sk.range) z.shots.splice(i, 1);
+        let stop = false;
+        for (const m of alive(z)) { if (s.hit.has(m)) continue; if (Math.hypot(m.x - s.x, (m.y - m.c.size * .6) - s.y) <= s.sk.width / 2 + m.c.size) { s.hit.add(m); damageMon(s.p, z, m, s.sk.mult);
+          if (s.sk.mark) { m.markT = s.sk.markDur; m.markBonus = s.sk.markBonus; }
+          if (s.sk.drain && players.has(s.p) && !s.p.dead) { const a = Math.round(s.p.maxHp * s.sk.drain); s.p.hp = Math.min(s.p.maxHp, s.p.hp + a); s.p.personal.push({ k: 'heal', amt: a, by: s.p.id }); }
+          if (s.sk.shape === 'shot' && !s.sk.pierce) { stop = true; break; } } }
+        if (stop || s.dist >= s.sk.range) z.shots.splice(i, 1);
       }
       for (const m of z.mons) updMon(z, m, dt, here);
     }

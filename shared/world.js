@@ -147,6 +147,85 @@ const CFG={
   {name:'ก้าวตัดเงา',path:'ดาบก้าวพริบตา',tier:0,job:3,max:10,shape:'dash',mult:1.8,range:120,width:30,cd:6,pose:[0,2],poseT:.3},
   {name:'ก้าวหลบสวนคม',path:'ดาบก้าวพริบตา',tier:1,job:10,max:5,shape:'counter',back:50,mult:2.2,range:100,arc:2.2,cd:9,pose:[0,1],poseT:.35},
   {name:'พริบตาสามคม',path:'ดาบก้าวพริบตา',tier:2,job:25,max:3,shape:'tri',mult:1.6,cd:12,pose:[1,3,2,3],poseT:.55,board:'บอร์ด 9-01–9-08'}],
+
+ /* สกิลจริงแต่ละอาชีพ (V2-R36) ตามตารางท่าของเจ้าของ assets/design_refs/skills/ — ช่อง 3–11, ตัวเลขชั่วคราว
+    shape ใหม่: shot (ลูกศร/กระสุนพุ่ง), rain (ตกหลายจุด), trap (วางที่พื้นแล้วระเบิด), heal (ฟื้น HP ตัวเอง+ปาร์ตี้ในรัศมี) */
+ classBasic:{
+  'นักธนู':{name:'ยิงธนู',shape:'shot',mult:1,range:260,width:14,speed:600,cd:.55,pose:[0,1],poseT:.22,color:'#d9f2a0',style:'arrow'},
+  'ผู้ใช้มนตรา':{name:'กระสุนเวท',shape:'shot',mult:1,range:230,width:16,speed:480,cd:.6,pose:[0,1],poseT:.25,color:'#7fb2ff',style:'orb'},
+  'ผู้รักษา':{name:'แสงศักดิ์สิทธิ์',shape:'shot',mult:.9,range:220,width:16,speed:480,cd:.6,pose:[0,1],poseT:.25,color:'#ffe08a',style:'orb'},
+  'ผู้สืบวิญญาณ':{name:'ลูกไฟวิญญาณ',shape:'shot',mult:.95,range:220,width:16,speed:460,cd:.6,pose:[0,1],poseT:.25,color:'#9ff0c0',style:'orb'}},
+ classSkills:{
+  'นักธนู':[
+   {shape:'shot',mult:1.9,range:340,width:20,speed:620,cd:5,color:'#8fe36b',style:'arrow'},
+   {shape:'shot',mult:2.8,range:400,width:26,speed:680,cd:7,color:'#ffd35a',style:'arrow',pierce:1},
+   {shape:'shot',mult:5,range:440,width:64,speed:520,cd:12,color:'#7dff9a',style:'eagle',pierce:1},
+   {shape:'trap',mult:1.2,dist:90,radius:42,delay:.35,cd:7,color:'#e6b85a'},
+   {shape:'trap',mult:2.4,dist:100,radius:56,delay:.45,cd:9,color:'#e69a3a'},
+   {shape:'rain',mult:2,n:5,dist:110,spread:70,radius:40,cd:14,color:'#ffcf5a'},
+   {shape:'buff',bonus:.25,dur:8,cd:15,color:'#c58bff'},
+   {shape:'shot',mult:2.2,range:360,width:24,speed:600,cd:8,color:'#c58bff',style:'arrow',mark:1,markDur:5,markBonus:.15},
+   {shape:'rain',mult:2.4,n:8,dist:130,spread:80,radius:44,cd:15,color:'#c58bff'}],
+  'นักฆ่า':[
+   {shape:'buff',bonus:.35,dur:5,cd:14,color:'#9b6bff'},
+   {shape:'dash',mult:2.3,range:130,width:30,cd:6,color:'#ff4a5a'},
+   {shape:'tri',mult:1.8,cd:12,color:'#ff4a5a'},
+   {shape:'buff',bonus:.2,dur:10,cd:16,color:'#7dff6a'},
+   {shape:'shot',mult:1.1,range:300,width:16,speed:640,cd:5,color:'#9dff6a',style:'needle',n:3},
+   {shape:'trap',mult:4,dist:90,radius:72,delay:.3,cd:14,color:'#6aff7a'},
+   {shape:'dash',mult:2,range:170,width:30,cd:7,color:'#5ff0ff'},
+   {shape:'shot',mult:2,range:300,width:22,speed:620,cd:8,color:'#5ff0ff',style:'beam',mark:1,markDur:5,markBonus:.2},
+   {shape:'wave',mult:3.6,range:300,width:90,speed:420,cd:12,color:'#5ff0ff'}],
+  'นักสู้':[
+   {shape:'line',mult:2.2,range:70,width:30,cd:5,color:'#ffa43a'},
+   {shape:'multi',hits:4,mult:.85,range:56,arc:1.6,cd:7,color:'#ffa43a'},
+   {shape:'circle',fxk:'quake',mult:4.5,range:140,cd:16,color:'#ffb43a'},
+   {shape:'guard',red:.6,dur:6,cd:14,color:'#7fb2ff'},
+   {shape:'counter',back:30,mult:2.4,range:90,arc:2.2,cd:9,color:'#7fb2ff'},
+   {shape:'trap',mult:4.2,dist:46,radius:70,delay:.2,cd:15,color:'#7fb2ff'},
+   {shape:'buff',bonus:.35,dur:10,cd:20,color:'#ff6ab4'},
+   {shape:'dash',mult:2.5,range:150,width:36,cd:7,color:'#ff6ab4'},
+   {shape:'circle',mult:4.2,range:130,cd:15,color:'#ff6ab4'}],
+  'ผู้สืบวิญญาณ':[
+   {shape:'buff',bonus:.25,dur:10,cd:16,color:'#ffd35a'},
+   {shape:'wave',mult:2.3,range:260,width:54,speed:420,cd:6,color:'#ffd35a'},
+   {shape:'rain',mult:3,n:3,dist:120,spread:60,radius:60,cd:14,color:'#ffd35a'},
+   {shape:'trap',mult:2,dist:80,radius:50,delay:.4,cd:8,color:'#6affc0'},
+   {shape:'spikes',mult:1.6,n:4,step:34,radius:32,cd:8,color:'#6affc0'},
+   {shape:'circle',mult:4,range:130,cd:15,color:'#6affc0'},
+   {shape:'shot',mult:1.6,range:280,width:22,speed:560,cd:7,color:'#b88cff',style:'beam',mark:1,markDur:6,markBonus:.15},
+   {shape:'shot',mult:1.8,range:280,width:22,speed:560,cd:9,color:'#6ae6ff',style:'beam',drain:.06},
+   {shape:'trap',mult:4.6,dist:140,radius:66,delay:.3,cd:14,color:'#b88cff'}],
+  'ผู้รักษา':[
+   {shape:'heal',heal:.25,radius:170,cd:6,color:'#6aff9a'},
+   {shape:'heal',heal:.45,radius:120,cd:10,color:'#6aff9a'},
+   {shape:'heal',heal:.6,radius:230,cd:18,color:'#6aff9a'},
+   {shape:'heal',heal:.15,radius:200,cd:8,color:'#6affd8',buff:.15,dur:8},
+   {shape:'heal',heal:.3,radius:220,cd:12,color:'#6affd8'},
+   {shape:'heal',heal:.35,radius:240,cd:16,color:'#6affd8',guard:.3,dur:5},
+   {shape:'shot',mult:1.8,range:280,width:22,speed:620,cd:6,color:'#ffd35a',style:'beam',mark:1,markDur:5,markBonus:.15},
+   {shape:'shot',mult:2.8,range:320,width:30,speed:700,cd:8,color:'#ffd35a',style:'beam',pierce:1},
+   {shape:'trap',mult:4.6,dist:110,radius:72,delay:.35,cd:15,color:'#ffd35a'}],
+  'ผู้ใช้มนตรา':[
+   {shape:'shot',mult:2.1,range:300,width:22,speed:520,cd:4,color:'#7fb2ff',style:'orb'},
+   {shape:'trap',mult:3,dist:120,radius:56,delay:.3,cd:8,color:'#7fb2ff'},
+   {shape:'rain',mult:2.4,n:6,dist:130,spread:80,radius:50,cd:15,color:'#7fb2ff'},
+   {shape:'shot',mult:1.5,range:280,width:22,speed:540,cd:7,color:'#c58bff',style:'orb',mark:1,markDur:6,markBonus:.2},
+   {shape:'trap',mult:2.2,dist:100,radius:60,delay:.4,cd:9,color:'#c58bff'},
+   {shape:'circle',mult:4,range:140,cd:15,color:'#c58bff'},
+   {shape:'shot',mult:1.8,range:300,width:22,speed:560,cd:6,color:'#5ff0ff',style:'beam',mark:1,markDur:4,markBonus:.1},
+   {shape:'trap',mult:2.3,dist:100,radius:62,delay:.5,cd:9,color:'#5ff0ff'},
+   {shape:'trap',mult:5,dist:100,radius:84,delay:.35,cd:16,color:'#5ff0ff'}],
+  'ผู้พิทักษ์':[
+   {shape:'guard',red:.6,dur:5,cd:12,color:'#9fd6ff'},
+   {shape:'circle',mult:1.4,range:110,cd:8,color:'#9fd6ff'},
+   {shape:'heal',heal:.2,radius:150,cd:18,color:'#9fd6ff',guard:.6,dur:6},
+   {shape:'heal',heal:.15,radius:180,cd:10,color:'#ffe08a',guard:.3,dur:5},
+   {shape:'dash',mult:1.6,range:130,width:34,cd:7,color:'#ffe08a'},
+   {shape:'heal',heal:.3,radius:220,cd:18,color:'#ffe08a',guard:.4,dur:6},
+   {shape:'line',mult:2.2,range:70,width:40,cd:5,color:'#ff9a5a'},
+   {shape:'mark',mult:2,range:60,arc:1.8,markDur:6,markBonus:.2,cd:8,color:'#ff9a5a'},
+   {shape:'counter',back:20,mult:3.6,range:100,arc:2.4,cd:12,color:'#ff9a5a'}]},
  /* ค่าสถานะมอนสเตอร์: ชั่วคราว ไล่ระดับตามลำดับในภาพแบบออกแบบ */
  monsters:{
   'หมูป่า':{hp:60,atk:8,exp:14,job:6,speed:70,aggro:120,leash:230,atkRange:26,atkCd:1.2,size:14,respawn:8,color:'#6e4a2c',color2:'#8a6040',tusk:1},
@@ -238,6 +317,9 @@ CFG.stats.total=lv=>Math.max(0,(lv-1)*CFG.stats.perLv);
 CFG.stats.used=st=>CFG.stats.keys.reduce((a,k)=>a+((st||{})[k]||0),0);
 CFG.stats.free=(lv,st)=>CFG.stats.total(lv)-CFG.stats.used(st);
 CFG.stats.bonus=st=>{st=st||{};const v=k=>st[k]||0;return{atk:v('str'),hp:v('vit')*4,def:Math.floor(v('vit')/4),spd:Math.min(.25,v('agi')*.004),cdr:Math.min(.2,v('agi')*.002),crit:Math.min(.25,v('luk')*.0025)}};
+/* สกิลที่ใช้จริงของอาชีพ: ช่อง 1–2 (เคลื่อนที่/ป้องกัน) และนักดาบใช้ตารางเดิม, อาชีพอื่นช่อง 3–11 ทับด้วย classSkills */
+CFG.skillFor=(cls,i)=>{const b=CFG.skills[i-1];if(!b)return null;const o=i>=3&&CFG.classSkills[cls]&&CFG.classSkills[cls][i-3];return o?Object.assign({},b,{mult:undefined,range:undefined,width:undefined,speed:undefined,radius:undefined,dist:undefined,fxk:undefined,color:undefined},o):b};
+CFG.basicFor=cls=>CFG.classBasic[cls]?Object.assign({},CFG.basic,CFG.classBasic[cls]):CFG.basic;
 CFG.applyBalance=function(){const B=CFG.balance;
  for(const[type,m]of Object.entries(CFG.monsters)){const L=B.lv[type];if(!L)continue;
   const k=m.world?B.world:m.boss?B.boss:{hpMul:1,atkMul:1,expMul:1};

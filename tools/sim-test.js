@@ -116,6 +116,36 @@ for (const [i, name, expectDx] of [[1, 'ท่าเคลื่อนที่'
   rec('แอดมิน: บอสที่เรียกไม่ถูกซ่อนตามเวลา', sim.zones.peak.mons.filter(m => m.c.boss).every(m => m.state !== 'dead'));
 }
 
+// V2-R36 สกิลจริงทุกอาชีพ: ทุกช่อง 3–11 ใช้ได้ และทำดาเมจ/ฟื้น HP/บัฟ/ป้องกัน ตามแบบท่า
+{
+  const ROWS = W.SKILL_TABLE, CL = [...new Set(ROWS.map(r => r[0]))], bad = [];
+  for (const cls of CL) {
+    const names = ROWS.filter(r => r[0] === cls && r[3] === 'a' && r[2] !== 'ท่าพื้นฐาน').map(r => r[2]);
+    for (let i = 3; i <= 11; i++) {
+      const sim = createSim({ rand: () => .5 }), z = sim.zones.field2, s0 = W.ZONES.field2.start;
+      const p = { id: 1, c: { zone: 'field2', x: s0[0], y: s0[1], dir: 'E', lv: 40, exp: 0, job: 30, jexp: 0, starter: 1, cls, clsset: 1 } };
+      sim.addPlayer(p); p.c.sk[names[i - 1]] = 1; sim.stats(p); p.hp = Math.round(p.maxHp * .3);
+      for (const m of z.mons) { m.state = 'dead'; m.respT = 1e9; }
+      const sk = W.CFG.skillFor(cls, i), far = sk.dist ? sk.dist : sk.shape === 'shot' || sk.shape === 'wave' ? 120 : 30;
+      const m = z.mons.find(m => !m.c.boss); Object.assign(m, { state: 'idle', hp: 1e6, x: p.c.x + far, y: p.c.y + (sk.dist ? 14 : 0) + m.c.size * .6 - 14 + 14, hx: p.c.x + far, hy: p.c.y, respT: 0, target: null, atkT: 99 });
+      m.y = p.c.y + (sk.dist ? 14 : 0); const hp0 = p.hp, r = sim.act(p, i, 100); run(sim, 2, 100);
+      const dmg = 1e6 - m.hp, ok = r === 'ok' && (sk.shape === 'heal' ? p.hp > hp0 : sk.shape === 'buff' ? p.buffT > 0 : sk.shape === 'guard' ? p.guardT > 0 : dmg > 0);
+      if (!ok) bad.push(cls + '#' + i + ' ' + names[i - 1] + ' (' + sk.shape + ') r=' + r + ' dmg=' + Math.round(dmg) + ' hp ' + hp0 + '→' + Math.round(p.hp));
+    }
+  }
+  rec('ทุกอาชีพ ทุกสกิล (8×9 = 72 ท่า) ใช้ได้และมีผลจริงบนเซิร์ฟเวอร์', bad.length === 0, bad.slice(0, 6).join(' | '));
+  const sim = createSim({ rand: () => .5 }), s0 = W.ZONES.field2.start;
+  const h = { id: 1, c: { name: 'H', zone: 'field2', x: s0[0], y: s0[1], dir: 'E', lv: 30, exp: 0, job: 30, jexp: 0, starter: 1, cls: 'ผู้รักษา', clsset: 1 } };
+  const f = { id: 2, c: { name: 'F', zone: 'field2', x: s0[0] + 60, y: s0[1], dir: 'E', lv: 30, exp: 0, job: 30, jexp: 0, starter: 1, clsset: 1 } };
+  const far = { id: 3, c: { name: 'X', zone: 'field2', x: s0[0] + 900, y: s0[1], dir: 'E', lv: 30, exp: 0, job: 30, jexp: 0, starter: 1, clsset: 1 } };
+  for (const q of [h, f, far]) sim.addPlayer(q);
+  sim.party(h, 'invite', 'F', 0); sim.party(f, 'accept', null, 0); sim.party(h, 'invite', 'X', 0); sim.party(far, 'accept', null, 0);
+  h.c.sk['ประคองชีวิต'] = 1; for (const q of [h, f, far]) q.hp = 10; sim.act(h, 3, 100); run(sim, 1, 100);
+  rec('ผู้รักษา: ฮีลตัวเอง + เพื่อนปาร์ตี้ในรัศมี (คนที่อยู่ไกลไม่ได้)', h.hp > 10 && f.hp > 10 && far.hp === 10, [h.hp, f.hp, far.hp].join('/'));
+  const a = { id: 9, c: { zone: 'field2', x: s0[0], y: s0[1], dir: 'E', lv: 30, exp: 0, job: 30, jexp: 0, starter: 1, cls: 'นักธนู', clsset: 1 } }; sim.addPlayer(a);
+  rec('นักธนู: ท่าพื้นฐานเป็นยิงธนูระยะไกล (ไม่ใช่ฟันดาบ)', W.CFG.basicFor('นักธนู').shape === 'shot' && W.CFG.basicFor('นักธนู').range >= 200 && W.CFG.basicFor('นักดาบ').shape !== 'shot');
+}
+
 // มอนสเตอร์ไม่ไล่ผู้เล่นในเขตปลอดภัย
 {
   const sim = createSim();

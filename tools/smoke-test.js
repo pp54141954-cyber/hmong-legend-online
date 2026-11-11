@@ -472,6 +472,20 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     await lp.click('#cstart [data-hs="1"]'); await lp.click('#cstart [data-of="1"]'); await lp.click('#csgo');
     rec('เลือกทรงผม/ชุดแล้วเริ่มเกม → ใช้ในตัวละคร', await lp.evaluate(() => HL.PS.look.hs === 1 && HL.PS.look.of === 1 && HL.PS.look.g === 'm'));
     await lp.evaluate(() => localStorage.removeItem('hl_look_off')); await lp.close(); }
+  // ===== V2-R36: สกิลจริงทุกอาชีพ (ออฟไลน์) =====
+  { const r = await page.evaluate(async () => { const out = [], sleep = ms => new Promise(r => setTimeout(r, ms));
+      const s0 = HL.ZONES.field2.start; HL.enterZone('field2', s0[0], s0[1]); HL.AUTO.on = false;
+      for (const cls of HL.CLASSES) { HL.PS.cls = cls; HL.buildSkills();
+        for (let i = 3; i <= 11; i++) { const sk = HL.skillFor(i); HL.PS.job = 30; HL.PS.dead = false; HL.PS.cast = null; HL.PS.cd = {}; HL.PS.buffT = 0; HL.PS.guardT = 0; HL.recalc(); HL.PS.hp = Math.round(HL.PS.maxHp * .3);
+          HL.player.x = s0[0]; HL.player.y = s0[1]; HL.player.dir = 'E'; for (const m of HL.mons) { m.state = 'dead'; m.respT = 1e9 }
+          const m = HL.mons.find(m => !m.c.boss), far = sk.dist || (sk.shape === 'shot' || sk.shape === 'wave' ? 110 : 26); Object.assign(m, { state: 'idle', hp: 1e6, x: s0[0] + far, y: s0[1] + (sk.dist ? 14 : 0) + m.c.size * .6 - 14, hx: s0[0] + far, hy: s0[1], respT: 0, atkT: 99 });
+          const hp0 = HL.PS.hp, res = HL.useSkill(i); await sleep(900);
+          const ok = res === 'ok' && (sk.shape === 'heal' ? HL.PS.hp > hp0 : sk.shape === 'buff' ? HL.PS.buffT > 0 : sk.shape === 'guard' ? HL.PS.guardT > 0 : m.hp < 1e6);
+          if (!ok) out.push(cls + '#' + i + ' ' + sk.shape + ' ' + res + ' dmg=' + Math.round(1e6 - m.hp)) } }
+      HL.PS.cls = 'นักดาบ'; HL.buildSkills(); for (const m of HL.mons) { m.respT = 1 } return out });
+    rec('ออฟไลน์: ทุกอาชีพ ทุกสกิล (72 ท่า) ใช้ได้และมีผล (ดาเมจ/ฟื้น/บัฟ/ป้องกัน)', r.length === 0, r.slice(0, 6).join(' | '));
+    const sh = await page.evaluate(async () => { HL.PS.cls = 'นักธนู'; HL.buildSkills(); HL.PS.cd = {}; HL.PS.cast = null; HL.PS.dead = false; HL.player.dir = 'E'; for (const m of HL.mons) { m.state = 'dead'; m.respT = 1e9 } const n0 = HL.shotsN; document.getElementById('atk').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); await new Promise(r => setTimeout(r, 200)); document.getElementById('atk').dispatchEvent(new PointerEvent('pointerup', { bubbles: true })); const n = HL.shotsN; HL.PS.cls = 'นักดาบ'; HL.buildSkills(); for (const m of HL.mons) m.respT = 1; return { n0, n } });
+    rec('นักธนู: กดโจมตี → ยิงลูกศรออกไป (กระสุนในฉาก)', sh.n > sh.n0, JSON.stringify(sh)); }
   rec('หน้าเกมปกติ (ระบบทดสอบอัตโนมัติ) ข้ามหน้าโหลดได้', await page.evaluate(() => document.getElementById('splash').hidden && SND.splash.shown === false));
   rec('ไม่มี JavaScript error ระหว่างทดสอบ', errors.length === 0, errors.slice(0, 5).join(' | '));
   await browser.close(); srv.close();
