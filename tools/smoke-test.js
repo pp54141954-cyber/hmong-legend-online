@@ -510,6 +510,11 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
         const f = HL.fxList.find(f => f.k === 'cchart4' || f.k === 'cchart'); out.push(d + ':' + (f ? f.k + (f.col !== undefined && f.k === 'cchart4' ? '/' + f.col : '') : '-')); HL.PS.cast = null }
       HL.PS.cls = 'นักดาบ'; HL.buildSkills(); return out.join(' ') });
     rec('ผู้รักษา 4 ทิศ: หันลง = ภาพ FRONT, หันขึ้น = ภาพ BACK, ซ้าย/ขวา = ตาราง 5 จังหวะ', r === 'S:cchart4/0 N:cchart4/1 E:cchart', r); }
+  { const r = await page.evaluate(async () => { const out = [];
+      for (const cls of ['นักธนู', 'ผู้พิทักษ์']) for (const d of ['S', 'N', 'W']) { HL.PS.cls = cls; HL.buildSkills(); HL.PS.job = 30; HL.PS.cd = {}; HL.PS.cast = null; HL.PS.dead = false; HL.player.dir = d; HL.fxList.length = 0; HL.useSkill(5);
+        const f = HL.fxList.find(f => /^cchart/.test(f.k)); out.push(d + ':' + (f ? f.k + (f.k === 'cchartud' ? (f.up ? '/up' : '/down') : '') : '-')); HL.PS.cast = null }
+      HL.PS.cls = 'นักดาบ'; HL.buildSkills(); return out.join(' ') });
+    rec('นักธนู/ผู้พิทักษ์ 4 ทิศ: หันลง/ขึ้นใช้ตาราง DOWN/UP 5 จังหวะ, ซ้ายใช้ตารางขวากลับด้าน', r === 'S:cchartud/down N:cchartud/up W:cchart S:cchartud/down N:cchartud/up W:cchart', r); }
   rec('หน้าเกมปกติ (ระบบทดสอบอัตโนมัติ) ข้ามหน้าโหลดได้', await page.evaluate(() => document.getElementById('splash').hidden && SND.splash.shown === false));
   rec('ไม่มี JavaScript error ระหว่างทดสอบ', errors.length === 0, errors.slice(0, 5).join(' | '));
   await browser.close(); srv.close();

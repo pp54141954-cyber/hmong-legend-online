@@ -1,5 +1,13 @@
 # ประวัติเวอร์ชัน
 
+## V2-R44 — 2026-11-12 (เอฟเฟกต์สกิลหันขึ้น/ลง 5 จังหวะ: นักธนู + ผู้พิทักษ์)
+
+- สำรองไฟล์ก่อนแก้: `game/versions/r43-before-fxud.html`; ตารางต้นฉบับ `assets/design_refs/skills/updown/`
+- `tools/build_skill_fxud.py`: ตาราง DOWN/UP 9×5 → หาหุ่นผู้ใช้สกิล (DOWN = ตัวบนสุด, UP = ตัวล่างสุด) → `game/sprites/skfxud_<class>.webp`
+- เกม: หันลง/ขึ้นเล่น 4 จังหวะเต็มเหมือนซ้าย/ขวา; ลำดับ: ตาราง DOWN/UP > ตาราง 4 ทิศ (ภาพเดียว) > ตารางหันขวา
+- ไฟล์เพิ่ม ~1.5 MB (นักธนู 1.2 MB — ภาพพิกเซลรายละเอียดสูง บีบอัดแล้ว)
+- ทดสอบ: smoke 133/133 (+1), sim 119/119, online 96/96 · ภาพ `evidence/r44_updown_fx.png`
+
 ## V2-R43 — 2026-11-12 (เอฟเฟกต์สกิลทิศขึ้น/ลง: ผู้รักษา)
 
 - สำรองไฟล์ก่อนแก้: `game/versions/r42-before-fx4.html`; ตารางต้นฉบับ `assets/design_refs/skills/dir4/healer.png` (FRONT · BACK · LEFT · RIGHT)
