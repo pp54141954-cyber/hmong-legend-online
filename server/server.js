@@ -189,6 +189,7 @@ function createServer(opts = {}) {
       if (m.t === 'cls') {
         if (m.first && !p.c.clsset && m.look !== undefined && !sim.cleanLook(m.look)) { p.denied = (p.denied || 0) + 1; return send(ws, { t: 'deny', k: 'cls', r: 'bad-look' }); }
         const r = sim.setClass(p, m.cls, !!m.first);
+        if (r === 'ok') for (const q of online.values()) if (q.seenP) q.seenP.delete(p.id); // คนอื่นเห็นชุดอาชีพใหม่
         if (r === 'ok' && m.first && m.look !== undefined) { sim.setLook(p, m.look); for (const q of online.values()) if (q.seenP) q.seenP.delete(p.id); }
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'cls', r }); }
         return;
@@ -246,7 +247,7 @@ function createServer(opts = {}) {
       if (p.full || tickN % 10 === 0) out.tm = tm;
       // ผู้เล่นอื่นในระยะ + ชื่อเฉพาะคนที่เครื่องนี้ยังไม่รู้จัก
       const ps = (pz[c.zone] || []).filter(r => r[0] !== p.id && near(r[1], r[2]));
-      const pn = {}, pl = {}; for (const r of ps) if (!p.seenP.has(r[0])) { p.seenP.add(r[0]); const q = online.get(r[0]); pn[r[0]] = q ? q.c.name : '?'; if (q && q.c.look) pl[r[0]] = q.c.look; }
+      const pn = {}, pl = {}; for (const r of ps) if (!p.seenP.has(r[0])) { p.seenP.add(r[0]); const q = online.get(r[0]); pn[r[0]] = q ? q.c.name : '?'; if (q && q.c.look) pl[r[0]] = Object.assign({}, q.c.look, { cls: sim.clsOf(q) }); }
       out.ps = ps; if (Object.keys(pn).length) out.pn = pn; if (Object.keys(pl).length) out.pl = pl;
       // มอนสเตอร์ในระยะ (หรือกำลังไล่เรา): ส่งเฉพาะแถวที่เปลี่ยน, ส่งรายการที่ออกนอกระยะ
       const md = [], cur = new Set();
