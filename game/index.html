@@ -847,7 +847,7 @@ function drawPlayer(){if(PS.dead)return;if(PS.hurt>0&&Math.floor(PS.hurt*20)%2)r
 /* ตัวละครต้นแบบแต่ละอาชีพ (tools/build_class_bodies.py) */
 const CBIMG={};function classBody(cls,look){const C=CLASS_BODY[cls];if(!C)return null;const e=C[look&&look.g==='f'?'f':'m']||C.m||C.f;if(!e)return null;
   if(!CBIMG[e.id]){const im=new Image();im.src='sprites/pcl_'+e.id+'.webp';CBIMG[e.id]=im}const im=CBIMG[e.id];return im.complete&&im.naturalWidth?im:null}
-const CLASS_BODY={"นักสู้":{"m":{"id":"fighter_m","dirs":"SNWE"},"f":{"id":"fighter_f","dirs":"SNWE"}},"ผู้สืบวิญญาณ":{"m":{"id":"spirit_m","dirs":"SNWE"},"f":{"id":"spirit_f","dirs":"SNWE"}},"ผู้พิทักษ์":{"m":{"id":"guardian_m","dirs":"SN"},"f":{"id":"guardian_f","dirs":"SN"}},"นักฆ่า":{"m":{"id":"assassin_m","dirs":"SN"},"f":{"id":"assassin_f","dirs":"SN"}},"ผู้ใช้มนตรา":{"m":{"id":"mage","dirs":"SN"},"f":{"id":"mage","dirs":"SN"}},"ผู้รักษา":{"m":{"id":"healer","dirs":"SN"},"f":{"id":"healer","dirs":"SN"}}};/*CLASS_BODY*/
+const CLASS_BODY={"นักสู้":{"m":{"id":"fighter_m","dirs":"SNWE"},"f":{"id":"fighter_f","dirs":"SNWE"}},"นักฆ่า":{"m":{"id":"assassin_m","dirs":"SNWE"},"f":{"id":"assassin_f","dirs":"SNWE"}},"นักธนู":{"m":{"id":"archer_m","dirs":"SNWE"},"f":{"id":"archer_f","dirs":"SNWE"}},"ผู้พิทักษ์":{"m":{"id":"guardian_m","dirs":"SNWE"},"f":{"id":"guardian_f","dirs":"SNWE"}},"ผู้รักษา":{"m":{"id":"healer_m","dirs":"SNWE"},"f":{"id":"healer_f","dirs":"SNWE"}},"ผู้ใช้มนตรา":{"m":{"id":"mage_m","dirs":"SNWE"},"f":{"id":"mage_f","dirs":"SNWE"}},"ผู้สืบวิญญาณ":{"m":{"id":"spirit_m","dirs":"SNWE"},"f":{"id":"spirit_f","dirs":"SNWE"}}};/*CLASS_BODY*/
 const CLASS_POSE={"นักธนู":{"m":{"id":"archer_m","seq":{"basic":[5,6,8,10],"skill":[4,6,7,8,10,11]}}}};/*CLASS_POSE*/
 /* เอฟเฟกต์สกิลจากตารางท่าของเจ้าของ (tools/build_skill_fx.py) */
 /* ตารางแบบ 4 ทิศ (tools/build_skill_fx4.py): ทิศลง = FRONT, ทิศขึ้น = BACK — ภาพเดียวต่อทิศ เล่นแบบขยาย/เรือง/จาง */
@@ -900,7 +900,7 @@ function drawPlayerBody(){
   if(PS.guardT>0){ctx.strokeStyle='rgba(140,210,255,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(player.x,player.y-22,26,0,7);ctx.stroke()}
   ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   const c=PS.cast;
-  if(c){const P=poseFor(curCls(),PS.look);if(P){const isB=c.key==='b',seq=isB?P.seq.basic:P.seq.skill,fi=seq[Math.min(seq.length-1,Math.floor(c.t/c.sk.poseT*seq.length))],side=player.dir==='E'||player.dir==='W'?player.dir:(player.lastH||'E'),dw=AWc*SCALE,dh=CHc*SCALE,py=player.y-(CHc-4)*SCALE;
+  if(c){const P=classBody(curCls(),PS.look)?null:poseFor(curCls(),PS.look);if(P){ /* ภาพท่าเก่า (ตัวละครแบบเดิม) ไม่ใช้เมื่ออาชีพมีตัวละครใหม่แล้ว */const isB=c.key==='b',seq=isB?P.seq.basic:P.seq.skill,fi=seq[Math.min(seq.length-1,Math.floor(c.t/c.sk.poseT*seq.length))],side=player.dir==='E'||player.dir==='W'?player.dir:(player.lastH||'E'),dw=AWc*SCALE,dh=CHc*SCALE,py=player.y-(CHc-4)*SCALE;
     ctx.save();ctx.translate(player.x,0);if(side==='W')ctx.scale(-1,1);ctx.drawImage(P.img,(fi%4)*AWc,Math.floor(fi/4)*CHc,AWc,CHc,-AAX*SCALE,py,dw,dh);ctx.restore();return}
     if(CLASS_WEAPON[curCls()]){drawClassCast(c);return}}
   if(c&&(player.dir==='N'||player.dir==='S')){drawVertCast(c);return}

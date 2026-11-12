@@ -515,11 +515,11 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
         const f = HL.fxList.find(f => /^cchart/.test(f.k)); out.push(d + ':' + (f ? f.k + (f.k === 'cchartud' ? (f.up ? '/up' : '/down') : '') : '-')); HL.PS.cast = null }
       HL.PS.cls = 'นักดาบ'; HL.buildSkills(); return out.join(' ') });
     rec('นักธนู/ผู้พิทักษ์ 4 ทิศ: หันลง/ขึ้นใช้ตาราง DOWN/UP 5 จังหวะ, ซ้ายใช้ตารางขวากลับด้าน', r === 'S:cchartud/down N:cchartud/up W:cchart S:cchartud/down N:cchartud/up W:cchart', r); }
-  { const r = await page.evaluate(async () => { const want = { 'นักสู้': ['fighter_m', 'fighter_f'], 'นักฆ่า': ['assassin_m', 'assassin_f'], 'ผู้ใช้มนตรา': ['mage', 'mage'], 'ผู้รักษา': ['healer', 'healer'], 'ผู้สืบวิญญาณ': ['spirit_m', 'spirit_f'], 'ผู้พิทักษ์': ['guardian_m', 'guardian_f'] };
+  { const r = await page.evaluate(async () => { const want = { 'นักสู้': ['fighter_m', 'fighter_f'], 'นักฆ่า': ['assassin_m', 'assassin_f'], 'ผู้ใช้มนตรา': ['mage_m', 'mage_f'], 'ผู้รักษา': ['healer_m', 'healer_f'], 'ผู้สืบวิญญาณ': ['spirit_m', 'spirit_f'], 'ผู้พิทักษ์': ['guardian_m', 'guardian_f'], 'นักธนู': ['archer_m', 'archer_f'] };
       for (let i = 0; i < 200 && !Object.keys(want).every(c => HL.classBody(c, { g: 'm' }) && HL.classBody(c, { g: 'f' })); i++) await new Promise(r => setTimeout(r, 50));
       const bad = []; for (const [c, [m, f]] of Object.entries(want)) { const a = HL.classBody(c, { g: 'm' }), b = HL.classBody(c, { g: 'f' }); if (!a || !a.src.includes('pcl_' + m) || a.naturalWidth !== 384 || !b || !b.src.includes('pcl_' + f)) bad.push(c) }
       return { bad, sword: !!HL.classBody('นักดาบ', { g: 'm' }) } });
-    rec('ตัวละครต้นแบบอาชีพ 6 อาชีพโหลดได้ 4 ทิศ; นักดาบใช้ตัวเดิม', r.bad.length === 0 && !r.sword, JSON.stringify(r)); }
+    rec('ตัวละครต้นแบบ 7 อาชีพ (ชาย/หญิง) โหลดได้ 4 ทิศ; นักดาบใช้ตัวเดิม', r.bad.length === 0 && !r.sword, JSON.stringify(r)); }
   rec('หน้าเกมปกติ (ระบบทดสอบอัตโนมัติ) ข้ามหน้าโหลดได้', await page.evaluate(() => document.getElementById('splash').hidden && SND.splash.shown === false));
   rec('ไม่มี JavaScript error ระหว่างทดสอบ', errors.length === 0, errors.slice(0, 5).join(' | '));
   await browser.close(); srv.close();

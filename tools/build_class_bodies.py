@@ -64,17 +64,83 @@ def two_rows(name, split):
     im = unbg(os.path.join(SRC, name)); W, H = im.size
     return {'S': row_frames(im.crop((0, 0, W, split))), 'N': row_frames(im.crop((0, split, W, H)))}
 
+def black_bg(im):
+    """พื้นดำ: เติมจากขอบผ่านพิกเซลมืด + ลบเศษสีแดงจัด (ภาพบางชุดมีขอบแดงเพี้ยน) + ก้อนเล็ก"""
+    im = im.convert('RGBA'); W, H = im.size; px = im.load()
+    def dk(p): return p[3] < 20 or max(p[:3]) < 42
+    seen = bytearray(W * H); q = deque([(x, y) for x in range(W) for y in (0, H - 1)] + [(x, y) for y in range(H) for x in (0, W - 1)])
+    while q:
+        x, y = q.popleft(); i = y * W + x
+        if seen[i] or not dk(px[x, y]): continue
+        seen[i] = 1; px[x, y] = (0, 0, 0, 0)
+        for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if 0 <= nx < W and 0 <= ny < H: q.append((nx, ny))
+    for y in range(H):
+        for x in range(W):
+            r, g, b, a = px[x, y]
+            if a and r > 170 and g < 70 and b < 70: px[x, y] = (0, 0, 0, 0)
+    seen2 = bytearray(W * H)
+    for sy in range(H):
+        for sx in range(W):
+            p0 = px[sx, sy]
+            if seen2[sy * W + sx] or not p0[3] or max(p0[:3]) >= 22: continue
+            comp = []; q2 = deque([(sx, sy)]); seen2[sy * W + sx] = 1
+            while q2:
+                x, y = q2.popleft(); comp.append((x, y))
+                for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if 0 <= nx < W and 0 <= ny < H and not seen2[ny * W + nx] and px[nx, ny][3] and max(px[nx, ny][:3]) < 22: seen2[ny * W + nx] = 1; q2.append((nx, ny))
+            if len(comp) >= 40:  # พื้นดำที่ติดในช่องปิด (ระหว่างคันธนูกับสาย)
+                for x, y in comp: px[x, y] = (0, 0, 0, 0)
+    return im
+
+def drop_small(im, mn=250):
+    W, H = im.size; px = im.load(); seen = bytearray(W * H)
+    for sy in range(H):
+        for sx in range(W):
+            if seen[sy * W + sx] or not px[sx, sy][3]: continue
+            comp = []; q = deque([(sx, sy)]); seen[sy * W + sx] = 1
+            while q:
+                x, y = q.popleft(); comp.append((x, y))
+                for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if 0 <= nx < W and 0 <= ny < H and not seen[ny * W + nx] and px[nx, ny][3]: seen[ny * W + nx] = 1; q.append((nx, ny))
+            if len(comp) < mn:
+                for x, y in comp: px[x, y] = (0, 0, 0, 0)
+    return im
+
+def grid4(name, box=None, bg='light'):
+    """ตาราง 4 แถว (ลง/ขึ้น/ซ้าย/ขวา) × 4 เฟรม: แบ่งแถวตามช่องว่างแนวนอน"""
+    f = os.path.join(SRC, name)
+    if bg == 'light':
+        src = Image.open(f).convert('RGB'); src = src.crop(box) if box else src
+        tmp = '/tmp/hl_grid4.png'; src.save(tmp); im = unbg(tmp)
+    else:
+        src = Image.open(f); src = src.crop(box) if box else src; im = black_bg(src)
+    im = drop_small(im); a = im.split()[3]; W, H = im.size
+    occ = [sum(1 for x in range(0, W, 3) if a.getpixel((x, y))) > 2 for y in range(H)]
+    bands, st = [], None
+    for y, o in enumerate(occ + [False]):
+        if o and st is None: st = y
+        elif not o and st is not None:
+            if y - st > H * .1: bands.append((st, y))
+            st = None
+    assert len(bands) == 4, (name, box, bands)
+    return {d: row_frames(im.crop((0, b0, W, b1))) for d, (b0, b1) in zip('SNWE', bands)}
+
 SETS = [  # (id, อาชีพ, เพศที่ใช้, ฟังก์ชัน)
     ('fighter_m', 'นักสู้', ['m'], lambda: fighter('m')),
+    ('assassin_m', 'นักฆ่า', ['m'], lambda: grid4('assassin_mf4.png', (8, 8, 880, 880))),
+    ('assassin_f', 'นักฆ่า', ['f'], lambda: grid4('assassin_mf4.png', (896, 8, 1766, 880))),
+    ('archer_m', 'นักธนู', ['m'], lambda: grid4('archer_m.png')),
+    ('archer_f', 'นักธนู', ['f'], lambda: grid4('archer_f.png', bg='black')),
+    ('guardian_m', 'ผู้พิทักษ์', ['m'], lambda: grid4('guardian_m4.png', (225, 70, 1200, 1200))),
+    ('guardian_f', 'ผู้พิทักษ์', ['f'], lambda: grid4('guardian_f4.png', (175, 90, 1230, 1215))),
+    ('healer_m', 'ผู้รักษา', ['m'], lambda: grid4('healer_m4.png')),
+    ('healer_f', 'ผู้รักษา', ['f'], lambda: grid4('healer_f4.png')),
+    ('mage_m', 'ผู้ใช้มนตรา', ['m'], lambda: grid4('mage_mf4.png', (6, 6, 880, 880), bg='black')),
+    ('mage_f', 'ผู้ใช้มนตรา', ['f'], lambda: grid4('mage_mf4.png', (894, 6, 1768, 880), bg='black')),
     ('fighter_f', 'นักสู้', ['f'], lambda: quad('fighter_f2.png')),  # แบบใหม่ (ชุดแดงหางม้า) แทนชุดในภาพนักสู้ชาย/หญิง
     ('spirit_m', 'ผู้สืบวิญญาณ', ['m'], lambda: panels('spirit_m.png')),
     ('spirit_f', 'ผู้สืบวิญญาณ', ['f'], lambda: quad('spirit_f.png')),
-    ('guardian_m', 'ผู้พิทักษ์', ['m'], lambda: two_rows('guardian_m.png', 440)),
-    ('guardian_f', 'ผู้พิทักษ์', ['f'], lambda: two_rows('guardian_f.png', 505)),
-    ('assassin_m', 'นักฆ่า', ['m'], lambda: assassin('m')),
-    ('assassin_f', 'นักฆ่า', ['f'], lambda: assassin('f')),
-    ('mage', 'ผู้ใช้มนตรา', ['m', 'f'], lambda: grid16('mage_front.png', 'mage_back.png')),
-    ('healer', 'ผู้รักษา', ['m', 'f'], lambda: grid16('healer_front.png', 'healer_back.png')),
 ]
 cat = {}
 for sid, cls, gs, fn in SETS:
