@@ -80,13 +80,14 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 #clp .lkedit{width:100%;padding:10px;font-size:14px;font-weight:800;color:#3a1a08;background:linear-gradient(#ffe08a,#f2a93b);border:0;border-radius:12px}
 #cstart{background:radial-gradient(ellipse at 50% 22%,color-mix(in srgb,var(--cc,#6b8cff) 45%,#14163a),#14163a 55%,#0b0c22);transition:background .4s}
 #cstart .lk{position:relative;flex-direction:column;gap:4px;background:linear-gradient(#ffffff10,#00000030);border-color:color-mix(in srgb,var(--cc,#fff) 50%,transparent)}
-#cstart #lkcv{width:240px;height:230px;background:radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--cc,#fff) 30%,transparent),transparent 65%)}
+#cstart .cshd{padding:2px 0 6px}#cstart .cshd b{font-size:20px}#cstart .cshd small{font-size:11px}#cstart .lkn{font-size:10px;margin:0}#cstart .lk{padding:6px}#cstart .cinf{margin-top:6px;padding:8px 10px}#cstart .cnm{font-size:18px}#cstart .cds{margin:4px 0;font-size:12px}#cstart .cpth{margin-top:6px}#cstart .csh{margin:6px 0 4px}#cstart .csg .csc{flex-basis:84px;padding:4px}#cstart .csg .cpt{width:52px;height:67px}#cstart .csft{padding-top:6px;gap:6px}#cstart .csft small{display:none}#cstart .csgo{padding:12px}
+#cstart #lkcv{width:min(220px,58vw);height:auto;aspect-ratio:240/230;background:radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--cc,#fff) 30%,transparent),transparent 65%)}
 #cstart .lko{width:100%;align-items:center}#cstart .lkr{justify-content:center}#cstart .lkn{text-align:center}
 #cstart .cinf{margin-top:8px;padding:10px 12px;border-radius:14px;background:#0008;border:1px solid color-mix(in srgb,var(--cc,#fff) 45%,transparent)}
 #cstart .cin{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px}#cstart .cnm{font-size:22px;color:var(--cc,#ffcf8a);text-shadow:0 0 12px var(--cc,#000)}#cstart .crl{font-size:12px;padding:2px 8px;border-radius:8px;background:color-mix(in srgb,var(--cc,#fff) 30%,transparent)}#cstart .cwp{font-size:11px;opacity:.75}
 #cstart .cds{margin:6px 0;font-size:13px;opacity:.9}#cstart .cbars{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}#cstart .cbr{display:flex;align-items:center;gap:6px;font-size:11px}#cstart .cbr span{width:52px;opacity:.8}#cstart .cbr i{display:flex;gap:3px}#cstart .cbr em{width:14px;height:8px;border-radius:2px;background:#ffffff22}#cstart .cbr em.on{background:var(--cc,#f2c14e);box-shadow:0 0 6px var(--cc,#f2c14e)}
 #cstart .cpth{display:flex;gap:8px;margin-top:8px}#cstart .cpth div{flex:1;display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:10px;background:#ffffff10}#cstart .cpth .pn{flex:none;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#14163a;background:var(--cc,#f2c14e)}#cstart .cpth small{font-size:10px;line-height:1.2}
-#cstart .csb{overflow-x:hidden}#cstart .csg:not([hidden]){display:flex!important;overflow-x:auto;gap:8px;padding:4px 2px 8px;scroll-snap-type:x mandatory}#cstart .csg .csc{flex:0 0 96px;align-items:center;text-align:center;padding:6px 4px;scroll-snap-align:center;background:#ffffff14;color:#f4efe2;border-color:transparent}
+#cstart .csb{overflow-x:hidden;overflow-y:auto;min-height:0}#cstart .csg:not([hidden]){display:flex!important;overflow-x:auto;gap:8px;padding:4px 2px 8px;scroll-snap-type:x mandatory}#cstart .csg .csc{flex:0 0 96px;align-items:center;text-align:center;padding:6px 4px;scroll-snap-align:center;background:#ffffff14;color:#f4efe2;border-color:transparent}
 #cstart .csg .csc.on{background:color-mix(in srgb,var(--cc,#f2c14e) 35%,#14163a);border-color:var(--cc,#f2c14e);box-shadow:0 0 14px var(--cc,#f2c14e)}#cstart .csg .csc b{font-size:12px}#cstart .csg .csc .d,#cstart .csg .csc .p{display:none}#cstart .csg .cpt{width:62px;height:80px;margin:0 auto}
 #cstart .csg{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start;max-width:560px;width:100%;margin:0 auto}
 #cstart .csc{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px;text-align:left;color:#1c2b3a;background:#eef2f8;border:3px solid transparent;border-radius:14px;min-width:0}#cstart .csc.on{border-color:#f2c14e;background:#fff;box-shadow:0 0 16px #f2c14e88}
@@ -736,7 +737,8 @@ const curCls=()=>{const c=netOn()?HLNET.cls:PS.cls;return CLS_ACTIVE[c]?c:'น�
 const skName=i=>CLS_ACTIVE[curCls()][i-1]||(CFG.skills[i-1]||{}).name;
 function useSkill(i){const sk=CFG.skillFor(curCls(),i);if(!sk||PS.dead)return'invalid';if(PS.job<sk.job||(netOn()&&!(HLNET.sk[skName(i)]>0)))return'locked';if((PS.cd[i]||0)>0)return'cooldown';if(PS.cast)return'busy';
   PS.cd[i]=sk.cd*(netOn()?Math.max(.5,1-(HLNET.bon.cdr||0)):1);startCast(sk,i);PS.cast.chart=chartFx(curCls(),i);sfx('skill',{shape:sk.shape});if(netOn())HLNET.act(i,player.dir);return'ok'}
-function updCast(dt){const c=PS.cast;if(!c)return;c.t+=dt;if(!c.done&&c.t>=c.sk.poseT*.6){c.done=true;release(c.sk)}if(c.t>=c.sk.poseT)PS.cast=null}
+let fxQuiet=0; /* ช่วงเวลาที่เอฟเฟกต์จากตารางเล่นอยู่: ภาพวาดโค้ดที่เกิดในช่วงนี้ไม่ต้องวาดซ้อน (V2-R51) */
+function updCast(dt){const c=PS.cast;if(!c)return;c.t+=dt;if(!c.done&&c.t>=c.sk.poseT*.6){c.done=true;if(c.chart)fxQuiet=tNow+1.6;release(c.sk)}if(c.t>=c.sk.poseT)PS.cast=null}
 function updShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i],d=s.sk.speed*dt;s.x+=s.ux*d;s.y+=s.uy*d;s.dist+=d;if(Math.random()<.7)burst(s.x-s.ux*10+(Math.random()-.5)*s.uy*s.sk.width,s.y-s.uy*10+(Math.random()-.5)*s.ux*s.sk.width,s.sk.color||'#c89bff',1,40,.4,0);
   let stop=false;for(const m of mons){if(m.state==='dead'||s.hit.has(m))continue;if(Math.hypot(m.x-s.x,(m.y-m.c.size*.6)-s.y)<=s.sk.width/2+m.c.size){s.hit.add(m);damageMon(m,s.sk.mult);if(s.sk.mark){m.markT=s.sk.markDur;m.markBonus=s.sk.markBonus}if(s.sk.drain&&!netOn()){const a=Math.round(PS.maxHp*s.sk.drain);PS.hp=Math.min(PS.maxHp,PS.hp+a);addNum(player.x,player.y-60,'+'+a,'#6aff9a')}if(s.sk.shape==='shot'&&!s.sk.pierce){stop=true;break}}}
   if(stop||s.dist>=s.sk.range)shots.splice(i,1)}}
@@ -885,10 +887,29 @@ function poseFor(cls,look){const P=CLASS_POSE[cls];if(!P)return null;const g=loo
 /* ท่าใช้สกิลแบบวาดด้วยโค้ด (V2-R40) — ใช้กับอาชีพ/เพศที่ยังไม่มีภาพท่าจริง: ตัวละครหันข้าง + อาวุธประจำอาชีพขยับตามจังหวะ
    ภาพจริงจากเจ้าของ (CLASS_POSE) มาแทนอัตโนมัติเมื่อมี */
 const CLASS_WEAPON={'นักธนู':'bow','นักฆ่า':'daggers','นักสู้':'fists','ผู้สืบวิญญาณ':'staff','ผู้รักษา':'leafstaff','ผู้ใช้มนตรา':'book','ผู้พิทักษ์':'shield'};
-function drawBodyCast(c,CB){const K=ctx,side=player.dir==='E'||player.dir==='W'?player.dir:(player.lastH||'E'),sx=side==='W'?-1:1,p=Math.min(1,c.t/c.sk.poseT),row=side==='W'?2:3;
-  const back=p<.4?p/.4:0,fwd=p>=.4&&p<.75?(p-.4)/.35:p>=.75?1-(p-.75)/.25:0,dx=sx*(-3*back+7*fwd),lean=sx*(-.07*back+.13*fwd),sq=1-.06*back+.04*fwd,dw=CWc*SCALE,dh=CHc*SCALE,fr=p<.4?0:p<.75?2:1;
-  K.save();K.translate(player.x+dx,player.y);K.rotate(lean);K.scale(1/sq,sq);K.drawImage(CB,fr*CWc,row*CHc,CWc,CHc,-dw/2,-(CHc-4)*SCALE,dw,dh);
-  if(fwd>.2){K.globalCompositeOperation='lighter';K.globalAlpha=.35*fwd;K.drawImage(CB,fr*CWc,row*CHc,CWc,CHc,-dw/2-sx*4,-(CHc-4)*SCALE,dw,dh)}K.restore()}
+const CLS_FXCOL={'นักดาบ':'#6b8cff','นักธนู':'#7bd36a','นักฆ่า':'#b06bff','นักสู้':'#ff7a4a','ผู้สืบวิญญาณ':'#5fe0b0','ผู้รักษา':'#ffd35a','ผู้ใช้มนตรา':'#9b7bff','ผู้พิทักษ์':'#5fb4ff'};
+const CLS_ATK={'นักธนู':'shot','ผู้ใช้มนตรา':'cast','ผู้รักษา':'cast','ผู้สืบวิญญาณ':'cast','นักฆ่า':'stab','นักสู้':'punch','ผู้พิทักษ์':'bash'};
+function drawBodyCast(c,CB){const K=ctx,cls=curCls(),kind=CLS_ATK[cls]||'slash',side=player.dir==='E'||player.dir==='W'?player.dir:(player.lastH||'E'),sx=side==='W'?-1:1,p=Math.min(1,c.t/c.sk.poseT);
+  const vert=player.dir==='N'||player.dir==='S',row=vert?(player.dir==='S'?0:1):(side==='W'?2:3),col=CLS_FXCOL[cls]||'#fff';
+  /* จังหวะ: ง้าง 0–.35 → พุ่ง .35–.6 → ค้าง .6–.8 → กลับ */
+  const back=p<.35?p/.35:0,fwd=p<.35?0:p<.6?(p-.35)/.25:p<.8?1:1-(p-.8)/.2,hop=kind==='punch'||kind==='stab'?Math.sin(Math.min(1,fwd)*Math.PI)*3:0;
+  const dist=kind==='shot'||kind==='cast'?2:kind==='bash'?6:9,dx=vert?0:sx*(-4*back+dist*fwd),dy=vert?(player.dir==='S'?1:-1)*(-3*back+dist*.6*fwd):-hop;
+  const lean=vert?0:sx*(-.09*back+(kind==='cast'?-.04:.15)*fwd),sq=1-.07*back+.05*fwd,dw=CWc*SCALE,dh=CHc*SCALE,fr=p<.35?0:p<.6?2:p<.8?3:1,hx=player.x+dx,hy=player.y+dy;
+  /* ฝุ่นตอนพุ่ง */
+  if(fwd>0&&p<.7&&kind!=='cast'){K.save();K.globalAlpha=.45*(1-fwd*.5);K.fillStyle='#d8c9a8';for(let i=0;i<4;i++){const t=fwd+i*.15;K.beginPath();K.ellipse(hx-sx*(6+t*10)*(vert?0:1)+(i-1.5)*4,player.y+1-i%2,3+t*3,1.6+t,0,0,7);K.fill()}K.restore()}
+  /* ร่างเงาตามหลัง 2 ชั้น */
+  for(const [o,a] of [[10,.18],[5,.3]])if(fwd>.15&&kind!=='cast'){K.save();K.globalAlpha=a*fwd;K.globalCompositeOperation='lighter';K.translate(hx-(vert?0:sx*o),hy-(vert?(player.dir==='S'?o:-o):0));K.rotate(lean);K.drawImage(CB,fr*CWc,row*CHc,CWc,CHc,-dw/2,-(CHc-4)*SCALE,dw,dh);K.restore()}
+  K.save();K.translate(hx,hy);K.rotate(lean);K.scale(1/sq,sq);K.drawImage(CB,fr*CWc,row*CHc,CWc,CHc,-dw/2,-(CHc-4)*SCALE,dw,dh);K.restore();
+  /* เส้นแรง/แสงของอาวุธ ตามอาชีพ */
+  const ux=vert?0:sx,uy=vert?(player.dir==='S'?1:-1):0,cx=hx+ux*14,cy=hy-22+uy*10,glow=(r,a)=>{const g=K.createRadialGradient(cx,cy,0,cx,cy,r);g.addColorStop(0,col);g.addColorStop(1,'rgba(0,0,0,0)');K.globalAlpha=a;K.fillStyle=g;K.fillRect(cx-r,cy-r,r*2,r*2)};
+  K.save();K.globalCompositeOperation='lighter';K.lineCap='round';K.strokeStyle=col;K.shadowColor=col;K.shadowBlur=10;
+  if(kind==='cast'){glow(10+back*8+fwd*6,.25+.5*Math.max(back,fwd));if(fwd>.2){K.globalAlpha=.7*fwd;K.lineWidth=1.5;for(let i=0;i<6;i++){const a=i/6*6.28+p*8;K.beginPath();K.arc(cx,cy,7+fwd*7,a,a+.5);K.stroke()}}}
+  else if(kind==='shot'){if(back>0){K.globalAlpha=.5*back;K.lineWidth=1;K.beginPath();K.moveTo(cx-ux*10,cy-uy*10);K.lineTo(cx+ux*6,cy+uy*6);K.stroke()}if(fwd>0&&p<.7){glow(9,.6*fwd);K.globalAlpha=.8*fwd;K.lineWidth=2;for(let i=-1;i<=1;i++){K.beginPath();K.moveTo(cx+ux*4,cy+uy*4+i*3*(vert?0:1));K.lineTo(cx+ux*(14+fwd*10),cy+uy*(14+fwd*10)+i*2)}K.stroke()}}
+  else if(fwd>0&&p<.82){/* ประชิด: โค้งฟัน/แรงหมัด/คลื่นโล่ */const r=kind==='punch'?9:kind==='bash'?12:16,a0=vert?(uy>0?Math.PI/2:-Math.PI/2):(sx>0?0:Math.PI),sw=kind==='stab'?.5:kind==='punch'?.6:1.4;
+    K.globalAlpha=.85*Math.min(1,fwd*1.5)*(p>.6?1-(p-.6)/.22:1);K.lineWidth=kind==='slash'?3.2:2.4;K.beginPath();K.arc(cx-ux*4,cy-uy*4,r+fwd*4,a0-sw,a0-sw+sw*2*Math.min(1,fwd*1.3));K.stroke();
+    K.lineWidth=1.2;K.globalAlpha*=.7;K.beginPath();K.arc(cx-ux*4,cy-uy*4,r+fwd*4-4,a0-sw*.8,a0-sw*.8+sw*1.6*Math.min(1,fwd*1.3));K.stroke();
+    if(p>.45&&p<.7){glow(kind==='bash'?14:8,.6);if(kind!=='slash'){K.globalAlpha=.8;K.lineWidth=1.5;for(let i=0;i<5;i++){const a=a0+(i-2)*.45;K.beginPath();K.moveTo(cx+Math.cos(a)*6,cy+Math.sin(a)*6);K.lineTo(cx+Math.cos(a)*(12+fwd*6),cy+Math.sin(a)*(12+fwd*6));K.stroke()}}}}
+  K.restore()}
 function drawClassCast(c){{const CB=classBody(curCls(),PS.look);if(CB){drawBodyCast(c,CB);return}}drawClassCast.n=(drawClassCast.n||0)+1;drawClassCast.w=CLASS_WEAPON[curCls()];const K=ctx,w=CLASS_WEAPON[curCls()],side=player.dir==='E'||player.dir==='W'?player.dir:(player.lastH||'E'),sx=side==='W'?-1:1,p=Math.min(1,c.t/c.sk.poseT);
   const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2,hit=p<.45?ease(p/.45)*.35:p<.7?.35+ease((p-.45)/.25)*.65:1-ease((p-.7)/.3)*.6;
   const lunge=(w==='daggers'||w==='fists'||w==='shield')?sx*hit*7:0,crouch=(w==='daggers'&&p<.45)?2:0;
@@ -920,6 +941,7 @@ function drawPlayerBody(){
   if(c){const P=classBody(curCls(),PS.look)?null:poseFor(curCls(),PS.look);if(P){ /* ภาพท่าเก่า (ตัวละครแบบเดิม) ไม่ใช้เมื่ออาชีพมีตัวละครใหม่แล้ว */const isB=c.key==='b',seq=isB?P.seq.basic:P.seq.skill,fi=seq[Math.min(seq.length-1,Math.floor(c.t/c.sk.poseT*seq.length))],side=player.dir==='E'||player.dir==='W'?player.dir:(player.lastH||'E'),dw=AWc*SCALE,dh=CHc*SCALE,py=player.y-(CHc-4)*SCALE;
     ctx.save();ctx.translate(player.x,0);if(side==='W')ctx.scale(-1,1);ctx.drawImage(P.img,(fi%4)*AWc,Math.floor(fi/4)*CHc,AWc,CHc,-AAX*SCALE,py,dw,dh);ctx.restore();return}
     if(CLASS_WEAPON[curCls()]){drawClassCast(c);return}}
+  if(c&&classBody(curCls(),PS.look)){drawBodyCast(c,classBody(curCls(),PS.look));return}
   if(c&&(player.dir==='N'||player.dir==='S')){drawVertCast(c);return}
   if(c){/* ท่าร่าย: ใช้เฟรมโจมตีของตัวหลัก (หันขวา) · หันซ้ายใช้การกลับด้านภาพ */
     /* สกิลใช้เฟรมท่าตั้ง (เฟรม 0) ที่ไม่มีแสงฟันธรรมดาติดมา · เฉพาะการฟันปกติใช้ครบทุกเฟรม */const seq=c.sk===CFG.basic?c.sk.pose:[0],fi=seq[Math.min(seq.length-1,Math.floor(c.t/c.sk.poseT*seq.length))];
@@ -1106,11 +1128,11 @@ function drawFxC(f){const c=f.col||'#fff';if(f.k==='cchartud'){drawChartUD(f);re
     ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(f.len*(.6+p*.4),0,6+p*6,0,7);ctx.fill();return true}
   return false}
 function drawFx(){
-  for(const s of shots){if(s.sk.shape==='shot'){drawShot(s);continue}if(s.sk.color&&s.sk.color!=='#b06bff'){drawWaveC(s);continue}/* ปลุกคมอาคม: คลื่นเสี้ยวจันทร์สีม่วง มีเงาตามหลัง 2 ชั้น */ctx.save();ctx.translate(s.x,s.y);ctx.rotate(ANG[s.dir]);ctx.shadowColor='#b06bff';ctx.shadowBlur=18;
+  for(const s of shots){if(s.q===undefined)s.q=tNow<fxQuiet;if(s.q)continue;if(s.sk.shape==='shot'){drawShot(s);continue}if(s.sk.color&&s.sk.color!=='#b06bff'){drawWaveC(s);continue}/* ปลุกคมอาคม: คลื่นเสี้ยวจันทร์สีม่วง มีเงาตามหลัง 2 ชั้น */ctx.save();ctx.translate(s.x,s.y);ctx.rotate(ANG[s.dir]);ctx.shadowColor='#b06bff';ctx.shadowBlur=18;
     for(let k=2;k>=0;k--){const off=-k*18,al=k?.25/k:1,R=s.sk.width/2;ctx.globalAlpha=al;const gr=ctx.createLinearGradient(off-24,0,off+16,0);gr.addColorStop(0,'rgba(140,60,255,0)');gr.addColorStop(1,'rgba(214,170,255,.95)');ctx.fillStyle=gr;
       ctx.beginPath();ctx.arc(off-6,0,R+6,-1.25,1.25);ctx.arc(off-20,0,R,1.1,-1.1,true);ctx.closePath();ctx.fill()}
     ctx.globalAlpha=1;ctx.strokeStyle='#f3e8ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(-6,0,s.sk.width/2+6,-1.1,1.1);ctx.stroke();ctx.restore()}
-  for(const f of fx){ctx.save();const a=Math.min(1,f.t*5);ctx.globalAlpha=a;if(f.k&&f.k[0]==='c'&&drawFxC(f)){ctx.restore();continue}
+  for(const f of fx){if(f.q===undefined)f.q=tNow<fxQuiet&&!/^cchart/.test(f.k);if(f.q)continue;ctx.save();const a=Math.min(1,f.t*5);ctx.globalAlpha=a;if(f.k&&f.k[0]==='c'&&drawFxC(f)){ctx.restore();continue}
     /* บอร์ด 1: ยันต์ทองกับดาบอาคม · บอร์ด 2: ฟันแดง+ตราประทับ · บอร์ด 6: ระเบิดทองจากพื้น · บอร์ด 7: แสงพุ่งสีเขียวน้ำทะเล */
     if(f.k==='firearc'){/* บอร์ด 4: ฟันขึ้นเป็นโค้งไฟส้ม */const a0=ANG[f.dir],r=f.sk.range;ctx.shadowColor='#ff8a1a';ctx.shadowBlur=14;ctx.strokeStyle='#ffb347';ctx.lineWidth=7;
       ctx.beginPath();ctx.arc(f.x,f.y-8,r,a0-f.sk.arc/2,a0+f.sk.arc/2);ctx.stroke();ctx.strokeStyle='#fff0c8';ctx.lineWidth=2;ctx.stroke()}
@@ -1524,7 +1546,10 @@ function drawLookPrev(){const cv=document.getElementById('lkcv');if(!cv||csEl.hi
   try{k.drawImage(S,fr*96,row*124,96,124,cx-48*sc,fy-118*sc,96*sc,124*sc)}catch(e){}
   if(!CBp&&csLook.g==='f'&&!HL.sheetsFor(csLook).fem&&!HL.sheetsFor(csLook).tmp)HL.femHair(cx,fy,dir,csLook,sc,k);
   /* เอฟเฟกต์ท่าไม้ตาย (แถว 09 ของตาราง) ทุก ๆ รอบ */
-  if(fx){const im=HL.skfxImg(cls),F=HL.SKILL_FX;if(im){const p=(T-64)/32,f=1+Math.min(3,Math.floor(p*4)),s2=107*sc/F.fig;k.save();k.globalCompositeOperation='lighter';k.globalAlpha=Math.min(1,(1-p)*4);k.translate(cx,fy);k.scale(s2,s2);k.drawImage(im,f*F.cw,8*F.ch,F.cw,F.ch,-F.ax,-F.ay,F.cw,F.ch);k.restore()}}
+  if(fx){const im=HL.skfxImg(cls),F=HL.SKILL_FX;if(im){const p=(T-64)/32,f=1+Math.min(3,Math.floor(p*4)),s2=107*sc/F.fig*.8,tc=drawLookPrev.tc||(drawLookPrev.tc=document.createElement('canvas'));tc.width=W;tc.height=H;const t=tc.getContext('2d');
+    t.save();t.translate(cx,fy);t.scale(s2,s2);t.drawImage(im,f*F.cw,8*F.ch,F.cw,F.ch,-F.ax,-F.ay,F.cw,F.ch);t.restore();
+    /* จางเป็นวงรี ไม่ให้เห็นขอบสี่เหลี่ยมของภาพเอฟเฟกต์ */t.globalCompositeOperation='destination-in';const g=t.createRadialGradient(cx,fy-60,20,cx,fy-60,Math.min(W,H)*.52);g.addColorStop(0,'#000');g.addColorStop(.7,'rgba(0,0,0,.6)');g.addColorStop(1,'rgba(0,0,0,0)');t.fillStyle=g;t.fillRect(0,0,W,H);
+    k.save();k.globalCompositeOperation='lighter';k.globalAlpha=Math.min(.85,(1-p)*4);k.drawImage(tc,0,0);k.restore()}}
   csAnim++}
 function lookHtml(){const L=csLook,hasCB=!!HL.CLASS_BODY[csMode==='edit'?HL.curCls():csPick];return '<div class="lk"><canvas id="lkcv" width="240" height="230" aria-label="ตัวอย่างตัวละคร"></canvas><div class="lko">'
    +'<div class="lkr"><span>เพศ</span><div class="seg"><button data-g="m" class="'+(L.g==='m'?'on':'')+'" aria-pressed="'+(L.g==='m')+'">ชาย</button><button data-g="f" class="'+(L.g==='f'?'on':'')+'" aria-pressed="'+(L.g==='f')+'">หญิง</button></div></div>'
