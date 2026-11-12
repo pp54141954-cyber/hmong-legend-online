@@ -444,7 +444,7 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
       return { hairCh, hairLow, outCh, outHead } });
     rec('หญิง: เปลี่ยนสีผมรวมผมยาวใต้ไหล่ (ไม่ใช่แค่หัว), เปลี่ยนชุดไม่กระทบผม', fh.hairCh > 3000 && fh.hairLow > 500 && fh.outCh > 1000 && fh.outHead < 50, JSON.stringify(fh));
     await cp.evaluate(() => HL.setLook({ g: 'f', hair: 2, outfit: 2 }));
-    await cp.evaluate(() => { const s = HL.ZONES.village2.start; HL.enterZone('village2', s[0], s[1]) });
+    await cp.evaluate(() => { const s = HL.ZONES.village2.start; HL.enterZone('village2', s[0], s[1]); HL.PS.cls = 'นักดาบ'; HL.buildSkills() }); // นักดาบ = อาชีพที่ยังเลือกสีผม/ชุดได้
     await cp.click('#skb'); await cp.click('#skp h3 .clsb'); await cp.click('#lkedit'); await cp.waitForSelector('#cstart:not([hidden]) #lkcv');
     const em = await cp.evaluate(() => ({ t: document.querySelector('#cstart .cshd b').textContent, grid: document.querySelector('#cstart .csg').hidden, btn: document.getElementById('csgo').textContent }));
     rec('แต่งตัวละครภายหลัง (หน้าอาชีพ → แต่งตัวละคร): ซ่อนส่วนอาชีพ ปุ่มบันทึก', em.t === 'แต่งตัวละคร' && em.grid && em.btn === 'บันทึกหน้าตา', JSON.stringify(em));
@@ -504,7 +504,7 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
       const out = {}; for (const cls of ['นักธนู', 'นักฆ่า', 'นักสู้', 'ผู้สืบวิญญาณ', 'ผู้รักษา', 'ผู้ใช้มนตรา', 'ผู้พิทักษ์', 'นักดาบ']) { HL.PS.cls = cls; HL.buildSkills(); HL.PS.job = 30; HL.PS.cd = {}; HL.PS.cast = null; HL.PS.dead = false; HL.fxList.length = 0; HL.useSkill(4);
         out[cls] = HL.fxList.some(f => f.k === 'cchart' && f.row === 1); HL.PS.cast = null }
       HL.PS.cls = 'นักดาบ'; HL.buildSkills(); return out });
-    rec('เอฟเฟกต์สกิลจากตารางท่า (7 อาชีพ) เล่นเมื่อใช้สกิล, นักดาบใช้เอฟเฟกต์เดิม', ['นักธนู', 'นักฆ่า', 'นักสู้', 'ผู้สืบวิญญาณ', 'ผู้รักษา', 'ผู้ใช้มนตรา', 'ผู้พิทักษ์'].every(c => r[c]) && !r['นักดาบ'], JSON.stringify(r)); }
+    rec('เอฟเฟกต์สกิลจากตารางท่า ครบ 8 อาชีพ (รวมนักดาบ) เล่นเมื่อใช้สกิล', Object.values(r).length === 8 && Object.values(r).every(Boolean), JSON.stringify(r)); }
   { const r = await page.evaluate(async () => { for (let i = 0; i < 200 && !HL.skfx4Ready('ผู้รักษา'); i++) await new Promise(r => setTimeout(r, 50)); const out = [];
       for (const d of ['S', 'N', 'E']) { HL.PS.cls = 'ผู้รักษา'; HL.buildSkills(); HL.PS.job = 30; HL.PS.cd = {}; HL.PS.cast = null; HL.PS.dead = false; HL.player.dir = d; HL.fxList.length = 0; HL.useSkill(11);
         const f = HL.fxList.find(f => /^cchart/.test(f.k)); out.push(d + ':' + (f ? f.k + (f.col !== undefined && f.k === 'cchart4' ? '/' + f.col : '') : '-')); HL.PS.cast = null }

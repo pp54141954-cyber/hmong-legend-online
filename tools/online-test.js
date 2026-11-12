@@ -54,6 +54,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
     rec('บัญชีใหม่: ขึ้นหน้าเลือกอาชีพตอนเริ่มเกม (8 อาชีพ)', shown && n === 8, n + ' อาชีพ');
     await A.page.click('#cstart button[aria-label="อาชีพ นักธนู"]');
     rec('แตะการ์ดอาชีพ → ปุ่มเริ่มบอกชื่ออาชีพที่เลือก', (await A.page.textContent('#csgo')) === 'เริ่มผจญภัยเป็น นักธนู');
+    await A.page.click('#cstart button[aria-label="อาชีพ นักดาบ"]'); // นักดาบ: อาชีพที่ยังเลือกสีผม/ชุดได้
     await A.page.click('#cstart [data-g="f"]'); await A.page.click('#cstart [data-h="3"]'); await A.page.click('#cstart [data-o="3"]');
     await A.page.click('#cstart button[aria-label="อาชีพ นักดาบ"]'); await A.page.click('#csgo'); await B.page.click('#csgo');
     const SAx = () => [...srv.online.values()].find(p => p.c.name === 'Tester_A');

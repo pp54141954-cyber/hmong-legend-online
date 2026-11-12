@@ -80,6 +80,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 #clp .lkedit{width:100%;padding:10px;font-size:14px;font-weight:800;color:#3a1a08;background:linear-gradient(#ffe08a,#f2a93b);border:0;border-radius:12px}
 #cstart .csg{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start;max-width:560px;width:100%;margin:0 auto}
 #cstart .csc{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:10px;text-align:left;color:#1c2b3a;background:#eef2f8;border:3px solid transparent;border-radius:14px;min-width:0}#cstart .csc.on{border-color:#f2c14e;background:#fff;box-shadow:0 0 16px #f2c14e88}
+#cstart .cpt{display:block;width:58px;height:75px;margin:-4px auto 0;background-size:400% 400%;background-position:0 0;background-repeat:no-repeat;image-rendering:auto}
 #cstart .csc i{width:46px;height:30px;border-radius:9px;color:#fff;font-style:normal;font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center}#cstart .csc b{font-size:15px}#cstart .csc .d{font-size:11px;line-height:1.3}#cstart .csc .p{font-size:9px;color:#7a8799;line-height:1.3}
 #cstart .csft{display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:10px;max-width:560px;width:100%;margin:0 auto}#cstart .csft small{font-size:10px;opacity:.6;text-align:center}
 #cstart .csgo{width:100%;padding:14px;font-size:17px;font-weight:900;color:#3a1a08;background:linear-gradient(#ffe08a,#f2a93b);border:0;border-radius:14px;box-shadow:0 4px 0 #8e4a10}
@@ -856,15 +857,17 @@ const SKILL_FXUD={"cw":300,"ch":300,"fig":92,"anch":{"down":[150,200],"up":[150,
 const SKFXUDIMG={};const skfxudImg=cls=>{const n=SKILL_FXUD.cls&&SKILL_FXUD.cls[cls];if(!n)return null;if(!SKFXUDIMG[n]){const im=new Image();im.src='sprites/skfxud_'+n+'.webp';SKFXUDIMG[n]=im}const im=SKFXUDIMG[n];return im.complete&&im.naturalWidth?im:null};
 const SKILL_FX4={"cw":300,"ch":260,"ax":150,"ay":226,"fig":92,"cls":{"ผู้รักษา":"healer"}};/*SKILL_FX4*/
 const SKFX4IMG={};const skfx4Img=cls=>{const n=SKILL_FX4.cls&&SKILL_FX4.cls[cls];if(!n)return null;if(!SKFX4IMG[n]){const im=new Image();im.src='sprites/skfx4_'+n+'.webp';SKFX4IMG[n]=im}const im=SKFX4IMG[n];return im.complete&&im.naturalWidth?im:null};
+/* ขนาดเอฟเฟกต์จากตาราง เทียบตัวละคร (V2-R49: เจ้าของขอให้ใหญ่ขึ้นเหมือนตาราง) */
+const FXK=1.7;
 const SKFXIMG={};const skfxImg=cls=>{const n=SKILL_FX.cls&&SKILL_FX.cls[cls];if(!n)return null;if(!SKFXIMG[n]){const im=new Image();im.src='sprites/skfx_'+n+'.webp';SKFXIMG[n]=im}const im=SKFXIMG[n];return im.complete&&im.naturalWidth?im:null};
 /* เล่นเอฟเฟกต์จากตาราง: แถว = ช่องสกิล-3, จังหวะ WIND-UP→ACTION→RELEASE→RECOVER (คอลัมน์ 1–4) วางที่เท้าตัวละคร */
 function chartFx(cls,i){if(i>=3&&i<=11&&(player.dir==='N'||player.dir==='S')&&SKILL_FXUD.cls&&SKILL_FXUD.cls[cls]){skfxudImg(cls);fx.push({k:'cchartud',cls,row:i-3,up:player.dir==='N',t:1.05,T:1.05});return true}
   if(i>=3&&i<=11&&(player.dir==='N'||player.dir==='S')&&SKILL_FX4.cls&&SKILL_FX4.cls[cls]){skfx4Img(cls);fx.push({k:'cchart4',cls,row:i-3,col:player.dir==='S'?0:1,t:1.05,T:1.05});return true}
   const n=SKILL_FX.cls&&SKILL_FX.cls[cls];if(!n||i<3||i>11)return false;skfxImg(cls);const side=player.dir==='E'||player.dir==='W'?player.dir:(player.lastH||'E');
   fx.push({k:'cchart',cls,row:i-3,x:player.x,y:player.y,sx:side==='W'?-1:1,t:1.05,T:1.05,follow:1});return true}
-function drawChart(f){const im=skfxImg(f.cls);if(!im)return;const F=SKILL_FX,p=1-f.t/f.T,fr=1+Math.min(3,Math.floor(p*4)),sc=107*SCALE/F.fig,x=f.follow?player.x:f.x,y=f.follow?player.y:f.y;
+function drawChart(f){const im=skfxImg(f.cls);if(!im)return;const F=SKILL_FX,p=1-f.t/f.T,fr=1+Math.min(3,Math.floor(p*4)),sc=107*SCALE/F.fig*FXK,x=f.follow?player.x:f.x,y=f.follow?player.y:f.y;
   ctx.globalAlpha=Math.min(1,f.t*4);ctx.globalCompositeOperation='lighter';ctx.translate(x,y+2);ctx.scale(f.sx*sc,sc);ctx.drawImage(im,fr*F.cw,f.row*F.ch,F.cw,F.ch,-F.ax,-F.ay,F.cw,F.ch)}
-const SKILL_FX={"cw":320,"ch":200,"ax":70,"ay":172,"fig":92,"cls":{"นักธนู":"archer","นักฆ่า":"assassin","นักสู้":"fighter","ผู้สืบวิญญาณ":"spirit_heir","ผู้รักษา":"healer","ผู้ใช้มนตรา":"mage","ผู้พิทักษ์":"guardian"}};/*SKILL_FX*/
+const SKILL_FX={"cw":320,"ch":200,"ax":70,"ay":172,"fig":92,"cls":{"นักธนู":"archer","นักฆ่า":"assassin","นักสู้":"fighter","ผู้สืบวิญญาณ":"spirit_heir","ผู้รักษา":"healer","นักดาบ":"swordsman","ผู้ใช้มนตรา":"mage","ผู้พิทักษ์":"guardian"}};/*SKILL_FX*/
 const POSEIMG={},POSEC={};
 function poseFor(cls,look){const P=CLASS_POSE[cls];if(!P)return null;const g=look&&look.g==='f'?'f':'m',e=P[g];if(!e)return null;
   if(!POSEIMG[e.id]){const im=new Image();im.src='sprites/pose_'+e.id+'.webp';POSEIMG[e.id]=im}const im=POSEIMG[e.id];if(!(im.complete&&im.naturalWidth))return null;
@@ -872,7 +875,11 @@ function poseFor(cls,look){const P=CLASS_POSE[cls];if(!P)return null;const g=loo
 /* ท่าใช้สกิลแบบวาดด้วยโค้ด (V2-R40) — ใช้กับอาชีพ/เพศที่ยังไม่มีภาพท่าจริง: ตัวละครหันข้าง + อาวุธประจำอาชีพขยับตามจังหวะ
    ภาพจริงจากเจ้าของ (CLASS_POSE) มาแทนอัตโนมัติเมื่อมี */
 const CLASS_WEAPON={'นักธนู':'bow','นักฆ่า':'daggers','นักสู้':'fists','ผู้สืบวิญญาณ':'staff','ผู้รักษา':'leafstaff','ผู้ใช้มนตรา':'book','ผู้พิทักษ์':'shield'};
-function drawClassCast(c){drawClassCast.n=(drawClassCast.n||0)+1;drawClassCast.w=CLASS_WEAPON[curCls()];const K=ctx,w=CLASS_WEAPON[curCls()],side=player.dir==='E'||player.dir==='W'?player.dir:(player.lastH||'E'),sx=side==='W'?-1:1,p=Math.min(1,c.t/c.sk.poseT);
+function drawBodyCast(c,CB){const K=ctx,side=player.dir==='E'||player.dir==='W'?player.dir:(player.lastH||'E'),sx=side==='W'?-1:1,p=Math.min(1,c.t/c.sk.poseT),row=side==='W'?2:3;
+  const back=p<.4?p/.4:0,fwd=p>=.4&&p<.75?(p-.4)/.35:p>=.75?1-(p-.75)/.25:0,dx=sx*(-3*back+7*fwd),lean=sx*(-.07*back+.13*fwd),sq=1-.06*back+.04*fwd,dw=CWc*SCALE,dh=CHc*SCALE,fr=p<.4?0:p<.75?2:1;
+  K.save();K.translate(player.x+dx,player.y);K.rotate(lean);K.scale(1/sq,sq);K.drawImage(CB,fr*CWc,row*CHc,CWc,CHc,-dw/2,-(CHc-4)*SCALE,dw,dh);
+  if(fwd>.2){K.globalCompositeOperation='lighter';K.globalAlpha=.35*fwd;K.drawImage(CB,fr*CWc,row*CHc,CWc,CHc,-dw/2-sx*4,-(CHc-4)*SCALE,dw,dh)}K.restore()}
+function drawClassCast(c){{const CB=classBody(curCls(),PS.look);if(CB){drawBodyCast(c,CB);return}}drawClassCast.n=(drawClassCast.n||0)+1;drawClassCast.w=CLASS_WEAPON[curCls()];const K=ctx,w=CLASS_WEAPON[curCls()],side=player.dir==='E'||player.dir==='W'?player.dir:(player.lastH||'E'),sx=side==='W'?-1:1,p=Math.min(1,c.t/c.sk.poseT);
   const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2,hit=p<.45?ease(p/.45)*.35:p<.7?.35+ease((p-.45)/.25)*.65:1-ease((p-.7)/.3)*.6;
   const lunge=(w==='daggers'||w==='fists'||w==='shield')?sx*hit*7:0,crouch=(w==='daggers'&&p<.45)?2:0;
   const row=side==='W'?2:3,dw=CWc*SCALE,dh=CHc*SCALE,px=player.x-dw/2+lunge,py=player.y-(CHc-4)*SCALE+crouch;
@@ -1070,10 +1077,10 @@ function drawGhost(x,y,sc,sx){const K=ctx;K.save();K.translate(x,y);K.scale(sx*s
 function drawBeast(x,y,sc,sx,p){const K=ctx;K.save();K.translate(x,y);K.scale(sx*sc,sc);const g=K.createLinearGradient(-30,-40,30,0);g.addColorStop(0,'rgba(106,255,192,.75)');g.addColorStop(1,'rgba(184,140,255,.75)');K.fillStyle=g;K.strokeStyle='#b88cff';K.lineWidth=2;
   K.beginPath();K.moveTo(-30,-12);K.quadraticCurveTo(-10,-26,16,-22);K.lineTo(26,-34);K.lineTo(30,-24);K.lineTo(38,-20);K.lineTo(30,-12);K.lineTo(20,-10);K.lineTo(18,2);K.lineTo(12,2);K.lineTo(10,-8);K.lineTo(-16,-6);K.lineTo(-18,2);K.lineTo(-24,2);K.lineTo(-24,-8);K.lineTo(-38,-18);K.closePath();K.fill();K.stroke();
   K.fillStyle='rgba(197,139,255,.9)';for(let k=0;k<5;k++){K.beginPath();K.moveTo(-8+k*6,-22);K.quadraticCurveTo(-12+k*6,-38-Math.sin(p*8+k)*4,-2+k*6,-30);K.fill()}K.fillStyle='#fff';K.beginPath();K.arc(30,-24,2,0,7);K.fill();K.restore()}
-function drawChart4(f){const im=skfx4Img(f.cls);if(!im)return;const F=SKILL_FX4,p=1-f.t/f.T,grow=p<.35?.55+p/.35*.45:1,al=p<.25?p/.25:p>.75?(1-p)/.25:1,sc=107*SCALE/F.fig*grow;
+function drawChart4(f){const im=skfx4Img(f.cls);if(!im)return;const F=SKILL_FX4,p=1-f.t/f.T,grow=p<.35?.55+p/.35*.45:1,al=p<.25?p/.25:p>.75?(1-p)/.25:1,sc=107*SCALE/F.fig*grow*FXK;
   ctx.globalAlpha=Math.max(0,al);ctx.globalCompositeOperation='lighter';ctx.translate(player.x,player.y+2);ctx.scale(sc,sc);ctx.drawImage(im,f.col*F.cw,f.row*F.ch,F.cw,F.ch,-F.ax,-F.ay,F.cw,F.ch);
   if(p>.3&&p<.6){ctx.globalAlpha=(.6-p)/.3*.5;ctx.drawImage(im,f.col*F.cw,f.row*F.ch,F.cw,F.ch,-F.ax,-F.ay,F.cw,F.ch)}}
-function drawChartUD(f){const im=skfxudImg(f.cls);if(!im)return;const F=SKILL_FXUD,p=1-f.t/f.T,fr=1+Math.min(3,Math.floor(p*4)),sc=107*SCALE/F.fig,a=F.anch[f.up?'up':'down'];
+function drawChartUD(f){const im=skfxudImg(f.cls);if(!im)return;const F=SKILL_FXUD,p=1-f.t/f.T,fr=1+Math.min(3,Math.floor(p*4)),sc=107*SCALE/F.fig*FXK,a=F.anch[f.up?'up':'down'];
   ctx.globalAlpha=Math.min(1,f.t*4);ctx.globalCompositeOperation='lighter';ctx.translate(player.x,player.y+2);ctx.scale(sc,sc);ctx.drawImage(im,fr*F.cw,(f.up?9+f.row:f.row)*F.ch,F.cw,F.ch,-a[0],-a[1],F.cw,F.ch)}
 function drawFxC(f){const c=f.col||'#fff';if(f.k==='cchartud'){drawChartUD(f);return true}if(f.k==='cchart4'){drawChart4(f);return true}if(f.k==='cchart'){drawChart(f);return true}if(f.k==='cart'){drawArt(f);return true}
   if(f.k==='cheal'){const p=1-f.t/.8;ctx.globalAlpha=Math.min(1,f.t*3);ctx.strokeStyle=c;ctx.lineWidth=3;ctx.shadowColor=c;ctx.shadowBlur=14;ctx.beginPath();ctx.ellipse(f.x,f.y,f.r*(.3+p*.7),f.r*(.3+p*.7)*.35,0,0,7);ctx.stroke();
@@ -1484,28 +1491,31 @@ function onClassChanged(){HL.buildSkills();renderClass();renderSkills();if(!stEl
 /* เลือกอาชีพตอนเริ่มเกม (V2-R29): ตัวละครใหม่/ที่ยังไม่เคยเลือก เห็นครั้งเดียว — เลือกแล้วเริ่มเล่น เปลี่ยนภายหลังได้ในหมู่บ้าน */
 const CLS_DESC={'นักดาบ':'ดาบประชิดตัว สมดุลทั้งบุกและรับ','นักธนู':'โจมตีระยะไกล วางกับดัก ศรอาคม','นักฆ่า':'ว่องไว ลอบโจมตี ใช้พิษ','นักสู้':'หมัดหนัก ทนทาน แปลงร่างสัตว์ร้าย','ผู้สืบวิญญาณ':'เรียกวิญญาณบรรพชนและอสูรช่วยรบ','ผู้รักษา':'ฟื้นฟูทีม ให้พร แสงพิพากษา','ผู้ใช้มนตรา':'เวทโจมตีวงกว้าง คำสาป ผนึก','ผู้พิทักษ์':'โล่แกร่ง ปกป้องเพื่อนร่วมทีม'};
 const csEl=document.createElement('div');csEl.id='cstart';csEl.hidden=true;csEl.setAttribute('role','dialog');csEl.setAttribute('aria-label','เลือกอาชีพเริ่มต้น');document.getElementById('app').appendChild(csEl);
+/* รูปตัวละครของอาชีพบนการ์ด (เฟรมหันหน้า) — นักดาบใช้ภาพที่ประกอบแล้วของตัวละครเดิม */
+const SWP={};const swordPortrait=g=>{if(SWP[g])return SWP[g];const S=HL.sheetsFor({g,hair:0,outfit:0,hs:0,of:0});if(S.tmp||!S.SPR.toDataURL)return '';return SWP[g]=S.SPR.toDataURL()};
+const clsPortrait=(c,g)=>{const C=HL.CLASS_BODY[c],e=C&&(C[g]||C.m),src=e?'sprites/pcl_'+e.id+'.webp':swordPortrait(g);return '<span class="cpt" style="background-image:url('+src+')"></span>'};
 let csPick=null,csLook=null,csMode='start',csAnim=0,csT=0;
 function openClassStart(mode){csMode=mode||'start';csPick=csPick||HL.curCls();csLook=HL.cleanLook(csLook||HL.PS.look);csEl.hidden=false;renderClassStart();if(!csT)csT=setInterval(drawLookPrev,140)}
 function closeClassStart(){csEl.hidden=true;clearInterval(csT);csT=0}
 /* ตัวอย่างตัวละครในหน้าแต่งตัว: เดินหน้า/ขวา/หลัง วนไป */
-function drawLookPrev(){const cv=document.getElementById('lkcv');if(!cv||csEl.hidden)return;const k=cv.getContext('2d'),S=HL.sheetsFor(csLook).SPR,dirs=['S','E','N','W'],dir=dirs[Math.floor(csAnim/16)%4],row={S:0,N:1,W:2,E:3}[dir];
+function drawLookPrev(){const cv=document.getElementById('lkcv');if(!cv||csEl.hidden)return;const k=cv.getContext('2d'),CBp=HL.classBody(csMode==='edit'?HL.curCls():csPick,csLook),S=CBp||HL.sheetsFor(csLook).SPR,dirs=['S','E','N','W'],dir=dirs[Math.floor(csAnim/16)%4],row={S:0,N:1,W:2,E:3}[dir];
   k.clearRect(0,0,cv.width,cv.height);k.imageSmoothingEnabled=true;k.fillStyle='rgba(0,0,0,.25)';k.beginPath();k.ellipse(60,146,26,7,0,0,7);k.fill();
   try{k.drawImage(S,(csAnim%4)*96,row*124,96,124,12,22,96,124)}catch(e){}
-  if(csLook.g==='f'&&!HL.sheetsFor(csLook).fem&&!HL.sheetsFor(csLook).tmp)HL.femHair(60,22+118,dir,csLook,1,k);csAnim++}
-function lookHtml(){const L=csLook;return '<div class="lk"><canvas id="lkcv" width="120" height="156" aria-label="ตัวอย่างตัวละคร"></canvas><div class="lko">'
+  if(!CBp&&csLook.g==='f'&&!HL.sheetsFor(csLook).fem&&!HL.sheetsFor(csLook).tmp)HL.femHair(60,22+118,dir,csLook,1,k);csAnim++}
+function lookHtml(){const L=csLook,hasCB=!!HL.CLASS_BODY[csMode==='edit'?HL.curCls():csPick];return '<div class="lk"><canvas id="lkcv" width="120" height="156" aria-label="ตัวอย่างตัวละคร"></canvas><div class="lko">'
    +'<div class="lkr"><span>เพศ</span><div class="seg"><button data-g="m" class="'+(L.g==='m'?'on':'')+'" aria-pressed="'+(L.g==='m')+'">ชาย</button><button data-g="f" class="'+(L.g==='f'?'on':'')+'" aria-pressed="'+(L.g==='f')+'">หญิง</button></div></div>'
-   +((HL.CHAR_CAT[L.g]||{hair:[]}).hair.length>1?'<div class="lkr"><span>ทรงผม</span><div class="chips">'+HL.CHAR_CAT[L.g].hair.map((h,i)=>'<button data-hs="'+i+'" class="'+(L.hs===i?'on':'')+'" aria-pressed="'+(L.hs===i)+'"></button>').join('')+'</div></div>':'')
-   +((HL.CHAR_CAT[L.g]||{outfit:[]}).outfit.length>1?'<div class="lkr"><span>แบบชุด</span><div class="chips">'+HL.CHAR_CAT[L.g].outfit.map((h,i)=>'<button data-of="'+i+'" class="'+(L.of===i?'on':'')+'" aria-pressed="'+(L.of===i)+'"></button>').join('')+'</div></div>':'')
-   +'<div class="lkr"><span>สีผม</span><div class="sws">'+HL.HAIRS.map((h,i)=>'<button class="sw1'+(L.hair===i?' on':'')+'" data-h="'+i+'" aria-label="สีผม '+h.n+'" aria-pressed="'+(L.hair===i)+'" style="background:'+h.sw+'"></button>').join('')+'</div><small>'+HL.HAIRS[L.hair].n+'</small></div>'
-   +'<div class="lkr"><span>สีชุด</span><div class="sws">'+HL.OUTFITS.map((o,i)=>'<button class="sw2'+(L.outfit===i?' on':'')+'" data-o="'+i+'" aria-label="ชุด '+o.n+'" aria-pressed="'+(L.outfit===i)+'" style="background:linear-gradient(135deg,'+o.sw[0]+' 55%,'+o.sw[1]+' 55%)"></button>').join('')+'</div><small>'+HL.OUTFITS[L.outfit].n+'</small></div>'
+   +(hasCB?'<p class="lkn">อาชีพนี้มีชุดและทรงผมประจำอาชีพ — เลือกได้แค่เพศ</p>':(''+((HL.CHAR_CAT[L.g]||{hair:[]}).hair.length>1?'<div class="lkr"><span>ทรงผม</span><div class="chips">'+HL.CHAR_CAT[L.g].hair.map((h,i)=>'<button data-hs="'+i+'" class="'+(L.hs===i?'on':'')+'" aria-pressed="'+(L.hs===i)+'"></button>').join('')+'</div></div>':'')
++((HL.CHAR_CAT[L.g]||{outfit:[]}).outfit.length>1?'<div class="lkr"><span>แบบชุด</span><div class="chips">'+HL.CHAR_CAT[L.g].outfit.map((h,i)=>'<button data-of="'+i+'" class="'+(L.of===i?'on':'')+'" aria-pressed="'+(L.of===i)+'"></button>').join('')+'</div></div>':'')
++'<div class="lkr"><span>สีผม</span><div class="sws">'+HL.HAIRS.map((h,i)=>'<button class="sw1'+(L.hair===i?' on':'')+'" data-h="'+i+'" aria-label="สีผม '+h.n+'" aria-pressed="'+(L.hair===i)+'" style="background:'+h.sw+'"></button>').join('')+'</div><small>'+HL.HAIRS[L.hair].n+'</small></div>'
++'<div class="lkr"><span>สีชุด</span><div class="sws">'+HL.OUTFITS.map((o,i)=>'<button class="sw2'+(L.outfit===i?' on':'')+'" data-o="'+i+'" aria-label="ชุด '+o.n+'" aria-pressed="'+(L.outfit===i)+'" style="background:linear-gradient(135deg,'+o.sw[0]+' 55%,'+o.sw[1]+' 55%)"></button>').join('')+'</div><small>'+HL.OUTFITS[L.outfit].n+'</small></div>'))
    +'</div></div>'}
 function renderClassStart(){if(csEl.hidden)return;
   const edit=csMode==='edit';
   csEl.innerHTML='<div class="cshd"><b>'+(edit?'แต่งตัวละคร':'สร้างตัวละคร')+'</b><small>'+(edit?'เลือกเพศ สีผม และชุด':'เลือกหน้าตาและ 1 ใน 8 อาชีพ · เปลี่ยนอาชีพภายหลังได้ในหมู่บ้าน')+'</small></div><div class="csb">'+lookHtml()+(edit?'':'<h4 class="csh">อาชีพ</h4>')+'<div class="csg"'+(edit?' hidden':'')+'>'
-   +HL.CLASSES.map((c,i)=>'<button class="csc'+(c===csPick?' on':'')+'" data-c="'+i+'" aria-pressed="'+(c===csPick)+'" aria-label="อาชีพ '+c+'"><i style="background:'+CLS_COL[i%8]+'">'+(CLS_SHORT[c]||'')+'</i><b></b><small class="d"></small><small class="p"></small></button>').join('')
-   +'</div></div><div class="csft"><small>ท่ากดของอาชีพใหม่ยังเป็นแบบชั่วคราว · ภาพตัวละครใช้ภาพเดิมจนกว่าจะมีภาพของแต่ละอาชีพ</small><button class="csgo" id="csgo"></button></div>';
+   +HL.CLASSES.map((c,i)=>'<button class="csc'+(c===csPick?' on':'')+'" data-c="'+i+'" aria-pressed="'+(c===csPick)+'" aria-label="อาชีพ '+c+'">'+clsPortrait(c,csLook.g)+'<b></b><small class="d"></small><small class="p"></small></button>').join('')
+   +'</div></div><div class="csft"><small>แต่ละอาชีพมีตัวละครและเอฟเฟกต์สกิลของตัวเอง · เปลี่ยนอาชีพได้ภายหลังในหมู่บ้าน</small><button class="csgo" id="csgo"></button></div>';
   csEl.querySelectorAll('.csc').forEach((b,i)=>{const c=HL.CLASSES[i];b.querySelector('b').textContent=c;b.querySelector('.d').textContent=CLS_DESC[c]||'';b.querySelector('.p').textContent=HL.CLS_PATHS[c].join(' · ');b.onclick=()=>{csPick=c;renderClassStart()}});
-  for(const b of csEl.querySelectorAll('[data-g]'))b.onclick=()=>{csLook.g=b.dataset.g;csLook.hs=0;csLook.of=0;renderClassStart()};
+  for(const b of csEl.querySelectorAll('[data-g]'))b.onclick=()=>{csLook.g=b.dataset.g;/* การ์ดอาชีพเปลี่ยนรูปตามเพศ */csLook.hs=0;csLook.of=0;renderClassStart()};
   {const C=HL.CHAR_CAT[csLook.g];csEl.querySelectorAll('[data-hs]').forEach(b=>{b.textContent=C.hair[+b.dataset.hs].n;b.setAttribute('aria-label','ทรงผม '+C.hair[+b.dataset.hs].n);b.onclick=()=>{csLook.hs=+b.dataset.hs;renderClassStart()}});
    csEl.querySelectorAll('[data-of]').forEach(b=>{b.textContent=C.outfit[+b.dataset.of].n;b.setAttribute('aria-label','แบบชุด '+C.outfit[+b.dataset.of].n);b.onclick=()=>{csLook.of=+b.dataset.of;renderClassStart()}})}
   for(const b of csEl.querySelectorAll('[data-h]'))b.onclick=()=>{csLook.hair=+b.dataset.h;renderClassStart()};
