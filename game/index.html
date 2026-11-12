@@ -848,7 +848,7 @@ const CLASS_POSE={"นักธนู":{"m":{"id":"archer_m","seq":{"basic":[5,6
 /* เอฟเฟกต์สกิลจากตารางท่าของเจ้าของ (tools/build_skill_fx.py) */
 /* ตารางแบบ 4 ทิศ (tools/build_skill_fx4.py): ทิศลง = FRONT, ทิศขึ้น = BACK — ภาพเดียวต่อทิศ เล่นแบบขยาย/เรือง/จาง */
 /* ตารางขึ้น/ลงแบบ 5 จังหวะ (tools/build_skill_fxud.py): แถว 0–8 = DOWN, 9–17 = UP */
-const SKILL_FXUD={"cw":440,"ch":280,"fig":92,"anch":{"down":[220,86],"up":[220,256]},"cls":{"ผู้พิทักษ์":"guardian","นักธนู":"archer"}};/*SKILL_FXUD*/
+const SKILL_FXUD={"cw":300,"ch":300,"fig":92,"anch":{"down":[150,200],"up":[150,200]},"cls":{"นักดาบ":"swordsman","นักธนู":"archer","นักฆ่า":"assassin","นักสู้":"fighter","ผู้สืบวิญญาณ":"spirit_heir","ผู้รักษา":"healer","ผู้ใช้มนตรา":"mage","ผู้พิทักษ์":"guardian"}};/*SKILL_FXUD*/
 const SKFXUDIMG={};const skfxudImg=cls=>{const n=SKILL_FXUD.cls&&SKILL_FXUD.cls[cls];if(!n)return null;if(!SKFXUDIMG[n]){const im=new Image();im.src='sprites/skfxud_'+n+'.webp';SKFXUDIMG[n]=im}const im=SKFXUDIMG[n];return im.complete&&im.naturalWidth?im:null};
 const SKILL_FX4={"cw":300,"ch":260,"ax":150,"ay":226,"fig":92,"cls":{"ผู้รักษา":"healer"}};/*SKILL_FX4*/
 const SKFX4IMG={};const skfx4Img=cls=>{const n=SKILL_FX4.cls&&SKILL_FX4.cls[cls];if(!n)return null;if(!SKFX4IMG[n]){const im=new Image();im.src='sprites/skfx4_'+n+'.webp';SKFX4IMG[n]=im}const im=SKFX4IMG[n];return im.complete&&im.naturalWidth?im:null};

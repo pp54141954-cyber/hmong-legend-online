@@ -509,7 +509,7 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
       for (const d of ['S', 'N', 'E']) { HL.PS.cls = 'ผู้รักษา'; HL.buildSkills(); HL.PS.job = 30; HL.PS.cd = {}; HL.PS.cast = null; HL.PS.dead = false; HL.player.dir = d; HL.fxList.length = 0; HL.useSkill(11);
         const f = HL.fxList.find(f => f.k === 'cchart4' || f.k === 'cchart'); out.push(d + ':' + (f ? f.k + (f.col !== undefined && f.k === 'cchart4' ? '/' + f.col : '') : '-')); HL.PS.cast = null }
       HL.PS.cls = 'นักดาบ'; HL.buildSkills(); return out.join(' ') });
-    rec('ผู้รักษา 4 ทิศ: หันลง = ภาพ FRONT, หันขึ้น = ภาพ BACK, ซ้าย/ขวา = ตาราง 5 จังหวะ', r === 'S:cchart4/0 N:cchart4/1 E:cchart', r); }
+    rec('ผู้รักษา 4 ทิศ: มีตาราง DOWN/UP แล้ว → ใช้ก่อนตาราง 4 ทิศ, ซ้าย/ขวา = ตาราง 5 จังหวะ', r === 'S:cchartud N:cchartud E:cchart', r); }
   { const r = await page.evaluate(async () => { const out = [];
       for (const cls of ['นักธนู', 'ผู้พิทักษ์']) for (const d of ['S', 'N', 'W']) { HL.PS.cls = cls; HL.buildSkills(); HL.PS.job = 30; HL.PS.cd = {}; HL.PS.cast = null; HL.PS.dead = false; HL.player.dir = d; HL.fxList.length = 0; HL.useSkill(5);
         const f = HL.fxList.find(f => /^cchart/.test(f.k)); out.push(d + ':' + (f ? f.k + (f.k === 'cchartud' ? (f.up ? '/up' : '/down') : '') : '-')); HL.PS.cast = null }
