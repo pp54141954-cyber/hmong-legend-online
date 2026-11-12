@@ -1,5 +1,12 @@
 # ประวัติเวอร์ชัน
 
+## V2-R43 — 2026-11-12 (เอฟเฟกต์สกิลทิศขึ้น/ลง: ผู้รักษา)
+
+- สำรองไฟล์ก่อนแก้: `game/versions/r42-before-fx4.html`; ตารางต้นฉบับ `assets/design_refs/skills/dir4/healer.png` (FRONT · BACK · LEFT · RIGHT)
+- `tools/build_skill_fx4.py`: ตัดช่อง FRONT/BACK ลบพื้นหลัง + หุ่นเทา ยึดเท้าหุ่นกลางช่อง ขนาดเดียวทั้งตาราง → `game/sprites/skfx4_healer.webp`
+- เกม: ผู้รักษาหันลงใช้ FRONT, หันขึ้นใช้ BACK (ภาพเดียว เล่นแบบขยาย→เรือง→จาง), ซ้าย/ขวาใช้ตาราง 5 จังหวะเดิม — อาชีพที่ยังไม่มีตาราง 4 ทิศใช้ภาพหันขวาเหมือนเดิม
+- ทดสอบ: smoke 132/132 (+1), sim 119/119, online 96/96 · ภาพ `evidence/r43_healer_4dir.png`
+
 ## V2-R42 — 2026-11-11 (เอฟเฟกต์สกิล ผู้ใช้มนตรา + ผู้พิทักษ์)
 
 - ตาราง MAGE / GUARDIAN จากเจ้าของ (ตามชุดคำสั่ง `docs/prompts/skill_charts_mage_guardian.md`) → `game/sprites/skfx_mage.webp`, `skfx_guardian.webp`

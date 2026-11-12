@@ -505,6 +505,11 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
         out[cls] = HL.fxList.some(f => f.k === 'cchart' && f.row === 1); HL.PS.cast = null }
       HL.PS.cls = 'นักดาบ'; HL.buildSkills(); return out });
     rec('เอฟเฟกต์สกิลจากตารางท่า (7 อาชีพ) เล่นเมื่อใช้สกิล, นักดาบใช้เอฟเฟกต์เดิม', ['นักธนู', 'นักฆ่า', 'นักสู้', 'ผู้สืบวิญญาณ', 'ผู้รักษา', 'ผู้ใช้มนตรา', 'ผู้พิทักษ์'].every(c => r[c]) && !r['นักดาบ'], JSON.stringify(r)); }
+  { const r = await page.evaluate(async () => { for (let i = 0; i < 200 && !HL.skfx4Ready('ผู้รักษา'); i++) await new Promise(r => setTimeout(r, 50)); const out = [];
+      for (const d of ['S', 'N', 'E']) { HL.PS.cls = 'ผู้รักษา'; HL.buildSkills(); HL.PS.job = 30; HL.PS.cd = {}; HL.PS.cast = null; HL.PS.dead = false; HL.player.dir = d; HL.fxList.length = 0; HL.useSkill(11);
+        const f = HL.fxList.find(f => f.k === 'cchart4' || f.k === 'cchart'); out.push(d + ':' + (f ? f.k + (f.col !== undefined && f.k === 'cchart4' ? '/' + f.col : '') : '-')); HL.PS.cast = null }
+      HL.PS.cls = 'นักดาบ'; HL.buildSkills(); return out.join(' ') });
+    rec('ผู้รักษา 4 ทิศ: หันลง = ภาพ FRONT, หันขึ้น = ภาพ BACK, ซ้าย/ขวา = ตาราง 5 จังหวะ', r === 'S:cchart4/0 N:cchart4/1 E:cchart', r); }
   rec('หน้าเกมปกติ (ระบบทดสอบอัตโนมัติ) ข้ามหน้าโหลดได้', await page.evaluate(() => document.getElementById('splash').hidden && SND.splash.shown === false));
   rec('ไม่มี JavaScript error ระหว่างทดสอบ', errors.length === 0, errors.slice(0, 5).join(' | '));
   await browser.close(); srv.close();
