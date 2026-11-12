@@ -46,9 +46,31 @@ def grid16(front, back):
     fr = frames_grid(unbg(os.path.join(SRC, front)), 4, 4)[:4]; bk = frames_grid(unbg(os.path.join(SRC, back)), 4, 4)[:4]
     return {'S': fr, 'N': bk}
 
+def quad(name):
+    """ภาพแบบ 2×2 กลุ่ม (ไม่มีกรอบ): แถวบน ซ้าย=หน้า ขวา=หลัง · แถวสอง ซ้าย=หันซ้าย ขวา=หันขวา"""
+    im = unbg(os.path.join(SRC, name)); W = im.size[0]
+    return {'S': row_frames(im.crop((0, 70, W // 2, 290))), 'N': row_frames(im.crop((W // 2, 70, W, 290))),
+            'W': row_frames(im.crop((0, 290, W // 2, 510))), 'E': row_frames(im.crop((W // 2, 290, W, 510)))}
+
+def panels(name):
+    """ภาพแบบกรอบ 4 ช่อง DOWN/UP/LEFT/RIGHT (ใช้ชุดบน)"""
+    f = os.path.join(SRC, name); out = {}
+    for d, (x0, x1) in zip('SNWE', ((14, 372), (398, 754), (782, 1140), (1166, 1524))):
+        tmp = os.path.join('/tmp', 'hl_panel.png'); Image.open(f).convert('RGB').crop((x0, 160, x1, 392)).save(tmp)
+        out[d] = row_frames(unbg(tmp))
+    return out
+
+def two_rows(name, split):
+    im = unbg(os.path.join(SRC, name)); W, H = im.size
+    return {'S': row_frames(im.crop((0, 0, W, split))), 'N': row_frames(im.crop((0, split, W, H)))}
+
 SETS = [  # (id, อาชีพ, เพศที่ใช้, ฟังก์ชัน)
     ('fighter_m', 'นักสู้', ['m'], lambda: fighter('m')),
-    ('fighter_f', 'นักสู้', ['f'], lambda: fighter('f')),
+    ('fighter_f', 'นักสู้', ['f'], lambda: quad('fighter_f2.png')),  # แบบใหม่ (ชุดแดงหางม้า) แทนชุดในภาพนักสู้ชาย/หญิง
+    ('spirit_m', 'ผู้สืบวิญญาณ', ['m'], lambda: panels('spirit_m.png')),
+    ('spirit_f', 'ผู้สืบวิญญาณ', ['f'], lambda: quad('spirit_f.png')),
+    ('guardian_m', 'ผู้พิทักษ์', ['m'], lambda: two_rows('guardian_m.png', 440)),
+    ('guardian_f', 'ผู้พิทักษ์', ['f'], lambda: two_rows('guardian_f.png', 505)),
     ('assassin_m', 'นักฆ่า', ['m'], lambda: assassin('m')),
     ('assassin_f', 'นักฆ่า', ['f'], lambda: assassin('f')),
     ('mage', 'ผู้ใช้มนตรา', ['m', 'f'], lambda: grid16('mage_front.png', 'mage_back.png')),
