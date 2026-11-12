@@ -507,7 +507,7 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     rec('เอฟเฟกต์สกิลจากตารางท่า (7 อาชีพ) เล่นเมื่อใช้สกิล, นักดาบใช้เอฟเฟกต์เดิม', ['นักธนู', 'นักฆ่า', 'นักสู้', 'ผู้สืบวิญญาณ', 'ผู้รักษา', 'ผู้ใช้มนตรา', 'ผู้พิทักษ์'].every(c => r[c]) && !r['นักดาบ'], JSON.stringify(r)); }
   { const r = await page.evaluate(async () => { for (let i = 0; i < 200 && !HL.skfx4Ready('ผู้รักษา'); i++) await new Promise(r => setTimeout(r, 50)); const out = [];
       for (const d of ['S', 'N', 'E']) { HL.PS.cls = 'ผู้รักษา'; HL.buildSkills(); HL.PS.job = 30; HL.PS.cd = {}; HL.PS.cast = null; HL.PS.dead = false; HL.player.dir = d; HL.fxList.length = 0; HL.useSkill(11);
-        const f = HL.fxList.find(f => f.k === 'cchart4' || f.k === 'cchart'); out.push(d + ':' + (f ? f.k + (f.col !== undefined && f.k === 'cchart4' ? '/' + f.col : '') : '-')); HL.PS.cast = null }
+        const f = HL.fxList.find(f => /^cchart/.test(f.k)); out.push(d + ':' + (f ? f.k + (f.col !== undefined && f.k === 'cchart4' ? '/' + f.col : '') : '-')); HL.PS.cast = null }
       HL.PS.cls = 'นักดาบ'; HL.buildSkills(); return out.join(' ') });
     rec('ผู้รักษา 4 ทิศ: มีตาราง DOWN/UP แล้ว → ใช้ก่อนตาราง 4 ทิศ, ซ้าย/ขวา = ตาราง 5 จังหวะ', r === 'S:cchartud N:cchartud E:cchart', r); }
   { const r = await page.evaluate(async () => { const out = [];
