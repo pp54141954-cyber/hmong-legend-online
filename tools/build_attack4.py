@@ -11,8 +11,13 @@ sys.path.insert(0, os.path.join(ROOT, 'tools'))
 from build_char_sets import unbg, col_segments, shrink, mark_hair, split, CH, H_TARGET, FOOT
 SRC = os.path.join(ROOT, 'assets/sprites_src/classbody')
 CW4, AX4 = 240, 120
-ATK4_SETS = [  # (ชุด, ไฟล์ต้นฉบับ)
+ATK4_SETS = [  # (ชุด, ไฟล์ต้นฉบับ) — ตัวละครพื้นฐานแบบแยกชั้น (นักดาบ)
     ('m0', 'swordsman_m_attack.png'),
+]
+BODY_SETS = [  # (id, อาชีพ, เพศ, ไฟล์ต้นฉบับ) — ตัวละครประจำอาชีพ → game/sprites/pca_<id>.webp (V2-R54) จำนวนเฟรมต่อแถวตามภาพ (4 หรือ 5)
+    ('fighter_f', 'นักสู้', 'f', 'fighter_f_attack.png'),
+    ('assassin_m', 'นักฆ่า', 'm', 'assassin_m_attack.png'),
+    ('assassin_f', 'นักฆ่า', 'f', 'assassin_f_attack.png'),
 ]
 
 def bands(im):
@@ -30,45 +35,59 @@ def feet(f):
     """กึ่งกลางเท้า + เส้นเท้า จากพิกเซลสีเข้ม (รองเท้า/กางเกง) ช่วงล่างของภาพ — ไม่นับใบดาบสีเงิน"""
     px = f.load(); w, h = f.size
     pts = [(x, y) for y in range(int(h * .8), h) for x in range(w) if px[x, y][3] and sum(px[x, y][:3]) / 3 < 110 and max(px[x, y][:3]) - min(px[x, y][:3]) < 70]
+    if len(pts) < 30: pts = [(x, y) for y in range(int(h * .88), h) for x in range(w) if px[x, y][3]]   # รองเท้าสีสว่าง: ใช้ทุกพิกเซลช่วงล่าง
     if not pts: return w / 2, h - 1
     xs = sorted(x for x, _ in pts); cx = xs[len(xs) // 2]
     fy = max(y for x, y in pts if abs(x - cx) < w * .25)
     return cx, fy
 
-def build(sid, name):
+def cut(name):
     im = unbg(os.path.join(SRC, name)); B = bands(im)
     assert len(B) == 4, (name, 'แถว', B)
     rows = []
     for b0, b1 in B:
         band = im.crop((0, b0, im.size[0], b1)); segs = col_segments(band)
         fr = [band.crop((x0, 0, x1, band.size[1])) for x0, x1 in segs]; fr = [f.crop(f.getbbox()) for f in fr]
-        assert len(fr) == 4, (name, 'เฟรมในแถว', len(fr)); rows.append(fr)
-    ref = sorted(f.size[1] for r in rows for f in (r[0], r[3])); s = H_TARGET / ref[len(ref) // 2]
-    out = Image.new('RGBA', (CW4 * 4, CH * 4), (0, 0, 0, 0))
+        assert len(fr) in (4, 5), (name, 'เฟรมในแถว', len(fr)); rows.append(fr)
+    assert len({len(r) for r in rows}) == 1, (name, 'จำนวนเฟรมแต่ละแถวไม่เท่ากัน', [len(r) for r in rows])
+    ref = sorted(r[0].size[1] for r in rows); s = H_TARGET / ref[len(ref) // 2]   # เฟรมแรก = ท่าพร้อม (ยืนตรง)
+    n = len(rows[0]); out = Image.new('RGBA', (CW4 * n, CH * 4), (0, 0, 0, 0))
     for r, fr in enumerate(rows):
         for c, f in enumerate(fr):
             g = shrink(f, s); fx, fy = feet(g)
             x0, y0 = c * CW4 + round(AX4 - fx), r * CH + FOOT - fy
             t = Image.new('RGBA', out.size, (0, 0, 0, 0)); t.alpha_composite(g, (max(0, x0), max(0, y0)), (max(0, -x0), max(0, -y0)))
             cell = (c * CW4, r * CH, (c + 1) * CW4, (r + 1) * CH); out.alpha_composite(t.crop(cell), cell[:2])
+    return out, n, s
+
+def check(out, sid, n):
+    chk = Image.new('RGBA', out.size, (70, 90, 70, 255)); chk.alpha_composite(out)
+    d = chk.load()
+    for r in range(4):
+        for c in range(n):
+            for k in range(-4, 5): d[c * CW4 + AX4 + k, r * CH + FOOT] = (255, 255, 0, 255)
+    chk.resize((out.size[0] * 2, out.size[1] * 2), Image.NEAREST).save(os.path.join(ROOT, 'docs/evidence', 'atk4_%s_check.png' % sid))
+
+def build(sid, name):
+    out, n, s = cut(name); assert n == 4, (sid, 'ชุดแยกชั้นต้องมี 4 เฟรม')
     mark_hair(out)
     head, body = split(out)
     head.save(os.path.join(ROOT, 'game/sprites', 'pc_%s_h_atk4.webp' % sid), 'WEBP', lossless=True)
     body.save(os.path.join(ROOT, 'game/sprites', 'pc_%s_b_atk4.webp' % sid), 'WEBP', lossless=True)
-    chk = Image.new('RGBA', out.size, (70, 90, 70, 255)); chk.alpha_composite(out)
-    d = chk.load()
-    for r in range(4):
-        for c in range(4):
-            for k in range(-4, 5): d[c * CW4 + AX4 + k, r * CH + FOOT] = (255, 255, 0, 255)
-    chk.resize((out.size[0] * 2, out.size[1] * 2), Image.NEAREST).save(os.path.join(ROOT, 'docs/evidence', 'atk4_%s_check.png' % sid))
+    check(Image.alpha_composite(body, head), sid, n)
     print('สร้าง', sid, 'scale', round(s, 3))
 
 done = []
 for sid, name in ATK4_SETS:
     if os.path.exists(os.path.join(SRC, name)): build(sid, name); done.append(sid)
     else: print('ข้าม', sid)
+body = {}
+for sid, cls, g, name in BODY_SETS:
+    if not os.path.exists(os.path.join(SRC, name)): print('ข้าม', sid); continue
+    out, n, sc = cut(name); out.save(os.path.join(ROOT, 'game/sprites', 'pca_%s.webp' % sid), 'WEBP', lossless=True); check(out, sid, n)
+    body.setdefault(cls, {})[g] = {'id': sid, 'n': n}; print('สร้าง', sid, 'เฟรม', n, 'scale', round(sc, 3))
 p = os.path.join(ROOT, 'game/index.html'); s = open(p, encoding='utf-8').read()
-js = 'const ATK4={cw:%d,ax:%d,sets:%s};/*ATK4*/' % (CW4, AX4, json.dumps(done))
+js = 'const ATK4={cw:%d,ax:%d,sets:%s,body:%s};/*ATK4*/' % (CW4, AX4, json.dumps(done), json.dumps(body, ensure_ascii=False, separators=(',', ':')))
 s, n = re.subn(r'const ATK4=\{.*?\};/\*ATK4\*/', lambda m: js, s, count=1, flags=re.S)
 if n != 1:
     a = 'const CBIMG={};'; assert s.count(a) == 1; s = s.replace(a, js + '\n' + a, 1)

@@ -481,6 +481,12 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
       const cells = []; const k = A.getContext('2d'); for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { const d = k.getImageData(c * 240, r * 124, 240, 124).data; let n = 0; for (let i = 3; i < d.length; i += 4) n += d[i] > 0; cells.push(n) }
       return { ok: true, w: A.width, h: A.height, head, body, filled, minCell: Math.min(...cells), fem: !!F } });
     rec('ท่าโจมตี 4 ทิศ นักดาบชาย: 16 เฟรมครบ (960×496), เปลี่ยนสีผม → ผมในท่าโจมตีเปลี่ยน, หญิงยังใช้ท่าเดิม', r.ok && r.w === 960 && r.h === 496 && r.minCell > 1500 && r.head > 1000 && !r.fem, JSON.stringify(r)); }
+  // ===== V2-R54: ภาพท่าโจมตีของตัวละครประจำอาชีพ (นักสู้หญิง 5 เฟรม) =====
+  { const r = await page.evaluate(async () => { const sleep = ms => new Promise(r => setTimeout(r, ms)); let A = null; for (let i = 0; i < 100; i++) { A = HL.classAtk('นักสู้', { g: 'f' }); const m = HL.classAtk('นักฆ่า', { g: 'm' }), f = HL.classAtk('นักฆ่า', { g: 'f' }); if (A && m && f) break; await sleep(50) }
+      if (!A) return { ok: false }; const c = document.createElement('canvas'); c.width = A.img.naturalWidth; c.height = A.img.naturalHeight; const k = c.getContext('2d'); k.drawImage(A.img, 0, 0); const cells = [];
+      for (let r = 0; r < 4; r++) for (let f = 0; f < A.n; f++) { const d = k.getImageData(f * 240, r * 124, 240, 124).data; let n = 0; for (let i = 3; i < d.length; i += 4) n += d[i] > 0; cells.push(n) }
+      return { ok: true, n: A.n, w: c.width, h: c.height, minCell: Math.min(...cells), male: !!HL.classAtk('นักสู้', { g: 'm' }), basic: HL.atkMode(A, true), skill: HL.atkMode(A, false), asn: [HL.classAtk('นักฆ่า', { g: 'm' }), HL.classAtk('นักฆ่า', { g: 'f' })].map(x => x && x.n + ':' + x.img.naturalWidth + 'x' + x.img.naturalHeight) } });
+    rec('ท่าโจมตีที่วาดจริง: นักสู้หญิง 4 ทิศ × 5 เฟรม, นักฆ่าชาย/หญิง 4 ทิศ × 4 เฟรม, โจมตีปกติ = ต่อย / สกิล = ชูหมัดทุบพื้น, ชายยังใช้ท่าเอี้ยวตัว', r.ok && r.n === 5 && r.w === 1200 && r.h === 496 && r.minCell > 1500 && !r.male && r.basic === 'b5' && r.skill === 's5' && r.asn.every(x => x === '4:960x496'), JSON.stringify(r)); }
   // ===== V2-R36: สกิลจริงทุกอาชีพ (ออฟไลน์) =====
   { const r = await page.evaluate(async () => { const out = [], sleep = ms => new Promise(r => setTimeout(r, ms));
       const s0 = HL.ZONES.field2.start; HL.enterZone('field2', s0[0], s0[1]); HL.AUTO.on = false;
@@ -506,10 +512,10 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     rec('นักธนูชาย: มีภาพท่ายิงธนูจริง (960×496), สีผม/ชุดเปลี่ยนตามได้, อาชีพที่ยังไม่มีภาพใช้ท่าเดิม', r.ok && r.w === 960 && r.h === 496 && r.recol && !r.sword && !r.fem, JSON.stringify(r)); }
   { const r = await page.evaluate(async () => { const out = {}; const s0 = [22.5 * 32, 15.5 * 32]; HL.enterZone('field2', s0[0], s0[1]); HL.setLook({ g: 'f', hair: 0, outfit: 0 });
       for (const cls of HL.CLASSES) { HL.PS.cls = cls; HL.buildSkills(); HL.player.dir = 'E'; const n0 = HL.castDraw[0]; HL.PS.cast = { sk: Object.assign({}, HL.basicNow(), { poseT: 9 }), t: 1, done: true, key: 'b' };
-        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); out[cls] = HL.castDraw[0] > n0 ? HL.castDraw[1] : 'เดิม'; HL.PS.cast = null }
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); out[cls] = HL.castDraw[0] > n0 ? HL.castDraw[1] : HL.classAtk(cls, HL.PS.look) ? 'ภาพท่าโจมตี' : 'เดิม'; HL.PS.cast = null }
       HL.PS.cls = 'นักดาบ'; HL.buildSkills(); HL.setLook({ g: 'm', hair: 0, outfit: 0 }); return out });
-    const want = { 'นักดาบ': 'เดิม', 'นักธนู': 'bow', 'นักฆ่า': 'daggers', 'นักสู้': 'fists', 'ผู้สืบวิญญาณ': 'staff', 'ผู้รักษา': 'leafstaff', 'ผู้ใช้มนตรา': 'book', 'ผู้พิทักษ์': 'shield' };
-    rec('ท่าใช้สกิลครบทุกอาชีพ: แต่ละอาชีพถืออาวุธของตัวเอง (นักดาบใช้ภาพเดิม)', Object.keys(want).every(k => r[k] === want[k]), JSON.stringify(r)); }
+    const want = { 'นักดาบ': 'เดิม', 'นักธนู': 'bow', 'นักฆ่า': 'ภาพท่าโจมตี', 'นักสู้': 'ภาพท่าโจมตี' /* V2-R54: นักสู้หญิงมีภาพท่าโจมตีที่วาดจริง */, 'ผู้สืบวิญญาณ': 'staff', 'ผู้รักษา': 'leafstaff', 'ผู้ใช้มนตรา': 'book', 'ผู้พิทักษ์': 'shield' };
+    rec('ท่าใช้สกิลครบทุกอาชีพ: แต่ละอาชีพถืออาวุธของตัวเอง (นักดาบใช้ภาพเดิม, อาชีพที่มีภาพท่าโจมตีจริงใช้ภาพนั้น)', Object.keys(want).every(k => r[k] === want[k]), JSON.stringify(r)); }
   { const r = await page.evaluate(async () => { for (let i = 0; i < 200 && !Object.keys(HL.SKILL_FX.cls).every(c => HL.skfxReady(c)); i++) await new Promise(r => setTimeout(r, 50));
       const out = {}; for (const cls of ['นักธนู', 'นักฆ่า', 'นักสู้', 'ผู้สืบวิญญาณ', 'ผู้รักษา', 'ผู้ใช้มนตรา', 'ผู้พิทักษ์', 'นักดาบ']) { HL.PS.cls = cls; HL.buildSkills(); HL.PS.job = 30; HL.PS.cd = {}; HL.PS.cast = null; HL.PS.dead = false; HL.fxList.length = 0; HL.useSkill(4);
         out[cls] = HL.fxList.some(f => f.k === 'cchart' && f.row === 1); HL.PS.cast = null }

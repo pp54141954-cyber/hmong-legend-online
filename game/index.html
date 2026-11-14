@@ -844,7 +844,7 @@ function sheetsFor(l){l=cleanLook(l);{const ls=lookSets(l);if(ls){const key='L'+
   /* สำรอง: ภาพเดิม (ไม่มีชั้นภาพ/โหลดไม่ได้) */const fem=l.g==='f'&&femReady(),key=(fem?'f':'m')+lookKey(l);if(LOOKC[key])return LOOKC[key];if(!(SPR0.complete&&IDL0.complete&&ATK0.complete&&SPR0.naturalWidth))return{SPR:SPR0,IDL:IDL0,ATK:ATK0,tmp:1};
   if(l.g==='f'&&!fem&&!FSPR0.complete)return{SPR:SPR0,IDL:IDL0,ATK:ATK0,tmp:1}; /* ภาพหญิงยังโหลดไม่เสร็จ: ลองใหม่เฟรมถัดไป */
   const b=fem?[FSPR0,FIDL0,FATK0]:[SPR0,IDL0,ATK0];return LOOKC[key]={SPR:recolor(b[0],l,fem),IDL:recolor(b[1],l,fem),ATK:recolor(b[2],l,fem),fem}}
-function setLook(l){PS.look=cleanLook(l);const s=sheetsFor(PS.look);SPR=s.SPR;IDL=s.IDL;ATK=s.ATK;PS.lookPending=!!s.tmp;atk4For(PS.look)/* โหลดท่าโจมตี 4 ทิศล่วงหน้า */}
+function setLook(l){PS.look=cleanLook(l);const s=sheetsFor(PS.look);SPR=s.SPR;IDL=s.IDL;ATK=s.ATK;PS.lookPending=!!s.tmp;atk4For(PS.look);classAtk(curCls(),PS.look)/* โหลดท่าโจมตี 4 ทิศล่วงหน้า */}
 /* ผมยาวประกอบ (ตัวละครหญิงชั่วคราว): วาดทับภาพเดิมตามทิศ — พิกัดหน่วยภาพ (กว้าง 96 สูง 124) อ้างอิงเท้า */
 function femHair(x,y,dir,l,sc,K){if(!K)femHair.n=(femHair.n||0)+1;K=K||ctx;const H=HAIRS[l.hair],col=H.c?'rgb('+H.c.map(v=>v*.8|0)+')':'#16141a',hi=H.c?'rgb('+H.c.map(v=>Math.min(255,v*1.15)|0)+')':'#3a3540';
   const P=(cx,cy)=>[x+(cx-48)*sc,y+(cy-118)*sc];K.save();K.fillStyle=col;K.strokeStyle=hi;K.lineWidth=Math.max(1,sc*2);
@@ -858,14 +858,20 @@ function drawPlayer(){if(PS.dead)return;if(PS.hurt>0&&Math.floor(PS.hurt*20)%2)r
   drawPlayerBody();if(PS.look&&PS.look.g==='f'&&!sheetsFor(PS.look).fem&&!sheetsFor(PS.look).tmp){const d=PS.cast?(player.dir==='E'||player.dir==='W'?player.dir:player.lastH==='W'?'W':'E'):player.dir;femHair(player.x,player.y,PS.cast&&(player.dir==='N'||player.dir==='S')?player.dir:d,PS.look,SCALE)}}
 /* ท่าทางอาชีพ (V2-R38): ภาพจากเจ้าของ tools/build_class_poses.py — ใช้ตอนโจมตี/ใช้สกิล ถ้ามีภาพของอาชีพ+เพศนั้น */
 /* ตัวละครต้นแบบแต่ละอาชีพ (tools/build_class_bodies.py) */
-const ATK4={cw:240,ax:120,sets:["m0"]};/*ATK4*/
+const ATK4={cw:240,ax:120,sets:["m0"],body:{"นักสู้":{"f":{"id":"fighter_f","n":5}},"นักฆ่า":{"m":{"id":"assassin_m","n":4},"f":{"id":"assassin_f","n":4}}}};/*ATK4*/
 /* ท่าโจมตี 4 ทิศที่วาดจริง (V2-R53): ชั้นหัว/ตัว pc_<ชุด>_<h|b>_atk4 ช่อง 240×124 เท้าที่ x=120 — ใช้เมื่อทรงผมและแบบชุดมีภาพนี้ (เปลี่ยนสีผม/ชุดได้) */
 const ATK4C={};function atk4For(l){l=cleanLook(l);const ls=lookSets(l);if(!ls||!ATK4.sets.includes(ls.h)||!ATK4.sets.includes(ls.b))return null;const key=lookKey(l);if(ATK4C[key])return ATK4C[key];
   const H=layer(ls.h,'h','atk4'),B=layer(ls.b,'b','atk4');if(!imOk(H)||!imOk(B))return null;return ATK4C[key]=recolor(composeLayers(H,B),l,true)}
-function drawAtk4(K,img,x,y,dir,p,S){const row={S:0,N:1,W:2,E:3}[dir]??3,fi=p<.12?0:p<.4?1:p<.75?2:3,u={E:[1,0],W:[-1,0],S:[0,1],N:[0,-1]}[dir]||[1,0],st=fi===2?3:fi===1?-1.5:0,dw=ATK4.cw*S,dh=CHc*S;
+/* seq = ลำดับเฟรมตามเวลา, hit = เฟรมที่เป็นจังหวะฟาด/ปล่อย (ก้าวไปข้างหน้า + ร่างเงา), wind = เฟรมง้าง (ถอยเล็กน้อย) */
+const ATK4_SEQ={sword:{seq:[0,1,1,2,2,2,3,3],hit:[2],wind:[1]},b5:{seq:[0,1,2,2,2,0],hit:[2],wind:[1]},s5:{seq:[0,3,3,4,4,4,4,0],hit:[4],wind:[3]},b4:{seq:[0,1,2,2,3],hit:[1,2],wind:[0]}};
+function drawAtk4(K,img,x,y,dir,p,S,mode){const M=ATK4_SEQ[mode||'sword'],row={S:0,N:1,W:2,E:3}[dir]??3,fi=M.seq[Math.min(M.seq.length-1,Math.floor(p*M.seq.length))],u={E:[1,0],W:[-1,0],S:[0,1],N:[0,-1]}[dir]||[1,0],hit=M.hit.includes(fi),st=hit?3:M.wind.includes(fi)?-1.5:0,dw=ATK4.cw*S,dh=CHc*S;
   const dx=x-ATK4.ax*S+u[0]*st*S/SCALE,dy=y-(CHc-4)*S+u[1]*st*.6*S/SCALE;
-  if(fi===2){K.save();K.globalAlpha=.25;K.globalCompositeOperation='lighter';K.drawImage(img,fi*ATK4.cw,row*CHc,ATK4.cw,CHc,dx-u[0]*5*S/SCALE,dy-u[1]*3*S/SCALE,dw,dh);K.restore()}
+  if(hit){K.save();K.globalAlpha=.25;K.globalCompositeOperation='lighter';K.drawImage(img,fi*ATK4.cw,row*CHc,ATK4.cw,CHc,dx-u[0]*5*S/SCALE,dy-u[1]*3*S/SCALE,dw,dh);K.restore()}
   K.drawImage(img,fi*ATK4.cw,row*CHc,ATK4.cw,CHc,dx,dy,dw,dh)}
+/* ภาพท่าโจมตีของตัวละครประจำอาชีพ (V2-R54): sprites/pca_<id>.webp — 4 หรือ 5 เฟรมต่อทิศ */
+const CATKIMG={};function classAtk(cls,look){const C=ATK4.body&&ATK4.body[cls];if(!C)return null;const e=C[look&&look.g==='f'?'f':'m'];if(!e)return null;
+  let im=CATKIMG[e.id];if(!im){im=CATKIMG[e.id]=new Image();im.src='sprites/pca_'+e.id+'.webp'}return imOk(im)?{img:im,n:e.n}:null}
+const atkMode=(A,basic)=>A.n>=5?(basic?'b5':'s5'):'sword'; /* 4 เฟรม: พร้อม · ง้าง · ฟาด · กลับ (จังหวะเดียวกับนักดาบ) */
 const CBIMG={};function classBody(cls,look){const C=CLASS_BODY[cls];if(!C)return null;const e=C[look&&look.g==='f'?'f':'m']||C.m||C.f;if(!e)return null;
   if(!CBIMG[e.id]){const im=new Image();im.src='sprites/pcl_'+e.id+'.webp';CBIMG[e.id]=im}const im=CBIMG[e.id];return im.complete&&im.naturalWidth?im:null}
 const CLASS_BODY={"นักสู้":{"m":{"id":"fighter_m","dirs":"SNWE"},"f":{"id":"fighter_f","dirs":"SNWE"}},"นักฆ่า":{"m":{"id":"assassin_m","dirs":"SNWE"},"f":{"id":"assassin_f","dirs":"SNWE"}},"นักธนู":{"m":{"id":"archer_m","dirs":"SNWE"},"f":{"id":"archer_f","dirs":"SNWE"}},"ผู้พิทักษ์":{"m":{"id":"guardian_m","dirs":"SNWE"},"f":{"id":"guardian_f","dirs":"SNWE"}},"ผู้รักษา":{"m":{"id":"healer_m","dirs":"SNWE"},"f":{"id":"healer_f","dirs":"SNWE"}},"ผู้ใช้มนตรา":{"m":{"id":"mage_m","dirs":"SNWE"},"f":{"id":"mage_f","dirs":"SNWE"}},"ผู้สืบวิญญาณ":{"m":{"id":"spirit_m","dirs":"SNWE"},"f":{"id":"spirit_f","dirs":"SNWE"}}};/*CLASS_BODY*/
@@ -954,6 +960,7 @@ function drawPlayerBody(){
   if(PS.guardT>0){ctx.strokeStyle='rgba(140,210,255,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(player.x,player.y-22,26,0,7);ctx.stroke()}
   ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   const c=PS.cast;
+  if(c){/* ภาพท่าโจมตีที่วาดจริงมาก่อน (V2-R54) */const A=classAtk(curCls(),PS.look);if(A){drawAtk4(ctx,A.img,player.x,player.y,player.dir,Math.min(1,c.t/c.sk.poseT),SCALE,atkMode(A,c.key==='b'));return}}
   if(c){const P=classBody(curCls(),PS.look)?null:poseFor(curCls(),PS.look);if(P){ /* ภาพท่าเก่า (ตัวละครแบบเดิม) ไม่ใช้เมื่ออาชีพมีตัวละครใหม่แล้ว */const isB=c.key==='b',seq=isB?P.seq.basic:P.seq.skill,fi=seq[Math.min(seq.length-1,Math.floor(c.t/c.sk.poseT*seq.length))],side=player.dir==='E'||player.dir==='W'?player.dir:(player.lastH||'E'),dw=AWc*SCALE,dh=CHc*SCALE,py=player.y-(CHc-4)*SCALE;
     ctx.save();ctx.translate(player.x,0);if(side==='W')ctx.scale(-1,1);ctx.drawImage(P.img,(fi%4)*AWc,Math.floor(fi/4)*CHc,AWc,CHc,-AAX*SCALE,py,dw,dh);ctx.restore();return}
     if(CLASS_WEAPON[curCls()]){drawClassCast(c);return}}
@@ -1378,7 +1385,7 @@ enterZone(CFG.player.home,ZONES[CFG.player.home].start[0],ZONES[CFG.player.home]
 let last=performance.now();
 function loop(n){const dt=Math.min((n-last)/1000,.05);last=n;update(dt);draw();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
-window.HL={atk4For:l=>atk4For(l),drawAtk4:(...a)=>drawAtk4(...a),drawAtkPose:(...a)=>drawAtkPose(...a),skfxImg:c=>skfxImg(c),classBody:(c,l)=>classBody(c,l||PS.look),CLASS_BODY,SKILL_FXUD,skfxudReady:c=>!!skfxudImg(c),SKILL_FX4,skfx4Ready:c=>!!skfx4Img(c),DV,SKILL_FX,skfxReady:c=>!!skfxImg(c),get fxList(){return fx},CLASS_WEAPON,get castDraw(){return[drawClassCast.n||0,drawClassCast.w]},poseFor:(c,l)=>poseFor(c,l||PS.look),get CLASS_POSE(){return CLASS_POSE},skillFor:i=>CFG.skillFor(curCls(),i),basicNow:()=>CFG.basicFor(curCls()),get shotsN(){return shots.length},CHAR_CAT,lookSets,femReady,get femDraws(){return femHair.n||0},HAIRS,OUTFITS,cleanLook,setLook,sheetsFor,femHair,get SPRcur(){return SPR},preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
+window.HL={classAtk:(c,l)=>classAtk(c,l),atkMode:(a,b)=>atkMode(a,b),atk4For:l=>atk4For(l),drawAtk4:(...a)=>drawAtk4(...a),drawAtkPose:(...a)=>drawAtkPose(...a),skfxImg:c=>skfxImg(c),classBody:(c,l)=>classBody(c,l||PS.look),CLASS_BODY,SKILL_FXUD,skfxudReady:c=>!!skfxudImg(c),SKILL_FX4,skfx4Ready:c=>!!skfx4Img(c),DV,SKILL_FX,skfxReady:c=>!!skfxImg(c),get fxList(){return fx},CLASS_WEAPON,get castDraw(){return[drawClassCast.n||0,drawClassCast.w]},poseFor:(c,l)=>poseFor(c,l||PS.look),get CLASS_POSE(){return CLASS_POSE},skillFor:i=>CFG.skillFor(curCls(),i),basicNow:()=>CFG.basicFor(curCls()),get shotsN(){return shots.length},CHAR_CAT,lookSets,femReady,get femDraws(){return femHair.n||0},HAIRS,OUTFITS,cleanLook,setLook,sheetsFor,femHair,get SPRcur(){return SPR},preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
   for(let i=0;i<=11;i++)out.push({src:'icons/sk_'+i+'.png',label:'ไอคอนสกิล'});for(const c of Object.values(CLASS_BODY))for(const e of Object.values(c))if(!out.some(o=>o.src==='sprites/pcl_'+e.id+'.webp'))out.push({src:'sprites/pcl_'+e.id+'.webp',label:'ตัวละครอาชีพ'});for(const n of Object.values(SKILL_FXUD.cls||{}))out.push({src:'sprites/skfxud_'+n+'.webp',label:'เอฟเฟกต์สกิล'});for(const n of Object.values(SKILL_FX4.cls||{}))out.push({src:'sprites/skfx4_'+n+'.webp',label:'เอฟเฟกต์สกิล'});for(const n of Object.values(SKILL_FX.cls||{}))out.push({src:'sprites/skfx_'+n+'.webp',label:'เอฟเฟกต์สกิล'});for(const g of['m','f']){const ls=lookSets({g,hs:0,of:0});if(ls)for(const f of['walk','idle','attack'])for(const[id,pt]of[[ls.h,'h'],[ls.b,'b']])out.push({src:'sprites/pc_'+id+'_'+pt+'_'+f+'.webp',label:'ภาพตัวละคร'})}out.push({src:'icons/sk_p.png',label:'ไอคอนสกิล'});
   for(const t of new Set((ZONES.field2.spawns||[]).map(s=>s.type))){const d=MON_SPR[t];if(!d)continue;if(d.walk)out.push({src:d.walk,label:'ภาพ'+t});if(d.act)out.push({src:d.act,label:'ภาพ'+t})}return out},CLASSES,CLS_ACTIVE,CLS_PATHS,curCls,skName,setClassLocal(c){if(!CLS_ACTIVE[c])return'invalid';if(!inSafe(player.x,player.y))return'not-safe';PS.cls=c;buildSkills();hudT=0;return'ok'},get inSafeNow(){return inSafe(player.x,player.y)},buildSkills,adminLocal,clearWarpCd(){warpCd=0},monShown,warp,openWorld,openAutoCfg,statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
 })();
@@ -1562,7 +1569,9 @@ function drawLookPrev(){const cv=document.getElementById('lkcv');if(!cv||csEl.hi
   const fr=fx?Math.min(3,Math.floor((T-64)/6)):csAnim%4;
   /* ช่วงท้ายของรอบ: แสดงท่าโจมตีของอาชีพ (ไม่มีภาพเอฟเฟกต์ติดมา) V2-R52 */
   const A4p=!CBp&&fx&&cls==='นักดาบ'?HL.atk4For(csLook):null;
-  if(fx&&CBp){try{HL.drawAtkPose(k,CBp,cx,fy+2*sc,'E','E',((T-64)%16)/16,cls,sc)}catch(e){}}
+  const CAp=fx&&CBp?HL.classAtk(cls,csLook):null,pp=((T-64)%16)/16;
+  if(CAp){try{HL.drawAtk4(k,CAp.img,cx,fy+2*sc,'E',pp,sc,HL.atkMode(CAp,Math.floor((T-64)/16)%2===0))}catch(e){}}
+  else if(fx&&CBp){try{HL.drawAtkPose(k,CBp,cx,fy+2*sc,'E','E',pp,cls,sc)}catch(e){}}
   else if(A4p){try{HL.drawAtk4(k,A4p,cx,fy+2*sc,'E',((T-64)%16)/16,sc)}catch(e){}}
   else try{k.drawImage(S,fr*96,row*124,96,124,cx-48*sc,fy-118*sc,96*sc,124*sc)}catch(e){}
   if(!CBp&&csLook.g==='f'&&!HL.sheetsFor(csLook).fem&&!HL.sheetsFor(csLook).tmp)HL.femHair(cx,fy,dir,csLook,sc,k);
