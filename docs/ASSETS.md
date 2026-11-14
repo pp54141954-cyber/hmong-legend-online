@@ -116,3 +116,4 @@
 - `docs/prompts/ref/class_<อาชีพ>_<m|f>_walk.png` (14 ภาพ) — ส่งออกจาก `game/sprites/pcl_*.webp` ขยาย 2 เท่า พื้นขาว ใช้แนบกับ `docs/prompts/class_attack_sprites.md`
 - `game/sprites/pc_m0_h_atk4.webp` / `pc_m0_b_atk4.webp` — ท่าโจมตี 4 ทิศนักดาบชาย เจ้าของทำด้วย ChatGPT ตาม `class_attack_sprites.md` ต้นฉบับ `assets/sprites_src/classbody/swordsman_m_attack.png` แปลงด้วย `tools/build_attack4.py` (V2-R53)
 - `game/sprites/pca_fighter_f.webp`, `pca_assassin_m.webp`, `pca_assassin_f.webp` — ท่าโจมตีที่วาดจริง เจ้าของทำด้วย ChatGPT ต้นฉบับ `assets/sprites_src/classbody/*_attack.png` แปลงด้วย `tools/build_attack4.py` (V2-R54)
+- `game/sprites/pca_archer_m.webp`, `pca_archer_f.webp` — ท่าโจมตีนักธนูที่วาดจริง (V2-R55) ต้นฉบับ `assets/sprites_src/classbody/archer_{m,f}_attack.png`

@@ -18,6 +18,8 @@ BODY_SETS = [  # (id, อาชีพ, เพศ, ไฟล์ต้นฉบั
     ('fighter_f', 'นักสู้', 'f', 'fighter_f_attack.png'),
     ('assassin_m', 'นักฆ่า', 'm', 'assassin_m_attack.png'),
     ('assassin_f', 'นักฆ่า', 'f', 'assassin_f_attack.png'),
+    ('archer_m', 'นักธนู', 'm', 'archer_m_attack.png'),
+    ('archer_f', 'นักธนู', 'f', 'archer_f_attack.png'),
 ]
 
 def bands(im):
@@ -41,8 +43,26 @@ def feet(f):
     fy = max(y for x, y in pts if abs(x - cx) < w * .25)
     return cx, fy
 
+def holes(im, mn=150):
+    """พื้นขาวที่ถูกล้อมไว้ (ระหว่างคันธนูกับสาย ฯลฯ): ก้อนสีขาวเรียบ ≥ mn px ที่ส่วนใหญ่ขาวจัด → โปร่งใส (ผ้า/ขนสีขาวมีลายเงา ไม่ผ่าน)"""
+    from collections import deque
+    W, H = im.size; px = im.load(); seen = bytearray(W * H); n = 0
+    wh = lambda p: p[3] and min(p[:3]) >= 244 and max(p[:3]) - min(p[:3]) < 16
+    for sy in range(H):
+        for sx in range(W):
+            if seen[sy * W + sx] or not wh(px[sx, sy]): continue
+            comp = []; q = deque([(sx, sy)]); seen[sy * W + sx] = 1
+            while q:
+                x, y = q.popleft(); comp.append((x, y))
+                for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if 0 <= nx < W and 0 <= ny < H and not seen[ny * W + nx] and wh(px[nx, ny]): seen[ny * W + nx] = 1; q.append((nx, ny))
+            if len(comp) >= mn and sum(1 for x, y in comp if min(px[x, y][:3]) >= 250) > len(comp) * .7:
+                for x, y in comp: px[x, y] = (0, 0, 0, 0)
+                n += 1
+    return n
+
 def cut(name):
-    im = unbg(os.path.join(SRC, name)); B = bands(im)
+    im = unbg(os.path.join(SRC, name)); print('  พื้นขาวที่ถูกล้อม:', holes(im), 'ก้อน'); B = bands(im)
     assert len(B) == 4, (name, 'แถว', B)
     rows = []
     for b0, b1 in B:
