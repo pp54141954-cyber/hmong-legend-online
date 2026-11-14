@@ -114,3 +114,4 @@
 
 ## ภาพอ้างอิงสำหรับคำสั่งท่าโจมตี (V2-R53)
 - `docs/prompts/ref/class_<อาชีพ>_<m|f>_walk.png` (14 ภาพ) — ส่งออกจาก `game/sprites/pcl_*.webp` ขยาย 2 เท่า พื้นขาว ใช้แนบกับ `docs/prompts/class_attack_sprites.md`
+- `game/sprites/pc_m0_h_atk4.webp` / `pc_m0_b_atk4.webp` — ท่าโจมตี 4 ทิศนักดาบชาย เจ้าของทำด้วย ChatGPT ตาม `class_attack_sprites.md` ต้นฉบับ `assets/sprites_src/classbody/swordsman_m_attack.png` แปลงด้วย `tools/build_attack4.py` (V2-R53)
