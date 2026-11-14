@@ -1,0 +1,348 @@
+// ไฟล์นี้สร้างอัตโนมัติจาก game/index.html โดย tools/extract-shared.js — ห้ามแก้ด้วยมือ
+'use strict';
+const T=32,COLS=48,ROWS=32,W=COLS*T,H=ROWS*T;
+const hh=(x,y,s)=>{let n=(x*374761393+y*668265263+(s||0)*982451653)|0;n=Math.imul(n^(n>>>13),1274126177);return(((n^(n>>>16))>>>0)/4294967295)};
+const inb=(x,y)=>x>=0&&y>=0&&x<COLS&&y<ROWS;
+const GR=0,PA=1,WA=2,BR=3,ST=4,CR=5,BD=6,CV=7,CF=8,EX=9;
+/* ผังช่องของแผนที่แบบภาพทั้งแผ่น ('.' เดินได้ '#' กีดขวาง '~' น้ำ 'E' ทางออก) — tools/build_map_mask.py + tools/embed_maps.py */
+const MAP_MASKS={"village2":["################################################","################################################","################################################","################################################","################################################","###################.............################","##################.........#####################","###############.########...#####################","########........########...####.......##########","##########....##########...#######.......#######","###########...####.###.....########..###########","###########..................###.....###########","##########..............#...........############","#################.##.............###############","##################...............###############","##################.....................#########","########.#########......................########","#######..#######.........................#######","########...........................##....#######","#########............##...###......#############","################.....##...###......#############","################...................###.#########","#############.##.......................#########","####..........................###...........####","............................#######...##########","##...........###########...########...##########","##########.#############...#####################","########################...##############..#####","###.###################....########..###....####","###.##...##############....####.......##.....###","###.......##########....................########","#####...###########....EEEEE......###..#########"],"field2":["################################################","################################################","#####.#########################.################","####..#EE..##########...######..################","###.......##########....##EE###....#############","####......##.##.####.........##..###############","###.............#####............###############","####............#######........#################","############....#########...####################","############....#########...####################","############.....#####............##############","############.......................#############","##########.................##....###############","##########.....####....######....###############","##########....###############....###############","#.########......##...............###############","#...............#####..........#################","#.##############...##..........#################","################...........................#####","################..............##................","################..........#################...##","################........###################....E","################...#....###################....E","#####.............##.......################....E","########.####..#####..................##.......E","..#..##############....##.......................","......############....######...................#","##.....##########..#################......##..##","#####..######......#################.....####.##","#####.........................####.......#######","#####....................................#######","#####################.######.EEEEEEE.....#######"],"bamboo":["################################################","################################################","################################################","################################################","################################################","################################################","################################################","##########..##....##########....################","#######...........##########......##############","#########........#########......################","#########.......########........#########.######","..###########...#######..........####..........E","E...#########......#####.........###...........E","E...#####..........#####.....#######...........E","##..................###.....##########.........#","###........................#############..####.#","#####..........###.........#####......##..######","#####.##.......######.........##..........######","########..###############..................#####","########..###############.##...........##..#####","#######........#############.........####...####","#######.........############...#################","######.............######.##...##.##############","#######..............###............############","#########....######.................############","###################......................#######","##################......................########","##################.#####....#####....###########","#################################....###########","#################################....###########","################################....############","###############################....#############"],"rainforest":["##############################################.#","############################################...#","############..#############################.....","############..############################..#..#","############..##############...#################","############.....############..#################","#########.......#############..#################","#######.........#############....###############","######..........#############....###############","########........###########.....################","##########......................################","E....########...........................######.#",".....#######..###.......#####...........###....E","###..######...######...#######..##..###..##.....","###..........#######...###########..###......##.","##........#########.......######..........######","#######..##########....########..........#######","#######..##########...#########..........#######","######....######......#########............#####","###.......####...........##...............######","###...........................###....##.########","###...............########...############.######","E....##...........########...############......E",".....##...........#######......................E","....####........#########.......................","##.#####.....####################....##....###..","####.....#...###################################","######.###.....#################################","#########......#################################","#########......#################################","###########..###################################","################################################"],"mine":["################################################","################################################","################################################","################################################","################################################","#######...######################################","#######...######################################","#######...########.#...#########################","#######............#.....######.......##########","##########.......######...............##########","##############...######...##...##..######...####","E...##########...#####..####...##########...####","#.....####.###.........#####...##########...####","####.......##.......########....#########...####","#########.......###########...###########......E","############....#######.......############.....E","#############...####...........###########..####","#############.....######.....#########......####","#############....########...#######.....##...###","###############..########...#######..######...##","###############....######...#######..###########","###########.................#####....###########","###########..........................###########","##########.........#######......###...##########","########...........#######...########.##########","#######...################...###################","#####...##################...###################","####...####################....#################","###...#####################........#############","##...############################.....##########","E....##############################........#####","EEE.#################################.........##"],"peak":["################################################","################################################","################################################","################################################","################################################","################################################","######################..########################","#####################..#########################","############...#####...######.............######","##########......####...######.............######","##########......####...######.............######","############.##.#####..######.............######","###############.#####...#####.............######","###############........############...##########","##############...##....############...##########","#.########.....#####...############...##########","E......##......#####.........................###","E..##.......############.....................###","#######.....############.##..................###","#######...############...##..................###","#######............###..###..................###","#######...#........###..###..................###","###########........####......................###","###########################..................###","###########################..................###","##############################.......###########","##############################.....#############","##############################....##############","##############################....##############","##############################....##############","##############################....##############","################################################"]};/*MAP_MASKS*/
+const ZONES={
+ village:{name:'หมู่บ้านเริ่มต้น',safe:(tx,ty)=>tx<=20&&ty>=8&&ty<=24,treeEdge:.55,treeIn:.13,sakura:0,
+  layout(A){
+   A.h(0,0,COLS,32,1);A.h(0,0,COLS,6,2);A.h(23,0,25,10,2);A.h(23,17,25,15,0);A.h(0,25,23,7,0);A.h(21,17,2,15,0);
+   const L=(p,w)=>A.line(p,w,PA);
+   L([[5,3],[19,3]],2);L([[24,3],[42,3]],2);L([[36,4],[36,9]],2);L([[5,3],[5,9]],2);L([[5,9],[5,13]],2);L([[5,13],[19,13]],2);A.rect(7,13,7,4,PA);L([[9,16],[9,24]],2);
+   L([[23,14],[44,14]],2);L([[30,15],[30,23]],2);L([[30,23],[34,23]],2);L([[33,23],[33,26]],2);L([[9,27],[9,29]],2);L([[9,29],[46,29]],2);L([[43,12],[43,14]],2);
+   L([[10,9],[10,12]],1);L([[3,12],[3,13]],1);L([[16,13],[16,14]],1);L([[3,17],[3,18]],1);L([[16,18],[16,18]],1);L([[3,22],[3,23]],1);L([[3,23],[9,23]],1);L([[25,21],[25,23]],1);L([[25,23],[30,23]],1);
+   A.rect(21,0,2,29,WA);A.rect(21,27,27,2,WA);A.rect(21,3,2,2,BR);A.rect(21,14,2,2,BR);A.rect(33,27,2,2,BR);
+  },
+  border(A){A.rect(21,0,2,1,WA);A.rect(46,27,2,2,WA);A.rect(47,29,1,2,EX);A.rect(46,29,1,2,PA)},
+  stairs:[[5,6,2,2],[9,25,2,2],[30,17,2,2],[36,10,2,2]],cave:[44,10],
+  exits:[{x:47,y:29,w:1,h:2,to:'field',tx:2,ty:15,label:'ทุ่งมอนสเตอร์'}],
+  objects(A){
+   [[2,10],[8,10],[14,11],[2,15],[15,16],[2,20]].forEach(([x,y],i)=>A.add('house',x,y,4,2,{v:i}));
+   A.add('mill',24,19,4,2);A.add('wheel',22,19,1,2);A.add('stall',11,17,3,1);A.add('fire',9,14,1,1);
+   A.add('pillar',8,23,1,1);A.add('pillar',11,23,1,1);A.deco('banner',8,24*T);
+   A.add('tower',2,3,3,2);A.add('tent',27,2,3,2);A.add('flag',32,5,1,1);
+   A.add('stone',35,1,1,1);A.add('stone',39,1,1,1);A.add('stone',37,1,1,1,{big:1});
+   for(let x=13;x<=18;x++){A.add('fence',x,20,1,1,{d:'h'});if(x!==15&&x!==16)A.add('fence',x,24,1,1,{d:'h'})}
+   for(let y=21;y<=23;y++){A.add('fence',13,y,1,1,{d:'v'});A.add('fence',18,y,1,1,{d:'v'})}
+   A.rect(14,21,4,3,CR)},
+  decor(o){o.strokeStyle='#8fd3ff';o.lineWidth=3;o.beginPath();o.ellipse(37.5*T,3*T,40,18,0,0,7);o.stroke();o.fillStyle='rgba(120,200,255,.25)';o.fill()},
+  /* มอนสเตอร์อ่อนนอกเขตปลอดภัยของหมู่บ้าน (keepTrees: ไม่ตัดต้นไม้เดิม) */keepTrees:1,
+  spawns:[{type:'กระต่ายมีเขา',tx:27,ty:12,count:3},{type:'หมูป่า',tx:40,ty:22,count:3},{type:'ไก่ฟ้า',tx:30,ty:6,count:2}],start:[11.5*T,15.6*T]},
+/* ===== 6 โซนจากภาพแผนที่สะอาด (V2-R15) — สร้างโดยสคริปต์จาก tools/build_clean_masks.py + tools/zone_links.py ===== */
+ village2:{name:'หมู่บ้านกางเขา',painted:'village2',safe:()=>true,treeEdge:0,treeIn:0,sakura:0,keepTrees:1,
+  layout(A){A.mask(MAP_MASKS.village2)},border(){},stairs:[],
+  exits:[{x:23,y:31,w:5,h:1,to:'field2',tx:34,ty:29,label:'field2'}],
+  objects(){},
+  spawns:[],
+  start:[24.5*T,20.5*T]},
+ field2:{name:'ทุ่งน้ำตก',painted:'field2',safe:()=>false,treeEdge:0,treeIn:0,sakura:0,keepTrees:1,
+  layout(A){A.mask(MAP_MASKS.field2)},border(){},stairs:[],
+  exits:[{x:29,y:31,w:7,h:1,to:'village2',tx:25,ty:29,label:'village2'},{x:47,y:21,w:1,h:4,to:'field',tx:2,ty:15,label:'field'},{x:7,y:3,w:2,h:1,to:'mine',tx:2,ty:29,label:'mine'},{x:26,y:4,w:2,h:1,to:'bamboo',tx:2,ty:12,label:'bamboo'}],
+  objects(){},
+  spawns:[{type:'กระต่ายมีเขา',tx:31,ty:25,count:3},{type:'ไก่ฟ้า',tx:22,ty:23,count:2},{type:'หมูป่า',tx:30,ty:14,count:3},{type:'หมาป่า',tx:26,ty:10,count:2},{type:'ก็อบลิน',tx:15,ty:11,count:2},{type:'ลิงป่า',tx:8,ty:5,count:2},{type:'กระต่ายมีเขา',tx:15,ty:29,count:2},{type:'หมูป่า',tx:37,ty:18,count:1}],
+  start:[34.5*T,29.5*T]},
+ bamboo:{name:'ป่าไผ่และหุบเขา',painted:'bamboo',safe:()=>false,treeEdge:0,treeIn:0,sakura:0,keepTrees:1,
+  layout(A){A.mask(MAP_MASKS.bamboo)},border(){},stairs:[],
+  exits:[{x:0,y:12,w:1,h:2,to:'field2',tx:25,ty:5,label:'field2'},{x:47,y:11,w:1,h:3,to:'rainforest',tx:2,ty:11,label:'rainforest'}],
+  objects(){},
+  spawns:[{type:'หมาป่า',tx:12,ty:15,count:3},{type:'ลิงป่า',tx:12,ty:22,count:3},{type:'กวางภูเขา',tx:25,ty:13,count:2},{type:'ก็อบลิน',tx:24,ty:25,count:3},{type:'นักรบเผ่าป่า',tx:34,ty:29,count:2},{type:'เสือ',tx:40,ty:12,count:1}],
+  start:[2.5*T,12.5*T]},
+ rainforest:{name:'ลำธารและป่าดิบชื้น',painted:'rainforest',safe:()=>false,treeEdge:0,treeIn:0,sakura:0,keepTrees:1,
+  layout(A){A.mask(MAP_MASKS.rainforest)},border(){},stairs:[],
+  exits:[{x:0,y:11,w:1,h:1,to:'bamboo',tx:45,ty:12,label:'bamboo'},{x:0,y:22,w:1,h:1,to:'bamboo',tx:45,ty:12,label:'bamboo'},{x:47,y:12,w:1,h:1,to:'mine',tx:2,ty:11,label:'mine'},{x:47,y:22,w:1,h:2,to:'mine',tx:2,ty:11,label:'mine'}],
+  objects(){},
+  spawns:[{type:'เสือ',tx:8,ty:21,count:2},{type:'กวางภูเขา',tx:11,ty:8,count:2},{type:'นักรบเผ่าป่า',tx:29,ty:10,count:2},{type:'หมีเขา',tx:33,ty:18,count:2},{type:'กระทิงผี',tx:34,ty:24,count:1}],
+  start:[2.5*T,11.5*T]},
+ mine:{name:'ถ้ำและภูเขาหิน',painted:'mine',safe:()=>false,treeEdge:0,treeIn:0,sakura:0,keepTrees:1,
+  layout(A){A.mask(MAP_MASKS.mine)},border(){},stairs:[],
+  exits:[{x:0,y:11,w:1,h:1,to:'rainforest',tx:45,ty:12,label:'rainforest'},{x:0,y:30,w:1,h:2,to:'field2',tx:5,ty:3,label:'field2'},{x:0,y:31,w:3,h:1,to:'field2',tx:5,ty:3,label:'field2'},{x:47,y:14,w:1,h:2,to:'peak',tx:2,ty:16,label:'peak'}],
+  objects(){},
+  spawns:[{type:'หมีเขา',tx:14,ty:14,count:2},{type:'กระทิงผี',tx:15,ty:22,count:2},{type:'โกเลมหิน',tx:26,ty:21,count:2},{type:'ปีศาจ',tx:28,ty:15,count:2},{type:'โกเลมหิน',tx:39,ty:31,count:1}],
+  start:[2.5*T,11.5*T]},
+ peak:{name:'ยอดเขาทะเลหมอก',painted:'peak',safe:()=>false,treeEdge:0,treeIn:0,sakura:0,keepTrees:1,
+  layout(A){A.mask(MAP_MASKS.peak)},border(){},stairs:[],
+  exits:[{x:0,y:16,w:1,h:2,to:'mine',tx:45,ty:14,label:'mine'}],
+  objects(){},
+  spawns:[{type:'วิญญาณไม้',tx:12,ty:21,count:2},{type:'ปีศาจ',tx:13,ty:9,count:2},{type:'โกเลมหิน',tx:21,ty:9,count:2},{type:'ปีศาจ',tx:28,ty:17,count:2},{type:'วิญญาณไม้',tx:29,ty:23,count:2}],
+  start:[2.5*T,16.5*T]},
+ field:{name:'ทุ่งมอนสเตอร์',safe:()=>false,treeEdge:.6,treeIn:.16,sakura:.12,
+  layout(A){
+   A.h(0,0,COLS,32,0);A.h(0,0,18,10,2);A.h(0,10,18,11,1);A.h(18,0,30,8,2);A.h(18,8,30,11,1);
+   A.h(18,0,2,8,2);A.h(18,8,2,11,1);A.h(18,19,2,13,0);
+   const L=(p,w)=>A.line(p,w,PA);
+   L([[1,14],[17,14]],2);L([[8,12],[8,14]],2);L([[8,3],[8,9]],2);L([[3,4],[17,4]],2);L([[6,16],[6,20]],2);L([[6,23],[6,27]],2);L([[6,27],[17,27]],2);
+   L([[20,14],[33,14]],2);L([[30,10],[30,13]],2);L([[30,3],[30,7]],2);L([[20,4],[40,4]],2);L([[33,12],[43,12]],2);L([[44,10],[44,12]],1);
+   L([[24,15],[24,18]],2);L([[24,21],[24,23]],2);L([[20,22],[27,22]],2);L([[40,13],[40,18]],2);L([[40,21],[40,27]],2);L([[30,23],[46,23]],2);L([[28,22],[30,22]],2);
+   L([[20,28],[26,28]],2);
+   A.rect(18,0,2,27,WA);A.rect(18,25,12,2,WA);A.rect(28,25,2,7,WA);
+   A.rect(18,4,2,2,BR);A.rect(18,14,2,2,BR);A.rect(18,22,2,2,BR);A.rect(24,25,2,2,BR);
+  },
+  border(A){A.rect(18,0,2,1,WA);A.rect(28,31,2,1,WA);A.rect(0,14,1,2,EX);A.rect(1,14,1,2,PA)},
+  stairs:[[8,10,2,2],[6,21,2,2],[30,8,2,2],[24,19,2,2],[40,19,2,2]],cave:[44,8],
+  exits:[{x:0,y:14,w:1,h:2,to:'field2',tx:45,ty:23,label:'ทุ่งน้ำตก'}],
+  objects(A){
+   A.add('portalGate',37,1,3,2);A.add('stone',35,2,1,1);A.add('stone',41,2,1,1);
+   A.add('crystal',42,9,1,1);A.add('crystal',46,10,1,1);A.add('rock',12,7,1,1);A.add('rock',27,17,1,1)},
+  decor(o){o.fillStyle='rgba(120,200,255,.25)';o.beginPath();o.ellipse(38.5*T,3.6*T,44,14,0,0,7);o.fill();o.strokeStyle='#8fd3ff';o.lineWidth=2;o.stroke()},
+  spawns:[{type:'หมาป่า',tx:8,ty:6,count:3},{type:'หมูป่า',tx:5,ty:12,count:3},{type:'กระต่ายมีเขา',tx:12,ty:18,count:2},
+   {type:'ก็อบลิน',tx:10,ty:25,count:2},{type:'เสือ',tx:27,ty:12,count:1},{type:'หมีเขา',tx:41,ty:14,count:1},
+   {type:'โกเลมหิน',tx:32,ty:3,count:1},{type:'กระทิงผี',tx:23,ty:23,count:1},{type:'วิญญาณไม้',tx:40,ty:26,count:1}],
+  start:[2.5*T,15*T]}
+};
+
+function buildGrid(id){
+ const D=ZONES[id];
+ const hgt=Array.from({length:ROWS},()=>Array(COLS).fill(0)),g=Array.from({length:ROWS},()=>Array(COLS).fill(GR));
+ const objs=[],blocked=new Set();
+ const set=(x,y,v)=>{if(inb(x,y))g[y][x]=v};
+ const A={
+  h:(x,y,w,h2,v)=>{for(let j=y;j<y+h2;j++)for(let i=x;i<x+w;i++)if(inb(i,j))hgt[j][i]=v},
+  rect:(x,y,w,h2,v)=>{for(let j=y;j<y+h2;j++)for(let i=x;i<x+w;i++)set(i,j,v)},
+  line:(pts,w,v)=>{for(let k=0;k<pts.length-1;k++){const[a,b]=pts[k],[c,d]=pts[k+1];for(let x=Math.min(a,c);x<=Math.max(a,c);x++)for(let y=Math.min(b,d);y<=Math.max(b,d);y++)A.rect(x,y,w,w,v)}},
+  add:(type,x,y,fw,fh,extra)=>{for(let j=y;j<y+fh;j++)for(let i=x;i<x+fw;i++)blocked.add(i+','+j);objs.push(Object.assign({type,x,y,fw,fh,base:(y+fh)*T},extra||{}))},
+  deco:(type,x,base)=>objs.push({type,x,y:0,base,fw:0,fh:0}),
+  mask:rows=>{for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){const ch=(rows&&rows[y]||'')[x]||'#';set(x,y,ch==='.'?PA:ch==='E'?EX:ch==='~'?WA:BD)}}
+ };
+ D.layout(A);
+ if(!D.painted){for(let x=0;x<COLS;x++){set(x,0,BD);set(x,ROWS-1,BD)}for(let y=0;y<ROWS;y++){set(0,y,BD);set(COLS-1,y,BD)}}
+ D.border(A);
+ const face=(x,y)=>inb(x,y-1)&&(hgt[y-1][x]>hgt[y][x]||(inb(x,y-2)&&hgt[y-2][x]>hgt[y][x]&&hgt[y-1][x]===hgt[y][x]&&face(x,y-1)));
+ for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){const t=g[y][x];if(t===WA||t===BD||t===EX)continue;
+  const hi=[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>inb(x+dx,y+dy)&&hgt[y+dy][x+dx]>hgt[y][x]);if(face(x,y)||hi)set(x,y,CF)}
+ D.stairs.forEach(([x,y,w,h2])=>A.rect(x,y,w,h2,ST));
+ if(D.cave)A.rect(D.cave[0],D.cave[1],2,2,CV);
+ D.objects(A);
+ const near=(x,y,r)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){if(!inb(x+i,y+j))continue;if(g[y+j][x+i]!==GR||blocked.has((x+i)+','+(y+j)))return true}return false};
+ const spawnTiles=new Set();(D.keepTrees?[]:(D.spawns||[])).forEach(s=>{for(let j=-3;j<=3;j++)for(let i=-4;i<=4;i++)spawnTiles.add((s.tx+i)+','+(s.ty+j))});
+ for(let y=1;y<ROWS-1;y++)for(let x=1;x<COLS-1;x++){if(g[y][x]!==GR||blocked.has(x+','+y)||spawnTiles.has(x+','+y))continue;
+  const e=Math.min(x-1,COLS-2-x,y-1,ROWS-2-y),r=hh(x,y,1);
+  if(D.painted)continue;
+  if(r<(e<2?D.treeEdge:D.treeIn)&&!near(x,y,1))A.add('tree',x,y,1,1,{v:hh(x,y,2),sak:hh(x,y,8)<D.sakura});
+  else if(hh(x,y,3)<.02&&!near(x,y,1))A.add('rock',x,y,1,1)}
+ if(!D.painted)for(let x=0;x<COLS;x++)for(const y of[0,ROWS-1])if(g[y][x]===BD&&hh(x,y,4)<.7)objs.push({type:'tree',x,y,base:(y+1)*T,v:hh(x,y,5),fw:0,fh:0});
+ if(!D.painted)for(let y=1;y<ROWS-1;y++)for(const x of[0,COLS-1])if(g[y][x]===BD&&hh(x,y,6)<.8)objs.push({type:'tree',x,y,base:(y+1)*T,v:hh(x,y,7),fw:0,fh:0});
+ const isFace=(x,y)=>inb(x,y)&&g[y][x]===CF&&face(x,y);
+ return {id,D,g,hgt,blocked};
+}
+const BLOCKT=new Set([WA,CF,BD,CR]);
+const CFG={
+ player:{home:'village2',baseHP:100,hpPerLv:12,baseAtk:12,atkPerLv:3,maxLv:100,maxJob:50,skillUnlockJob:30,respawnSec:3,regenSafe:8,speed:110},
+ expCurve:lv=>Math.floor(40*Math.pow(lv,1.5)),jobCurve:lv=>Math.floor(25*Math.pow(lv,1.4)),
+ basic:{name:'ท่าพื้นฐาน',shape:'arc',mult:1,range:44,arc:1.6,cd:.45,pose:[0,1],poseT:.22,src:'CSV'},
+ /* นักดาบจากตาราง CSV: ชื่อ สาย ขั้น เลเวลปลดล็อก (ถือเป็น Job Lv) และระดับสูงสุด มาจากไฟล์
+    รูปแบบท่า ตัวคูณ ระยะ และคูลดาวน์ ตาราง CSV ไม่มี จึงเป็นค่าชั่วคราว
+    สกิล 3/4/5 ตามบอร์ด = ลำดับที่ 3/4/5 ของท่ากดทั้ง 9 ในตาราง */
+ skills:[
+  {name:'ท่าเคลื่อนที่',path:'เริ่มต้น',tier:0,job:1,max:10,shape:'move',dist:80,cd:3,pose:[0],poseT:.2},
+  {name:'ท่าป้องกัน',path:'เริ่มต้น',tier:0,job:1,max:10,shape:'guard',red:.5,dur:2,cd:8,pose:[0],poseT:.2},
+  {name:'ลงอาคมคมดาบ',path:'ดาบอาคม',tier:0,job:3,max:10,shape:'buff',bonus:.2,dur:8,cd:15,pose:[0],poseT:.3},
+  {name:'ฟันประทับตรา',path:'ดาบอาคม',tier:1,job:10,max:5,shape:'mark',mult:2,range:56,arc:1.8,markDur:5,markBonus:.15,cd:6,pose:[0,1],poseT:.3},
+  {name:'ปลุกคมอาคม',path:'ดาบอาคม',tier:2,job:25,max:3,shape:'wave',mult:3.2,range:300,width:72,speed:360,cd:10,pose:[0,1,3],poseT:.4,color:'#b06bff',board:'วิดีโอ SKILL 3 V6'},
+  {name:'ฟันแยกศิลา',path:'ดาบทลายขุนเขา',tier:0,job:3,max:10,shape:'spikes',mult:1.2,n:5,step:36,radius:30,cd:6,pose:[0,3],poseT:.45,color:'#ff9a2e',board:'บอร์ด 4-01–4-08'},
+  {name:'คลื่นดาบผาขาด',path:'ดาบทลายขุนเขา',tier:1,job:10,max:5,shape:'pillar',mult:3,dist:110,radius:46,cd:8,pose:[0,3,3],poseT:.5,color:'#5fc8ff',board:'SKILL 5 แบบ A: ปักดาบลงพื้น เสาพลังโผล่'},
+  {name:'ดาบทลายขุนเขา',path:'ดาบทลายขุนเขา',tier:2,job:25,max:3,shape:'circle',fxk:'quake',board:'บอร์ด 6-01–6-08',mult:4.5,range:150,cd:16,pose:[0,3],poseT:.45},
+  {name:'ก้าวตัดเงา',path:'ดาบก้าวพริบตา',tier:0,job:3,max:10,shape:'dash',mult:1.8,range:120,width:30,cd:6,pose:[0,2],poseT:.3},
+  {name:'ก้าวหลบสวนคม',path:'ดาบก้าวพริบตา',tier:1,job:10,max:5,shape:'counter',back:50,mult:2.2,range:100,arc:2.2,cd:9,pose:[0,1],poseT:.35},
+  {name:'พริบตาสามคม',path:'ดาบก้าวพริบตา',tier:2,job:25,max:3,shape:'tri',mult:1.6,cd:12,pose:[1,3,2,3],poseT:.55,board:'บอร์ด 9-01–9-08'}],
+
+ /* สกิลจริงแต่ละอาชีพ (V2-R36) ตามตารางท่าของเจ้าของ assets/design_refs/skills/ — ช่อง 3–11, ตัวเลขชั่วคราว
+    shape ใหม่: shot (ลูกศร/กระสุนพุ่ง), rain (ตกหลายจุด), trap (วางที่พื้นแล้วระเบิด), heal (ฟื้น HP ตัวเอง+ปาร์ตี้ในรัศมี) */
+ classBasic:{
+  'นักธนู':{name:'ยิงธนู',shape:'shot',mult:1,range:260,width:14,speed:600,cd:.55,pose:[0,1],poseT:.22,color:'#d9f2a0',style:'arrow'},
+  'ผู้ใช้มนตรา':{name:'กระสุนเวท',shape:'shot',mult:1,range:230,width:16,speed:480,cd:.6,pose:[0,1],poseT:.25,color:'#7fb2ff',style:'orb'},
+  'ผู้รักษา':{name:'แสงศักดิ์สิทธิ์',shape:'shot',mult:.9,range:220,width:16,speed:480,cd:.6,pose:[0,1],poseT:.25,color:'#ffe08a',style:'orb'},
+  'ผู้สืบวิญญาณ':{name:'ลูกไฟวิญญาณ',shape:'shot',mult:.95,range:220,width:16,speed:460,cd:.6,pose:[0,1],poseT:.25,color:'#9ff0c0',style:'orb'}},
+ classSkills:{
+  'นักธนู':[
+   {shape:'shot',mult:1.9,range:340,width:20,speed:620,cd:5,color:'#8fe36b',style:'arrow'},
+   {shape:'shot',mult:2.8,range:400,width:26,speed:680,cd:7,color:'#ffd35a',style:'arrow',pierce:1},
+   {shape:'shot',mult:5,range:440,width:64,speed:520,cd:12,color:'#7dff9a',style:'eagle',pierce:1},
+   {shape:'trap',mult:1.2,dist:90,radius:42,delay:.35,cd:7,color:'#e6b85a',art:'rope'},
+   {shape:'trap',mult:2.4,dist:100,radius:56,delay:.45,cd:9,color:'#e69a3a',art:'thorns'},
+   {shape:'rain',mult:2,n:5,dist:110,spread:70,radius:40,cd:14,color:'#ffcf5a',art:'pins'},
+   {shape:'buff',bonus:.25,dur:8,cd:15,color:'#c58bff',art:'arcane'},
+   {shape:'shot',mult:2.2,range:360,width:24,speed:600,cd:8,color:'#c58bff',style:'arrow',mark:1,markDur:5,markBonus:.15},
+   {shape:'rain',mult:2.4,n:8,dist:130,spread:80,radius:44,cd:15,color:'#c58bff',art:'arrowrain'}],
+  'นักฆ่า':[
+   {shape:'buff',bonus:.35,dur:5,cd:14,color:'#9b6bff',art:'smoke'},
+   {shape:'dash',mult:2.3,range:130,width:30,cd:6,color:'#ff4a5a',art:'redslash'},
+   {shape:'tri',mult:1.8,cd:12,color:'#ff4a5a',art:'xcross'},
+   {shape:'buff',bonus:.2,dur:10,cd:16,color:'#7dff6a',art:'poison'},
+   {shape:'shot',mult:1.1,range:300,width:16,speed:640,cd:5,color:'#9dff6a',style:'needle',n:3},
+   {shape:'trap',mult:4,dist:90,radius:72,delay:.3,cd:14,color:'#6aff7a',art:'snake'},
+   {shape:'dash',mult:2,range:170,width:30,cd:7,color:'#5ff0ff',art:'astral'},
+   {shape:'shot',mult:2,range:300,width:22,speed:620,cd:8,color:'#5ff0ff',style:'beam',mark:1,markDur:5,markBonus:.2,art:'seal'},
+   {shape:'wave',mult:3.6,range:300,width:90,speed:420,cd:12,color:'#5ff0ff'}],
+  'นักสู้':[
+   {shape:'line',mult:2.2,range:70,width:30,cd:5,color:'#ffa43a',art:'fist'},
+   {shape:'multi',hits:4,mult:.85,range:56,arc:1.6,cd:7,color:'#ffa43a',art:'fists'},
+   {shape:'circle',fxk:'quake',mult:4.5,range:140,cd:16,color:'#ffb43a'},
+   {shape:'guard',red:.6,dur:6,cd:14,color:'#7fb2ff',art:'stoneskin'},
+   {shape:'counter',back:30,mult:2.4,range:90,arc:2.2,cd:9,color:'#7fb2ff',art:'shock'},
+   {shape:'trap',mult:4.2,dist:46,radius:70,delay:.2,cd:15,color:'#7fb2ff',art:'throw'},
+   {shape:'buff',bonus:.35,dur:10,cd:20,color:'#ff6ab4',art:'tiger'},
+   {shape:'dash',mult:2.5,range:150,width:36,cd:7,color:'#ff6ab4',art:'pounce'},
+   {shape:'circle',mult:4.2,range:130,cd:15,color:'#ff6ab4',art:'roar'}],
+  'ผู้สืบวิญญาณ':[
+   {shape:'buff',bonus:.25,dur:10,cd:16,color:'#ffd35a',art:'ancestor'},
+   {shape:'wave',mult:2.3,range:260,width:54,speed:420,cd:6,color:'#ffd35a'},
+   {shape:'rain',mult:3,n:3,dist:120,spread:60,radius:60,cd:14,color:'#ffd35a',art:'warriors'},
+   {shape:'trap',mult:2,dist:80,radius:50,delay:.4,cd:8,color:'#6affc0',art:'beast'},
+   {shape:'spikes',mult:1.6,n:4,step:34,radius:32,cd:8,color:'#6affc0',art:'beast'},
+   {shape:'circle',mult:4,range:130,cd:15,color:'#6affc0',art:'beastbig'},
+   {shape:'shot',mult:1.6,range:280,width:22,speed:560,cd:7,color:'#b88cff',style:'beam',mark:1,markDur:6,markBonus:.15},
+   {shape:'shot',mult:1.8,range:280,width:22,speed:560,cd:9,color:'#6ae6ff',style:'beam',drain:.06},
+   {shape:'trap',mult:4.6,dist:140,radius:66,delay:.3,cd:14,color:'#b88cff',art:'shatter'}],
+  'ผู้รักษา':[
+   {shape:'heal',heal:.25,radius:170,cd:6,color:'#6aff9a',art:'leaves'},
+   {shape:'heal',heal:.45,radius:120,cd:10,color:'#6aff9a',art:'cocoon'},
+   {shape:'heal',heal:.6,radius:230,cd:18,color:'#6aff9a',art:'lifeline'},
+   {shape:'heal',heal:.15,radius:200,cd:8,color:'#6affd8',buff:.15,dur:8,art:'leaves'},
+   {shape:'heal',heal:.3,radius:220,cd:12,color:'#6affd8',art:'sprout'},
+   {shape:'heal',heal:.35,radius:240,cd:16,color:'#6affd8',guard:.3,dur:5,art:'cleanse'},
+   {shape:'shot',mult:1.8,range:280,width:22,speed:620,cd:6,color:'#ffd35a',style:'beam',mark:1,markDur:5,markBonus:.15},
+   {shape:'shot',mult:2.8,range:320,width:30,speed:700,cd:8,color:'#ffd35a',style:'beam',pierce:1},
+   {shape:'trap',mult:4.6,dist:110,radius:72,delay:.35,cd:15,color:'#ffd35a',art:'lightpillar'}],
+  'ผู้ใช้มนตรา':[
+   {shape:'shot',mult:2.1,range:300,width:22,speed:520,cd:4,color:'#7fb2ff',style:'orb'},
+   {shape:'trap',mult:3,dist:120,radius:56,delay:.3,cd:8,color:'#7fb2ff',art:'runes'},
+   {shape:'rain',mult:2.4,n:6,dist:130,spread:80,radius:50,cd:15,color:'#7fb2ff'},
+   {shape:'shot',mult:1.5,range:280,width:22,speed:540,cd:7,color:'#c58bff',style:'orb',mark:1,markDur:6,markBonus:.2},
+   {shape:'trap',mult:2.2,dist:100,radius:60,delay:.4,cd:9,color:'#c58bff',art:'chains'},
+   {shape:'circle',mult:4,range:140,cd:15,color:'#c58bff'},
+   {shape:'shot',mult:1.8,range:300,width:22,speed:560,cd:6,color:'#5ff0ff',style:'beam',mark:1,markDur:4,markBonus:.1},
+   {shape:'trap',mult:2.3,dist:100,radius:62,delay:.5,cd:9,color:'#5ff0ff',art:'runes'},
+   {shape:'trap',mult:5,dist:100,radius:84,delay:.35,cd:16,color:'#5ff0ff',art:'sealboom'}],
+  'ผู้พิทักษ์':[
+   {shape:'guard',red:.6,dur:5,cd:12,color:'#9fd6ff',art:'shield'},
+   {shape:'circle',mult:1.4,range:110,cd:8,color:'#9fd6ff'},
+   {shape:'heal',heal:.2,radius:150,cd:18,color:'#9fd6ff',guard:.6,dur:6,art:'shield'},
+   {shape:'heal',heal:.15,radius:180,cd:10,color:'#ffe08a',guard:.3,dur:5,art:'shield'},
+   {shape:'dash',mult:1.6,range:130,width:34,cd:7,color:'#ffe08a'},
+   {shape:'heal',heal:.3,radius:220,cd:18,color:'#ffe08a',guard:.4,dur:6,art:'shieldring'},
+   {shape:'line',mult:2.2,range:70,width:40,cd:5,color:'#ff9a5a',art:'shieldbash'},
+   {shape:'mark',mult:2,range:60,arc:1.8,markDur:6,markBonus:.2,cd:8,color:'#ff9a5a'},
+   {shape:'counter',back:20,mult:3.6,range:100,arc:2.4,cd:12,color:'#ff9a5a'}]},
+ /* ค่าสถานะมอนสเตอร์: ชั่วคราว ไล่ระดับตามลำดับในภาพแบบออกแบบ */
+ monsters:{
+  'หมูป่า':{hp:60,atk:8,exp:14,job:6,speed:70,aggro:120,leash:230,atkRange:26,atkCd:1.2,size:14,respawn:8,color:'#6e4a2c',color2:'#8a6040',tusk:1},
+  'กระต่ายมีเขา':{hp:35,atk:5,exp:9,job:4,speed:85,aggro:100,leash:200,atkRange:22,atkCd:1,size:10,respawn:6,color:'#d8d4cc',color2:'#eeeae2',horn:1},
+  'หมาป่า':{hp:80,atk:11,exp:20,job:8,speed:95,aggro:140,leash:240,atkRange:24,atkCd:1,size:13,respawn:9,color:'#6f7378',color2:'#8a8f95'},
+  'ไก่ฟ้า':{hp:25,atk:3,exp:6,job:3,speed:90,aggro:0,leash:180,atkRange:20,atkCd:1,size:9,respawn:6,color:'#b8322a',color2:'#2f7a4a'},
+  'ก็อบลิน':{hp:95,atk:13,exp:26,job:10,speed:80,aggro:130,leash:230,atkRange:24,atkCd:1.1,size:11,respawn:10,color:'#5d8a3a',color2:'#7aa64f'},
+  'เสือ':{hp:180,atk:20,exp:55,job:20,speed:100,aggro:150,leash:260,atkRange:28,atkCd:1.2,size:17,respawn:15,color:'#d48a2a',color2:'#e9a64a'},
+  'หมีเขา':{hp:220,atk:22,exp:65,job:24,speed:70,aggro:120,leash:220,atkRange:30,atkCd:1.5,size:19,respawn:18,color:'#6b4a2e',color2:'#83603e'},
+  'โกเลมหิน':{hp:320,atk:26,exp:90,job:32,speed:50,aggro:110,leash:200,atkRange:32,atkCd:1.8,size:20,respawn:22,color:'#7d7a72',color2:'#9a978e'},
+  'กระทิงผี':{hp:260,atk:24,exp:80,job:28,speed:85,aggro:130,leash:230,atkRange:30,atkCd:1.4,size:18,respawn:20,color:'#4a2a5e',color2:'#7a4aa0'},
+  'ลิงป่า':{hp:110,atk:14,exp:30,job:12,speed:90,aggro:130,leash:230,atkRange:24,atkCd:1,size:12,respawn:10},
+  'กวางภูเขา':{hp:120,atk:12,exp:32,job:12,speed:100,aggro:0,leash:230,atkRange:26,atkCd:1.2,size:14,respawn:10},
+  'นักรบเผ่าป่า':{hp:200,atk:21,exp:60,job:22,speed:80,aggro:140,leash:240,atkRange:30,atkCd:1.3,size:13,respawn:15},
+  'ปีศาจ':{hp:300,atk:27,exp:95,job:34,speed:85,aggro:150,leash:250,atkRange:30,atkCd:1.4,size:15,respawn:22},
+  'วิญญาณไม้':{hp:280,atk:23,exp:85,job:30,speed:55,aggro:120,leash:210,atkRange:34,atkCd:1.6,size:19,respawn:20,color:'#6b5a32',color2:'#3fa04a'},
+  /* ===== บอส 6 ตัว (V2-R16) — ค่าชั่วคราวทั้งหมด รอปรับสมดุล; boss:1 = ป้ายบอส/ไม่หนีกลับง่าย ===== */
+  'วิญญาณแห่งป่า':{boss:1,hp:3000,atk:45,exp:900,job:200,speed:70,aggro:170,leash:320,atkRange:46,atkCd:1.6,size:28,respawn:600,color:'#2f8a7a',color2:'#7fe0d0'},
+  'เทพหมาป่าภูเขา':{boss:1,hp:6000,atk:70,exp:1800,job:380,speed:95,aggro:180,leash:340,atkRange:48,atkCd:1.4,size:30,respawn:900,color:'#dfe8f2',color2:'#8fc0ff'},
+  'มังกรภูเขาดำ':{boss:1,hp:12000,atk:110,exp:4000,job:800,speed:60,aggro:190,leash:360,atkRange:56,atkCd:1.8,size:36,respawn:1200,color:'#2a2a32',color2:'#7a3aa0'},
+  'ราชาปีศาจภูเขา':{boss:1,hp:20000,atk:150,exp:8000,job:1500,speed:70,aggro:200,leash:380,atkRange:54,atkCd:1.6,size:34,respawn:1800,color:'#7a1414',color2:'#1a1a1a'},
+  'วิญญาณหมาป่าศักดิ์สิทธิ์':{boss:1,hp:9000,atk:90,exp:5000,job:1000,speed:100,aggro:190,leash:360,atkRange:50,atkCd:1.3,size:32,respawn:1e6,color:'#f4ead2',color2:'#f2c14e'},
+  'มังกรแห่งหุบเขาหมอก':{boss:1,world:1,hp:60000,atk:200,exp:30000,job:5000,speed:55,aggro:240,leash:460,atkRange:70,atkCd:2,size:44,respawn:1e6,color:'#e8f2ff',color2:'#8fc8ff'}},
+ /* ===== ไอเทม (V2-R4) — ชื่อ ค่า และอัตราดรอปทั้งหมดเป็นค่าชั่วคราว รอข้อกำหนด/อนุมัติ ===== */
+ /* ===== กลางวัน/กลางคืน/คืนพระจันทร์สีเลือด/World Boss (V2-R16) — เวลาจริง (วินาที) เกมกับเซิร์ฟเวอร์คิดเหมือนกัน ===== */
+ time:{cycleSec:1200,dayFrac:.6,bloodEvery:3,worldEvery:3600,worldWindow:900,
+  night:{atk:1.2,exp:1.25},blood:{atk:1.5,exp:2}},
+ worldClock(t){const C=CFG.time,ci=Math.floor(t/C.cycleSec),ph=(t%C.cycleSec)/C.cycleSec,night=ph>=C.dayFrac,blood=night&&ci%C.bloodEvery===0,
+  wph=t%C.worldEvery,world=wph<C.worldWindow,M=blood?C.blood:night?C.night:{atk:1,exp:1};
+  return{night,blood,world,atk:M.atk,exp:M.exp,name:blood?'คืนพระจันทร์สีเลือด':night?'กลางคืน':'กลางวัน',
+   left:Math.ceil(night?C.cycleSec*(1-ph):C.cycleSec*(C.dayFrac-ph)),worldLeft:Math.ceil(world?C.worldWindow-wph:C.worldEvery-wph)}},
+ /* บอสประจำโซน: when = always (บอสประจำพื้นที่) / bloodmoon / world */
+ bosses:{bamboo:[{type:'วิญญาณแห่งป่า',tx:24,ty:24,when:'always'}],
+  rainforest:[{type:'เทพหมาป่าภูเขา',tx:33,ty:17,when:'always'},{type:'วิญญาณหมาป่าศักดิ์สิทธิ์',tx:11,ty:20,when:'bloodmoon'}],
+  mine:[{type:'มังกรภูเขาดำ',tx:28,ty:15,when:'always'}],
+  peak:[{type:'ราชาปีศาจภูเขา',tx:13,ty:9,when:'always'},{type:'มังกรแห่งหุบเขาหมอก',tx:35,ty:20,when:'world'}]},
+ bossActive(when,wt){return !when||when==='always'||(when==='bloodmoon'&&wt.blood)||(when==='world'&&wt.world)},
+ bag:{slots:30,stack:99,potionCd:1},
+ /* แต้มสเตตัส (V2-R25, เจ้าของเลือกแบบ 4 ค่า): ได้ 3 แต้มต่อเลเวล (Lv 1 = 0) — สูตรใช้ร่วมกับเซิร์ฟเวอร์ */
+ stats:{perLv:3,max:99,keys:['str','vit','agi','luk'],
+  info:{str:['STR','พลัง','ATK +1 ต่อแต้ม'],vit:['VIT','อึด','HP +4 ต่อแต้ม · DEF +1 ทุก 4 แต้ม'],agi:['AGI','ว่องไว','ความเร็วเดิน +0.4% · ลดคูลดาวน์ +0.2% ต่อแต้ม'],luk:['LUK','โชค','คริติคอล +0.25% ต่อแต้ม']}},
+ /* หน้าตาตัวละคร (V2-R30): จำนวนตัวเลือก — เซิร์ฟเวอร์ใช้ตรวจค่า */
+ look:{hair:6,outfit:6,hs:16,of:16},
+ /* ชุดไอเทมเริ่มต้น (V2-R24): ให้ครั้งเดียวต่อตัวละคร ใส่อุปกรณ์ให้ทันที */
+ starter:{eq:{weapon:'sword_wood',armor:'coat_cloth'},bag:[['potion_s',10],['potion_m',3]]},
+ items:{
+  potion_s:{name:'ยาสมุนไพรเล็ก',type:'use',heal:40},
+  potion_m:{name:'ยาสมุนไพรกลาง',type:'use',heal:100},
+  hide:{name:'หนังสัตว์',type:'mat'},
+  horn:{name:'เขาสัตว์',type:'mat'},
+  tusk:{name:'เขี้ยวหมูป่า',type:'mat'},
+  feather:{name:'ขนไก่ฟ้า',type:'mat'},
+  fang:{name:'เขี้ยวสัตว์ป่า',type:'mat'},
+  ore:{name:'เศษหินแร่',type:'mat'},
+  spirit:{name:'เศษวิญญาณ',type:'mat'},
+  sword_wood:{name:'ดาบไม้ฝึกหัด',type:'eq',slot:'weapon',atk:4},
+  sword_iron:{name:'ดาบเหล็กตีมือ',type:'eq',slot:'weapon',atk:10},
+  coat_cloth:{name:'เสื้อผ้าฝ้ายปัก',type:'eq',slot:'armor',def:2,hp:20},
+  coat_leather:{name:'เสื้อหนังสัตว์',type:'eq',slot:'armor',def:5,hp:45},
+  charm_silver:{name:'กำไลเงิน',type:'eq',slot:'acc',hp:30,atk:2}},
+ /* ตารางดรอป: [ไอเทม, โอกาส 0–1, จำนวน] ทอยแยกทีละแถว */
+ drops:{
+  'ไก่ฟ้า':[['feather',.6,1],['potion_s',.15,1]],
+  'กระต่ายมีเขา':[['horn',.5,1],['hide',.4,1],['potion_s',.15,1],['sword_wood',.04,1]],
+  'หมูป่า':[['tusk',.5,1],['hide',.5,1],['potion_s',.2,1],['coat_cloth',.05,1]],
+  'หมาป่า':[['fang',.5,1],['hide',.5,1],['potion_s',.2,1],['sword_wood',.06,1]],
+  'ก็อบลิน':[['ore',.4,1],['potion_s',.3,1],['coat_cloth',.06,1],['charm_silver',.03,1]],
+  'เสือ':[['fang',.7,2],['hide',.6,2],['potion_m',.25,1],['coat_leather',.06,1]],
+  'หมีเขา':[['hide',.7,2],['horn',.5,1],['potion_m',.3,1],['coat_leather',.07,1]],
+  'โกเลมหิน':[['ore',.8,3],['potion_m',.3,1],['sword_iron',.07,1]],
+  'กระทิงผี':[['horn',.6,2],['spirit',.4,1],['potion_m',.3,1],['sword_iron',.06,1]],
+  'วิญญาณไม้':[['spirit',.6,2],['potion_m',.3,1],['charm_silver',.06,1]],
+  'ลิงป่า':[['hide',.5,1],['potion_s',.2,1]],
+  'กวางภูเขา':[['horn',.6,1],['hide',.5,1]],
+  'นักรบเผ่าป่า':[['ore',.4,1],['potion_m',.25,1],['sword_iron',.05,1]],
+  'ปีศาจ':[['spirit',.7,2],['potion_m',.3,1],['charm_silver',.06,1]]}
+};
+/* ===== สมดุลค่าพลัง (V2-R21) — คำนวณจากเลเวลมอนสเตอร์ ใช้ทั้งเกมและเซิร์ฟเวอร์ (ค่าเป้าหมายปรับได้ใน CFG.balance) =====
+   เป้าหมายที่เลเวลเท่ากัน: ตีด้วยท่าพื้นฐาน ~5 ครั้งจึงตาย, มอนสเตอร์ตีผู้เล่น ~12 ครั้งจึงตาย, ล่า ~(14+L/3) ตัวต่อ 1 เลเวล
+   บอส: HP ×hpMul, ATK ×atkMul, EXP ×expMul ของมอนสเตอร์เลเวลเดียวกัน */
+CFG.balance={hits:5,survive:12,killsBase:14,killsPerLv:1/3,jobKillsBase:10,
+ lv:{'ไก่ฟ้า':1,'กระต่ายมีเขา':2,'หมูป่า':4,'หมาป่า':7,'ก็อบลิน':10,'ลิงป่า':12,'กวางภูเขา':15,'นักรบเผ่าป่า':18,'เสือ':22,'หมีเขา':27,'กระทิงผี':32,'โกเลมหิน':37,'ปีศาจ':42,'วิญญาณไม้':47,
+  'วิญญาณแห่งป่า':24,'เทพหมาป่าภูเขา':34,'วิญญาณหมาป่าศักดิ์สิทธิ์':36,'มังกรภูเขาดำ':44,'ราชาปีศาจภูเขา':50,'มังกรแห่งหุบเขาหมอก':60},
+ boss:{hpMul:40,atkMul:2.5,expMul:30},world:{hpMul:200,atkMul:3,expMul:100},
+ /* ค่าพื้นฐานของผู้เล่นเลเวล L (ไม่รวมอุปกรณ์/สกิลติดตัว) */
+ pAtk:L=>CFG.player.baseAtk+(L-1)*(CFG.player.atkPerLv+1),pHp:L=>CFG.player.baseHP+(L-1)*(CFG.player.hpPerLv+4)} /* +1 STR +4 HP (1 VIT) ต่อเลเวล = ผู้เล่นที่ลงแต้มแบบสมดุล (V2-R25) */;
+CFG.stats.clean=st=>{const o={};for(const k of CFG.stats.keys)o[k]=Math.max(0,Math.floor(+((st||{})[k])||0));return o};
+CFG.stats.total=lv=>Math.max(0,(lv-1)*CFG.stats.perLv);
+CFG.stats.used=st=>CFG.stats.keys.reduce((a,k)=>a+((st||{})[k]||0),0);
+CFG.stats.free=(lv,st)=>CFG.stats.total(lv)-CFG.stats.used(st);
+CFG.stats.bonus=st=>{st=st||{};const v=k=>st[k]||0;return{atk:v('str'),hp:v('vit')*4,def:Math.floor(v('vit')/4),spd:Math.min(.25,v('agi')*.004),cdr:Math.min(.2,v('agi')*.002),crit:Math.min(.25,v('luk')*.0025)}};
+/* สกิลที่ใช้จริงของอาชีพ: ช่อง 1–2 (เคลื่อนที่/ป้องกัน) และนักดาบใช้ตารางเดิม, อาชีพอื่นช่อง 3–11 ทับด้วย classSkills */
+CFG.skillFor=(cls,i)=>{const b=CFG.skills[i-1];if(!b)return null;const o=i>=3&&CFG.classSkills[cls]&&CFG.classSkills[cls][i-3];return o?Object.assign({},b,{mult:undefined,range:undefined,width:undefined,speed:undefined,radius:undefined,dist:undefined,fxk:undefined,color:undefined},o):b};
+/* สกิลพื้นที่ (rain/trap/pillar): ตกที่มอนสเตอร์ใกล้สุดในระยะ (เดิมตกตามทิศที่หันเสมอ จึงพลาดตัวที่อยู่ข้าง ๆ) — ใช้ร่วมเกม/เซิร์ฟเวอร์ */
+CFG.aimReach=sk=>sk.dist?sk.dist+(sk.spread||0)*.5+40:0;
+CFG.aimPoint=(sk,ox,oy,dir,DVd,mons,hint)=>{const[ux,uy]=DVd,def=[ox+ux*sk.dist,oy+uy*sk.dist+14],R=CFG.aimReach(sk);if(!R)return def;
+  if(hint&&Number.isFinite(hint[0])&&Number.isFinite(hint[1])&&Math.hypot(hint[0]-ox,hint[1]-oy-14)<=R)return[hint[0],hint[1]];
+  let best=null,bd=R;for(const m of mons){if(m.state==='dead'||m.away)continue;const d=Math.hypot(m.x-ox,m.y-oy-14);if(d<=bd){bd=d;best=[m.x,m.y]}}return best||def};
+CFG.basicFor=cls=>CFG.classBasic[cls]?Object.assign({},CFG.basic,CFG.classBasic[cls]):CFG.basic;
+CFG.applyBalance=function(){const B=CFG.balance;
+ for(const[type,m]of Object.entries(CFG.monsters)){const L=B.lv[type];if(!L)continue;
+  const k=m.world?B.world:m.boss?B.boss:{hpMul:1,atkMul:1,expMul:1};
+  m.lv=L;m.hp=Math.round(B.pAtk(L)*B.hits*k.hpMul);m.atk=Math.max(2,Math.round(B.pHp(L)/B.survive*k.atkMul));
+  m.exp=Math.max(1,Math.round(CFG.expCurve(L)/(B.killsBase+L*B.killsPerLv)*k.expMul));
+  m.job=Math.max(1,Math.round(CFG.jobCurve(Math.min(L,CFG.player.maxJob-1))/(B.jobKillsBase+L*B.killsPerLv)*k.expMul))}};
+CFG.applyBalance();
+/* ปาร์ตี้ (V2-R21): แบ่ง EXP ให้สมาชิกในระยะ + โบนัสต่อคน; บอสแบ่งตามดาเมจที่ทำ */
+CFG.party={max:5,range:900,bonusPer:.1,bossMinShare:.3,bossMinDmgPct:.01};
+/* V2-R23: เพิ่มจำนวนมอนสเตอร์ (คูณจำนวนในจุดเกิด) และวางกระจายเป็นวง — ใช้ทั้งเกมและเซิร์ฟเวอร์ */
+CFG.spawnMul=2;
+CFG.spawnOff=i=>{if(!i)return[0,0];const a=i*2.39996,r=1.6+Math.sqrt(i)*1.25;return[Math.round(Math.cos(a)*r),Math.round(Math.sin(a)*r)]};
+const Combat={
+ damage(atk,mult,rnd,critRoll){const crit=critRoll<.1;return{dmg:Math.max(1,Math.round(atk*mult*(.9+.2*rnd)*(crit?1.5:1))),crit}},
+ inShape(sk,range,ox,oy,dir,tx,ty){const fx={E:1,W:-1,N:0,S:0}[dir],fy={E:0,W:0,N:-1,S:1}[dir],dx=tx-ox,dy=ty-oy,d=Math.hypot(dx,dy);
+  if(sk.shape==='circle')return d<=range;
+  if(sk.shape==='line'||sk.shape==='spear'){const t=dx*fx+dy*fy,p=Math.abs(dx*fy-dy*fx);return t>=-8&&t<=range&&p<=sk.width/2+8}
+  if(d>range)return false;if(d<6)return true;return Math.acos(Math.max(-1,Math.min(1,(dx*fx+dy*fy)/d)))<=sk.arc/2}
+};
+const SKILL_TABLE=[["นักดาบ","เริ่มต้น","ท่าพื้นฐาน","a",true,0,1,10,"  "],["นักดาบ","เริ่มต้น","ท่าเคลื่อนที่","a",true,0,1,10,"  "],["นักดาบ","เริ่มต้น","ท่าป้องกัน","a",true,0,1,10,"  "],["นักดาบ","ดาบอาคม","ลงอาคมคมดาบ","a",false,0,3,10,"  "],["นักดาบ","ดาบอาคม","ฟันประทับตรา","a",false,1,10,5,"  "],["นักดาบ","ดาบอาคม","ปลุกคมอาคม","a",false,2,25,3,"  "],["นักดาบ","ดาบอาคม","คมดาบลงยันต์","p",false,0,1,10,"พลังโจมตีกายภาพ 2 %"],["นักดาบ","ดาบอาคม","สายเลือดอาคม","p",false,0,5,10,"พลังโจมตีเวท 2 %"],["นักดาบ","ดาบอาคม","จิตประสานคม","p",false,1,15,5,"โอกาสคริติคอล 1 จุดเปอร์เซ็นต์"],["นักดาบ","ดาบอาคม","อาคมต่อเนื่อง","p",false,1,20,5,"ระยะเวลาบัฟและสถานะที่สร้าง 2 %"],["นักดาบ","ดาบอาคม","แก่นดาบวิญญาณ","p",false,2,30,3,"ความเสียหายสกิล 2 %"],["นักดาบ","ดาบทลายขุนเขา","ฟันแยกศิลา","a",false,0,3,10,"  "],["นักดาบ","ดาบทลายขุนเขา","คลื่นดาบผาขาด","a",false,1,10,5,"  "],["นักดาบ","ดาบทลายขุนเขา","ดาบทลายขุนเขา","a",false,2,25,3,"  "],["นักดาบ","ดาบทลายขุนเขา","กำลังขุนเขา","p",false,0,1,10,"พลังโจมตีกายภาพ 2 %"],["นักดาบ","ดาบทลายขุนเขา","ร่างแกร่งดั่งผา","p",false,0,5,10,"พลังชีวิตสูงสุด 2 %"],["นักดาบ","ดาบทลายขุนเขา","คมทะลวงเกราะ","p",false,1,15,5,"การเจาะเกราะและต้านเวท 1 จุดเปอร์เซ็นต์"],["นักดาบ","ดาบทลายขุนเขา","แรงฟันกว้าง","p",false,1,20,5,"รัศมีสกิลพื้นที่ 2 %"],["นักดาบ","ดาบทลายขุนเขา","เจตจำนงผาทลาย","p",false,2,30,3,"ความเสียหายสกิล 2 %"],["นักดาบ","ดาบก้าวพริบตา","ก้าวตัดเงา","a",false,0,3,10,"  "],["นักดาบ","ดาบก้าวพริบตา","ก้าวหลบสวนคม","a",false,1,10,5,"  "],["นักดาบ","ดาบก้าวพริบตา","พริบตาสามคม","a",false,2,25,3,"  "],["นักดาบ","ดาบก้าวพริบตา","ฝีเท้านักดาบ","p",false,0,1,10,"ความเร็วเคลื่อนที่ 1 %"],["นักดาบ","ดาบก้าวพริบตา","ลมหายใจว่องไว","p",false,0,5,10,"พลังงานสูงสุด 2 %"],["นักดาบ","ดาบก้าวพริบตา","คมดาบแม่นยำ","p",false,1,15,5,"โอกาสคริติคอล 1 จุดเปอร์เซ็นต์"],["นักดาบ","ดาบก้าวพริบตา","จังหวะไร้ช่องว่าง","p",false,1,20,5,"ความเร็วฟื้นคูลดาวน์ 1 %"],["นักดาบ","ดาบก้าวพริบตา","วิถีดาบพริบตา","p",false,2,30,3,"ความเสียหายสกิล 2 %"],["นักธนู","เริ่มต้น","ท่าพื้นฐาน","a",true,0,1,10,"  "],["นักธนู","เริ่มต้น","ท่าเคลื่อนที่","a",true,0,1,10,"  "],["นักธนู","เริ่มต้น","ท่าป้องกัน","a",true,0,1,10,"  "],["นักธนู","แม่นธนู","ศรเจาะจุดอ่อน","a",false,0,3,10,"  "],["นักธนู","แม่นธนู","ศรทะลวงเกราะ","a",false,1,10,5,"  "],["นักธนู","แม่นธนู","ศรปลิดชีพ","a",false,2,25,3,"  "],["นักธนู","แม่นธนู","สายตาเหยี่ยว","p",false,0,1,10,"ความแม่นยำ 2 %"],["นักธนู","แม่นธนู","แรงน้าวคันศร","p",false,0,5,10,"พลังโจมตีกายภาพ 2 %"],["นักธนู","แม่นธนู","เจาะช่องเกราะ","p",false,1,15,5,"การเจาะเกราะและต้านเวท 1 จุดเปอร์เซ็นต์"],["นักธนู","แม่นธนู","สมาธินักล่า","p",false,1,20,5,"โอกาสคริติคอล 1 จุดเปอร์เซ็นต์"],["นักธนู","แม่นธนู","หัวใจนักแม่นธนู","p",false,2,30,3,"ความเสียหายสกิล 2 %"],["นักธนู","พรานกับดัก","บ่วงตรึงเท้า","a",false,0,3,10,"  "],["นักธนู","พรานกับดัก","กับดักหนาม","a",false,1,10,5,"  "],["นักธนู","พรานกับดัก","ค่ายกลพราน","a",false,2,25,3,"  "],["นักธนู","พรานกับดัก","เสบียงพราน","p",false,0,1,10,"พลังชีวิตสูงสุด 2 %"],["นักธนู","พรานกับดัก","ฝีเท้าป่า","p",false,0,5,10,"ความเร็วเคลื่อนที่ 1 %"],["นักธนู","พรานกับดัก","บ่วงแน่นหนา","p",false,1,15,5,"ระยะเวลาบัฟและสถานะที่สร้าง 2 %"],["นักธนู","พรานกับดัก","หนามแหลมคม","p",false,1,20,5,"การเจาะเกราะและต้านเวท 1 จุดเปอร์เซ็นต์"],["นักธนู","พรานกับดัก","จ้าวแห่งค่ายกล","p",false,2,30,3,"รัศมีสกิลพื้นที่ 2 %"],["นักธนู","ศรมนตรา","ลงอาคมลูกศร","a",false,0,3,10,"  "],["นักธนู","ศรมนตรา","ศรพันธนาการ","a",false,1,10,5,"  "],["นักธนู","ศรมนตรา","ห่าศรอาคม","a",false,2,25,3,"  "],["นักธนู","ศรมนตรา","ลูกศรอาบมนตรา","p",false,0,1,10,"พลังโจมตีเวท 2 %"],["นักธนู","ศรมนตรา","จิตแห่งคันศร","p",false,0,5,10,"มานาสูงสุด 2 %"],["นักธนู","ศรมนตรา","อาคมยั่งยืน","p",false,1,15,5,"ระยะเวลาบัฟและสถานะที่สร้าง 2 %"],["นักธนู","ศรมนตรา","ศรแผ่ไพศาล","p",false,1,20,5,"รัศมีสกิลพื้นที่ 2 %"],["นักธนู","ศรมนตรา","พันธะศรวิญญาณ","p",false,2,30,3,"ความเสียหายสกิล 2 %"],["นักฆ่า","เริ่มต้น","ท่าพื้นฐาน","a",true,0,1,10,"  "],["นักฆ่า","เริ่มต้น","ท่าเคลื่อนที่","a",true,0,1,10,"  "],["นักฆ่า","เริ่มต้น","ท่าป้องกัน","a",true,0,1,10,"  "],["นักฆ่า","เงาสังหาร","พรางเงา","a",false,0,3,10,"  "],["นักฆ่า","เงาสังหาร","ก้าวมีดสังหาร","a",false,1,10,5,"  "],["นักฆ่า","เงาสังหาร","คมมีดปิดชีพ","a",false,2,25,3,"  "],["นักฆ่า","เงาสังหาร","คมมีดเงียบ","p",false,0,1,10,"พลังโจมตีกายภาพ 2 %"],["นักฆ่า","เงาสังหาร","ย่างก้าวเงา","p",false,0,5,10,"ความเร็วเคลื่อนที่ 1 %"],["นักฆ่า","เงาสังหาร","มองจุดตาย","p",false,1,15,5,"โอกาสคริติคอล 1 จุดเปอร์เซ็นต์"],["นักฆ่า","เงาสังหาร","มีดทะลวง","p",false,1,20,5,"การเจาะเกราะและต้านเวท 1 จุดเปอร์เซ็นต์"],["นักฆ่า","เงาสังหาร","เจตจำนงมือสังหาร","p",false,2,30,3,"ความเสียหายสกิล 2 %"],["นักฆ่า","พิษอสรพิษ","เคลือบพิษ","a",false,0,3,10,"  "],["นักฆ่า","พิษอสรพิษ","เข็มพิษสกัด","a",false,1,10,5,"  "],["นักฆ่า","พิษอสรพิษ","พิษปะทุ","a",false,2,25,3,"  "],["นักฆ่า","พิษอสรพิษ","พิษเข้มข้น","p",false,0,1,10,"ความเสียหายต่อเนื่อง 2 %"],["นักฆ่า","พิษอสรพิษ","กายต้านพิษ","p",false,0,5,10,"พลังชีวิตสูงสุด 2 %"],["นักฆ่า","พิษอสรพิษ","พิษฝังลึก","p",false,1,15,5,"ระยะเวลาบัฟและสถานะที่สร้าง 2 %"],["นักฆ่า","พิษอสรพิษ","ประหยัดน้ำยา","p",false,1,20,5,"การลดค่าร่ายสกิล 1 จุดเปอร์เซ็นต์"],["นักฆ่า","พิษอสรพิษ","หัวใจอสรพิษ","p",false,2,30,3,"ความเสียหายสกิล 2 %"],["นักฆ่า","จิตท่องภพ","ถอดจิตล่าเงา","a",false,0,3,10,"  "],["นักฆ่า","จิตท่องภพ","ประทับตราจิต","a",false,1,10,5,"  "],["นักฆ่า","จิตท่องภพ","คมจิตสะท้าน","a",false,2,25,3,"  "],["นักฆ่า","จิตท่องภพ","จิตแข็งแกร่ง","p",false,0,1,10,"พลังโจมตีเวท 2 %"],["นักฆ่า","จิตท่องภพ","ห้วงพลังจิต","p",false,0,5,10,"มานาสูงสุด 2 %"],["นักฆ่า","จิตท่องภพ","จิตทะลวง","p",false,1,15,5,"การเจาะเกราะและต้านเวท 1 จุดเปอร์เซ็นต์"],["นักฆ่า","จิตท่องภพ","สมาธิต่อเนื่อง","p",false,1,20,5,"ความเร็วฟื้นคูลดาวน์ 1 %"],["นักฆ่า","จิตท่องภพ","ผู้ท่องเงาวิญญาณ","p",false,2,30,3,"ความเสียหายสกิล 2 %"],["นักสู้","เริ่มต้น","ท่าพื้นฐาน","a",true,0,1,10,"  "],["นักสู้","เริ่มต้น","ท่าเคลื่อนที่","a",true,0,1,10,"  "],["นักสู้","เริ่มต้น","ท่าป้องกัน","a",true,0,1,10,"  "],["นักสู้","หมัดทะลวง","หมัดเจาะเกราะ","a",false,0,3,10,"  "],["นักสู้","หมัดทะลวง","ชุดหมัดสะเทือน","a",false,1,10,5,"  "],["นักสู้","หมัดทะลวง","หมัดทลายปฐพี","a",false,2,25,3,"  "],["นักสู้","หมัดทะลวง","หมัดหนัก","p",false,0,1,10,"พลังโจมตีกายภาพ 2 %"],["นักสู้","หมัดทะลวง","ลมหายใจนักสู้","p",false,0,5,10,"พลังงานสูงสุด 2 %"],["นักสู้","หมัดทะลวง","หมัดเจาะจุด","p",false,1,15,5,"โอกาสคริติคอล 1 จุดเปอร์เซ็นต์"],["นักสู้","หมัดทะลวง","แรงทะลวง","p",false,1,20,5,"การเจาะเกราะและต้านเวท 1 จุดเปอร์เซ็นต์"],["นักสู้","หมัดทะลวง","วิถีหมัดไร้พ่าย","p",false,2,30,3,"ความเสียหายสกิล 2 %"],["นักสู้","กายาเหล็ก","อาคมหนังเหล็ก","a",false,0,3,10,"  "],["นักสู้","กายาเหล็ก","ตั้งกายรับแรง","a",false,1,10,5,"  "],["นักสู้","กายาเหล็ก","ทุ่มพสุธา","a",false,2,25,3,"  "],["นักสู้","กายาเหล็ก","ผิวกายเหล็ก","p",false,0,1,10,"พลังป้องกัน 2 %"],["นักสู้","กายาเหล็ก","เลือดนักสู้","p",false,0,5,10,"พลังชีวิตสูงสุด 2 %"],["นักสู้","กายาเหล็ก","ตั้งหลักมั่นคง","p",false,1,15,5,"ความต้านทานสถานะควบคุม 1 จุดเปอร์เซ็นต์"],["นักสู้","กายาเหล็ก","กายฟื้นกำลัง","p",false,1,20,5,"การรักษาที่ได้รับ 2 %"],["นักสู้","กายาเหล็ก","หัวใจไม่ยอมแพ้","p",false,2,30,3,"ปริมาณโล่ป้องกัน 2 %"],["นักสู้","สัตว์ร้ายอาคม","แปลงร่างสัตว์ร้าย","a",false,0,3,10,"  "],["นักสู้","สัตว์ร้ายอาคม","จู่โจมสัตว์ร้าย","a",false,1,10,5,"  "],["นักสู้","สัตว์ร้ายอาคม","สัญชาตญาณดุร้าย","a",false,2,25,3,"  "],["นักสู้","สัตว์ร้ายอาคม","กำลังสัตว์ร้าย","p",false,0,1,10,"พลังโจมตีกายภาพ 2 %"],["นักสู้","สัตว์ร้ายอาคม","เลือดเดือด","p",false,0,5,10,"พลังชีวิตสูงสุด 2 %"],["นักสู้","สัตว์ร้ายอาคม","กรงเล็บล่าเหยื่อ","p",false,1,15,5,"โอกาสคริติคอล 1 จุดเปอร์เซ็นต์"],["นักสู้","สัตว์ร้ายอาคม","ย่างก้าวนักล่า","p",false,1,20,5,"ความเร็วเคลื่อนที่ 1 %"],["นักสู้","สัตว์ร้ายอาคม","สัญชาตญาณจ่าฝูง","p",false,2,30,3,"ความเสียหายสกิล 2 %"],["ผู้สืบวิญญาณ","เริ่มต้น","ท่าพื้นฐาน","a",true,0,1,10,"  "],["ผู้สืบวิญญาณ","เริ่มต้น","ท่าเคลื่อนที่","a",true,0,1,10,"  "],["ผู้สืบวิญญาณ","เริ่มต้น","ท่าป้องกัน","a",true,0,1,10,"  "],["ผู้สืบวิญญาณ","วิญญาณนักรบ","ประสานบรรพชน","a",false,0,3,10,"  "],["ผู้สืบวิญญาณ","วิญญาณนักรบ","คมวิญญาณ","a",false,1,10,5,"  "],["ผู้สืบวิญญาณ","วิญญาณนักรบ","บรรพชนร่วมศึก","a",false,2,25,3,"  "],["ผู้สืบวิญญาณ","วิญญาณนักรบ","พลังบรรพชน","p",false,0,1,10,"พลังโจมตีกายภาพ 2 %"],["ผู้สืบวิญญาณ","วิญญาณนักรบ","จิตสืบทอด","p",false,0,5,10,"มานาสูงสุด 2 %"],["ผู้สืบวิญญาณ","วิญญาณนักรบ","คมประสานวิญญาณ","p",false,1,15,5,"พลังโจมตีเวท 2 %"],["ผู้สืบวิญญาณ","วิญญาณนักรบ","พรยั่งยืน","p",false,1,20,5,"ระยะเวลาบัฟและสถานะที่สร้าง 2 %"],["ผู้สืบวิญญาณ","วิญญาณนักรบ","เจตจำนงนักรบโบราณ","p",false,2,30,3,"ความเสียหายสกิล 2 %"],["ผู้สืบวิญญาณ","อัญเชิญอสูร","เรียกอสูรคู่พันธะ","a",false,0,3,10,"  "],["ผู้สืบวิญญาณ","อัญเชิญอสูร","บัญชาอสูร","a",false,1,10,5,"  "],["ผู้สืบวิญญาณ","อัญเชิญอสูร","ปลุกอสูร","a",false,2,25,3,"  "],["ผู้สืบวิญญาณ","อัญเชิญอสูร","พันธะอสูรแกร่ง","p",false,0,1,10,"ความเสียหายอสูรอัญเชิญ 2 %"],["ผู้สืบวิญญาณ","อัญเชิญอสูร","จิตหล่อเลี้ยง","p",false,0,5,10,"มานาสูงสุด 2 %"],["ผู้สืบวิญญาณ","อัญเชิญอสูร","เขี้ยวอสูร","p",false,1,15,5,"ความเสียหายอสูรอัญเชิญ 2 %"],["ผู้สืบวิญญาณ","อัญเชิญอสูร","กายอสูร","p",false,1,20,5,"พลังชีวิตอสูรอัญเชิญ 2 %"],["ผู้สืบวิญญาณ","อัญเชิญอสูร","ผู้บัญชาพันธะ","p",false,2,30,3,"การลดค่าร่ายสกิล 1 จุดเปอร์เซ็นต์"],["ผู้สืบวิญญาณ","พันธะวิญญาณ","ผูกพันธะศัตรู","a",false,0,3,10,"  "],["ผู้สืบวิญญาณ","พันธะวิญญาณ","ดึงพลังวิญญาณ","a",false,1,10,5,"  "],["ผู้สืบวิญญาณ","พันธะวิญญาณ","สะบั้นพันธะ","a",false,2,25,3,"  "],["ผู้สืบวิญญาณ","พันธะวิญญาณ","จิตผูกพัน","p",false,0,1,10,"พลังโจมตีเวท 2 %"],["ผู้สืบวิญญาณ","พันธะวิญญาณ","พลังหล่อเลี้ยง","p",false,0,5,10,"มานาสูงสุด 2 %"],["ผู้สืบวิญญาณ","พันธะวิญญาณ","สายใยยั่งยืน","p",false,1,15,5,"ระยะเวลาบัฟและสถานะที่สร้าง 2 %"],["ผู้สืบวิญญาณ","พันธะวิญญาณ","พันธะกัดกร่อน","p",false,1,20,5,"ความเสียหายต่อเนื่อง 2 %"],["ผู้สืบวิญญาณ","พันธะวิญญาณ","แก่นวิญญาณร่วมศึก","p",false,2,30,3,"ความเสียหายสกิล 2 %"],["ผู้รักษา","เริ่มต้น","ท่าพื้นฐาน","a",true,0,1,10,"  "],["ผู้รักษา","เริ่มต้น","ท่าเคลื่อนที่","a",true,0,1,10,"  "],["ผู้รักษา","เริ่มต้น","ท่าป้องกัน","a",true,0,1,10,"  "],["ผู้รักษา","ฟื้นชีวา","ประคองชีวิต","a",false,0,3,10,"  "],["ผู้รักษา","ฟื้นชีวา","เยียวยาล้ำลึก","a",false,1,10,5,"  "],["ผู้รักษา","ฟื้นชีวา","สายใยต่อชีวิต","a",false,2,25,3,"  "],["ผู้รักษา","ฟื้นชีวา","มือประคองชีพ","p",false,0,1,10,"พลังรักษา 2 %"],["ผู้รักษา","ฟื้นชีวา","ลมหายใจผู้เยียวยา","p",false,0,5,10,"มานาสูงสุด 2 %"],["ผู้รักษา","ฟื้นชีวา","กายรับพร","p",false,1,15,5,"การรักษาที่ได้รับ 2 %"],["ผู้รักษา","ฟื้นชีวา","รักษาต่อเนื่อง","p",false,1,20,5,"ความเร็วฟื้นคูลดาวน์ 1 %"],["ผู้รักษา","ฟื้นชีวา","หัวใจฟื้นชีวา","p",false,2,30,3,"พลังรักษา 2 %"],["ผู้รักษา","พรแห่งชีวิต","พรฟื้นฟู","a",false,0,3,10,"  "],["ผู้รักษา","พรแห่งชีวิต","เขตชีวา","a",false,1,10,5,"  "],["ผู้รักษา","พรแห่งชีวิต","ชำระมลทิน","a",false,2,25,3,"  "],["ผู้รักษา","พรแห่งชีวิต","พรอ่อนโยน","p",false,0,1,10,"พลังรักษา 2 %"],["ผู้รักษา","พรแห่งชีวิต","ชีวิตมั่นคง","p",false,0,5,10,"พลังชีวิตสูงสุด 2 %"],["ผู้รักษา","พรแห่งชีวิต","พรยาวนาน","p",false,1,15,5,"ระยะเวลาบัฟและสถานะที่สร้าง 2 %"],["ผู้รักษา","พรแห่งชีวิต","ม่านคุ้มชีวิต","p",false,1,20,5,"ปริมาณโล่ป้องกัน 2 %"],["ผู้รักษา","พรแห่งชีวิต","แก่นพรแห่งชีวิต","p",false,2,30,3,"การลดค่าร่ายสกิล 1 จุดเปอร์เซ็นต์"],["ผู้รักษา","มนตราพิพากษา","ตราพิพากษา","a",false,0,3,10,"  "],["ผู้รักษา","มนตราพิพากษา","แสงลงทัณฑ์","a",false,1,10,5,"  "],["ผู้รักษา","มนตราพิพากษา","พิพากษาชีวา","a",false,2,25,3,"  "],["ผู้รักษา","มนตราพิพากษา","แสงพิพากษา","p",false,0,1,10,"พลังโจมตีเวท 2 %"],["ผู้รักษา","มนตราพิพากษา","พลังจิตสว่าง","p",false,0,5,10,"มานาสูงสุด 2 %"],["ผู้รักษา","มนตราพิพากษา","แสงทะลวง","p",false,1,15,5,"การเจาะเกราะและต้านเวท 1 จุดเปอร์เซ็นต์"],["ผู้รักษา","มนตราพิพากษา","เปลวแสงกว้าง","p",false,1,20,5,"รัศมีสกิลพื้นที่ 2 %"],["ผู้รักษา","มนตราพิพากษา","เจตนาลงทัณฑ์","p",false,2,30,3,"ความเสียหายสกิล 2 %"],["ผู้ใช้มนตรา","เริ่มต้น","ท่าพื้นฐาน","a",true,0,1,10,"  "],["ผู้ใช้มนตรา","เริ่มต้น","ท่าเคลื่อนที่","a",true,0,1,10,"  "],["ผู้ใช้มนตรา","เริ่มต้น","ท่าป้องกัน","a",true,0,1,10,"  "],["ผู้ใช้มนตรา","อาคมพิฆาต","กระสุนอาคม","a",false,0,3,10,"  "],["ผู้ใช้มนตรา","อาคมพิฆาต","อาคมถล่ม","a",false,1,10,5,"  "],["ผู้ใช้มนตรา","อาคมพิฆาต","มหาอาคมพิฆาต","a",false,2,25,3,"  "],["ผู้ใช้มนตรา","อาคมพิฆาต","พลังอาคม","p",false,0,1,10,"พลังโจมตีเวท 2 %"],["ผู้ใช้มนตรา","อาคมพิฆาต","ขุมมนตรา","p",false,0,5,10,"มานาสูงสุด 2 %"],["ผู้ใช้มนตรา","อาคมพิฆาต","อาคมทะลวง","p",false,1,15,5,"การเจาะเกราะและต้านเวท 1 จุดเปอร์เซ็นต์"],["ผู้ใช้มนตรา","อาคมพิฆาต","คลื่นมนตรา","p",false,1,20,5,"รัศมีสกิลพื้นที่ 2 %"],["ผู้ใช้มนตรา","อาคมพิฆาต","แก่นพิฆาต","p",false,2,30,3,"ความเสียหายสกิล 2 %"],["ผู้ใช้มนตรา","คุณไสยพันธนาการ","ประทับคำสาป","a",false,0,3,10,"  "],["ผู้ใช้มนตรา","คุณไสยพันธนาการ","พันธนาการอาคม","a",false,1,10,5,"  "],["ผู้ใช้มนตรา","คุณไสยพันธนาการ","คุณไสยกัดกร่อน","a",false,2,25,3,"  "],["ผู้ใช้มนตรา","คุณไสยพันธนาการ","คำสาปฝังลึก","p",false,0,1,10,"พลังโจมตีเวท 2 %"],["ผู้ใช้มนตรา","คุณไสยพันธนาการ","จิตคุณไสย","p",false,0,5,10,"มานาสูงสุด 2 %"],["ผู้ใช้มนตรา","คุณไสยพันธนาการ","พันธนาการยั่งยืน","p",false,1,15,5,"ระยะเวลาบัฟและสถานะที่สร้าง 2 %"],["ผู้ใช้มนตรา","คุณไสยพันธนาการ","คำสาปกัดกิน","p",false,1,20,5,"ความเสียหายต่อเนื่อง 2 %"],["ผู้ใช้มนตรา","คุณไสยพันธนาการ","เจ้าพิธีพันธนาการ","p",false,2,30,3,"การลดค่าร่ายสกิล 1 จุดเปอร์เซ็นต์"],["ผู้ใช้มนตรา","มนตราผนึก","ยันต์สะกด","a",false,0,3,10,"  "],["ผู้ใช้มนตรา","มนตราผนึก","เขตผนึก","a",false,1,10,5,"  "],["ผู้ใช้มนตรา","มนตราผนึก","ปิดผนึกระเบิด","a",false,2,25,3,"  "],["ผู้ใช้มนตรา","มนตราผนึก","ลายยันต์มั่นคง","p",false,0,1,10,"ปริมาณโล่ป้องกัน 2 %"],["ผู้ใช้มนตรา","มนตราผนึก","พลังผนึก","p",false,0,5,10,"พลังโจมตีเวท 2 %"],["ผู้ใช้มนตรา","มนตราผนึก","เขตอาคมกว้าง","p",false,1,15,5,"รัศมีสกิลพื้นที่ 2 %"],["ผู้ใช้มนตรา","มนตราผนึก","ผนึกต่อเนื่อง","p",false,1,20,5,"ระยะเวลาบัฟและสถานะที่สร้าง 2 %"],["ผู้ใช้มนตรา","มนตราผนึก","แก่นยันต์สะกด","p",false,2,30,3,"ความเร็วฟื้นคูลดาวน์ 1 %"],["ผู้พิทักษ์","เริ่มต้น","ท่าพื้นฐาน","a",true,0,1,10,"  "],["ผู้พิทักษ์","เริ่มต้น","ท่าเคลื่อนที่","a",true,0,1,10,"  "],["ผู้พิทักษ์","เริ่มต้น","ท่าป้องกัน","a",true,0,1,10,"  "],["ผู้พิทักษ์","โล่ปราการ","ตั้งโล่รับศึก","a",false,0,3,10,"  "],["ผู้พิทักษ์","โล่ปราการ","ท้าประจัญ","a",false,1,10,5,"  "],["ผู้พิทักษ์","โล่ปราการ","ปราการมั่นคง","a",false,2,25,3,"  "],["ผู้พิทักษ์","โล่ปราการ","โล่แข็งแกร่ง","p",false,0,1,10,"พลังป้องกัน 2 %"],["ผู้พิทักษ์","โล่ปราการ","กายปราการ","p",false,0,5,10,"พลังชีวิตสูงสุด 2 %"],["ผู้พิทักษ์","โล่ปราการ","รับแรงมั่นคง","p",false,1,15,5,"ความต้านทานสถานะควบคุม 1 จุดเปอร์เซ็นต์"],["ผู้พิทักษ์","โล่ปราการ","โล่เสริมกำลัง","p",false,1,20,5,"ปริมาณโล่ป้องกัน 2 %"],["ผู้พิทักษ์","โล่ปราการ","หัวใจป้อมปราการ","p",false,2,30,3,"การรักษาที่ได้รับ 2 %"],["ผู้พิทักษ์","องครักษ์","พันธะคุ้มครอง","a",false,0,3,10,"  "],["ผู้พิทักษ์","องครักษ์","ก้าวช่วยชีวิต","a",false,1,10,5,"  "],["ผู้พิทักษ์","องครักษ์","วงโล่พิทักษ์","a",false,2,25,3,"  "],["ผู้พิทักษ์","องครักษ์","เกราะองครักษ์","p",false,0,1,10,"พลังป้องกัน 2 %"],["ผู้พิทักษ์","องครักษ์","เลือดผู้คุ้มครอง","p",false,0,5,10,"พลังชีวิตสูงสุด 2 %"],["ผู้พิทักษ์","องครักษ์","ก้าวทันภัย","p",false,1,15,5,"ความเร็วเคลื่อนที่ 1 %"],["ผู้พิทักษ์","องครักษ์","พรคุ้มกัน","p",false,1,20,5,"ปริมาณโล่ป้องกัน 2 %"],["ผู้พิทักษ์","องครักษ์","ปณิธานพิทักษ์","p",false,2,30,3,"ระยะเวลาบัฟและสถานะที่สร้าง 2 %"],["ผู้พิทักษ์","โล่พิฆาต","กระแทกโล่","a",false,0,3,10,"  "],["ผู้พิทักษ์","โล่พิฆาต","โล่ทลายเกราะ","a",false,1,10,5,"  "],["ผู้พิทักษ์","โล่พิฆาต","สะท้อนแรงศึก","a",false,2,25,3,"  "],["ผู้พิทักษ์","โล่พิฆาต","แรงกระแทกโล่","p",false,0,1,10,"พลังโจมตีกายภาพ 2 %"],["ผู้พิทักษ์","โล่พิฆาต","กายพร้อมรบ","p",false,0,5,10,"พลังป้องกัน 2 %"],["ผู้พิทักษ์","โล่พิฆาต","ขอบโล่ทะลวง","p",false,1,15,5,"การเจาะเกราะและต้านเวท 1 จุดเปอร์เซ็นต์"],["ผู้พิทักษ์","โล่พิฆาต","แรงสะท้อนกว้าง","p",false,1,20,5,"รัศมีสกิลพื้นที่ 2 %"],["ผู้พิทักษ์","โล่พิฆาต","วิถีโล่พิฆาต","p",false,2,30,3,"ความเสียหายสกิล 2 %"]];
+module.exports={T,COLS,ROWS,W,H,inb,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX},BLOCKT,ZONES,buildGrid,CFG,Combat,SKILL_TABLE};

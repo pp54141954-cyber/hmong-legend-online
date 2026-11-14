@@ -1,0 +1,206 @@
+<!-- ===== V2-R28: หน้าโหลดตอนเข้าเกม + เพลง/เสียงประกอบ (สังเคราะห์สดด้วย Web Audio — แต่งเอง ไม่มีไฟล์เสียง ไม่มีลิขสิทธิ์ผู้อื่น) =====
+     ต้นฉบับ: assets/ui/audio_splash.html → ฝังลงท้าย game/index.html โดย tools/embed_audio_splash.py -->
+<style>
+#splash{position:absolute;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:calc(28px + env(safe-area-inset-top,0px)) 20px calc(22px + env(safe-area-inset-bottom,0px));overflow:hidden;color:#f4efe2;
+  background:radial-gradient(ellipse at 50% 18%,#3b3f7a 0%,#1e1f4a 38%,#0d0f24 75%);transition:opacity .6s}
+#splash[hidden]{display:none}#splash.out{opacity:0;pointer-events:none}
+#splash .stars{position:absolute;inset:0;background-image:radial-gradient(1.5px 1.5px at 12% 18%,#fff8,transparent),radial-gradient(1px 1px at 28% 8%,#fff9,transparent),radial-gradient(1.5px 1.5px at 46% 22%,#ffe9a8aa,transparent),radial-gradient(1px 1px at 64% 12%,#fff8,transparent),radial-gradient(1.5px 1.5px at 82% 20%,#fff9,transparent),radial-gradient(1px 1px at 90% 6%,#fff7,transparent),radial-gradient(1px 1px at 6% 32%,#fff6,transparent),radial-gradient(1px 1px at 72% 34%,#fff6,transparent);animation:sptw 4s ease-in-out infinite alternate}
+@keyframes sptw{from{opacity:.55}to{opacity:1}}
+#splash .moon{position:absolute;top:9%;right:14%;width:58px;height:58px;border-radius:50%;background:radial-gradient(circle at 38% 38%,#fff7d6,#f2c14e 60%,#c98a2a);box-shadow:0 0 40px #f2c14e88}
+#splash svg.mt{position:absolute;left:0;right:0;bottom:0;width:100%;height:62%}
+#splash .mist{position:absolute;left:-10%;right:-10%;bottom:16%;height:18%;background:radial-gradient(ellipse at center,#c9d6ff22,transparent 70%);animation:spmist 9s ease-in-out infinite alternate}
+@keyframes spmist{from{transform:translateX(-4%)}to{transform:translateX(4%)}}
+#splash .top{margin-top:6vh}#splash .top,#splash .bot{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:100%;max-width:420px}
+#splash .emb{width:118px;height:118px;filter:drop-shadow(0 4px 14px #000a);animation:spfloat 4s ease-in-out infinite alternate}
+@keyframes spfloat{from{transform:translateY(0)}to{transform:translateY(-6px)}}
+#splash h1{margin:12px 0 0;text-align:center;font-size:clamp(30px,10vw,44px);letter-spacing:4px;font-weight:900;line-height:1;background:linear-gradient(#fff3c4,#f2c14e 55%,#b4531a);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #3a1a08)}
+#splash .sub{margin-top:6px;font-size:15px;letter-spacing:3px;color:#ffcf8a}
+#splash .band{margin-top:12px;width:220px;height:10px;background:repeating-linear-gradient(90deg,#c4222c 0 10px,#f2c14e 10px 14px,#1e2a6b 14px 24px,#f4efe2 24px 28px);border-radius:3px;opacity:.9}
+#splash .bar{width:100%;height:16px;padding:3px;border-radius:9px;background:#0008;border:2px solid #f2c14e99;box-shadow:inset 0 0 6px #000}
+#splash .bar i{display:block;height:100%;width:0;border-radius:6px;background:repeating-linear-gradient(135deg,#f2c14e 0 8px,#e0a83a 8px 16px);transition:width .25s}
+#splash .ld{display:flex;justify-content:space-between;width:100%;margin-top:6px;font-size:12px;opacity:.85}
+#splash .tip{min-height:34px;margin-top:10px;font-size:12px;line-height:1.4;text-align:center;color:#d8dcf5;opacity:.9}
+#splash .go{margin-top:12px;padding:14px 34px;font-size:18px;font-weight:900;letter-spacing:1px;color:#3a1a08;background:linear-gradient(#ffe08a,#f2a93b);border:0;border-radius:16px;box-shadow:0 4px 0 #8e4a10,0 0 24px #f2c14e88;animation:sppulse 1.4s ease-in-out infinite}
+#splash .go[hidden]{display:none}@keyframes sppulse{50%{transform:scale(1.05)}}
+#splash .snd{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));left:14px;z-index:2;padding:6px 12px;font-size:13px;color:#f4efe2;background:#0006;border:1px solid #ffffff44;border-radius:12px}
+#splash .ver{margin-top:10px;font-size:10px;opacity:.5}
+#sndb{position:absolute;right:8px;top:calc(var(--toph,120px) + 30px);z-index:4;width:40px;height:34px;padding:0;font-size:17px;color:#fff;background:rgba(18,22,18,.74);border:1px solid #ffffff33;border-radius:12px}
+#sndp .row{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:13px}#sndp .row span{width:110px}#sndp input[type=range]{flex:1;accent-color:#3b6fd0}#sndp .row b{width:36px;text-align:right;font-size:12px}
+</style>
+<div id="splash" hidden aria-label="หน้าโหลดเกม">
+  <div class="stars"></div><div class="moon"></div>
+  <svg class="mt" viewBox="0 0 400 200" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 120 L40 80 L70 104 L110 52 L150 98 L190 66 L230 110 L270 58 L310 96 L350 70 L400 104 L400 200 L0 200Z" fill="#2a2d63"/>
+    <path d="M0 150 L50 112 L90 140 L140 96 L185 138 L230 104 L280 146 L330 108 L370 136 L400 120 L400 200 L0 200Z" fill="#1c1f4a"/>
+    <path d="M0 178 L60 150 L120 170 L170 146 L230 172 L290 150 L350 174 L400 158 L400 200 L0 200Z" fill="#11132f"/>
+    <g fill="#0b0c22"><path d="M48 176 l6 -22 l6 22z"/><path d="M58 178 l5 -16 l5 16z"/><path d="M312 178 l7 -26 l7 26z"/><path d="M324 180 l5 -18 l5 18z"/>
+      <!-- บ้านหลังคามุงจากบนเนิน (เงา) -->
+      <path d="M150 168 l18 -14 l18 14z"/><rect x="155" y="168" width="26" height="10"/><path d="M188 172 l14 -11 l14 11z"/><rect x="192" y="172" width="20" height="8"/><path d="M226 170 l16 -12 l16 12z"/><rect x="230" y="170" width="24" height="9"/></g>
+    <g fill="#f2c14e"><rect x="164" y="171" width="3" height="3"/><rect x="199" y="174" width="2" height="2"/><rect x="240" y="173" width="3" height="3"/></g>
+  </svg>
+  <div class="mist"></div>
+  <button class="snd" id="splsnd" aria-pressed="false">🔇 เปิดเสียง</button>
+  <div class="top">
+    <svg class="emb" viewBox="0 0 100 100" aria-hidden="true">
+      <!-- ลายผ้าปักแบบเรขาคณิต (ออกแบบใหม่ ไม่ใช่ลายของใคร) -->
+      <rect x="15" y="15" width="70" height="70" rx="6" transform="rotate(45 50 50)" fill="#1e2a6b" stroke="#f2c14e" stroke-width="3"/>
+      <rect x="27" y="27" width="46" height="46" rx="3" transform="rotate(45 50 50)" fill="#c4222c"/>
+      <rect x="37" y="37" width="26" height="26" transform="rotate(45 50 50)" fill="#f4efe2"/>
+      <rect x="44" y="44" width="12" height="12" transform="rotate(45 50 50)" fill="#1e2a6b"/>
+      <g fill="#f2c14e"><rect x="48" y="4" width="4" height="14"/><rect x="48" y="82" width="4" height="14"/><rect x="4" y="48" width="14" height="4"/><rect x="82" y="48" width="14" height="4"/></g>
+      <g fill="#f4efe2"><rect x="46" y="23" width="8" height="4"/><rect x="46" y="73" width="8" height="4"/><rect x="23" y="46" width="4" height="8"/><rect x="73" y="46" width="4" height="8"/></g>
+    </svg>
+    <h1>HMONG LEGEND</h1>
+    <div class="sub">ตำนานม้ง · ออนไลน์</div>
+    <div class="band"></div>
+  </div>
+  <div class="bot">
+    <div class="bar" role="progressbar" aria-label="ความคืบหน้าการโหลด" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="splbar"></i></div>
+    <div class="ld"><span id="splwhat">กำลังเตรียมโลก…</span><b id="splpct">0%</b></div>
+    <div class="tip" id="spltip"></div>
+    <button class="go" id="splgo" hidden>แตะเพื่อเข้าเกม</button>
+    <div class="ver">V2.0 · เพลงและเสียงแต่งขึ้นใหม่สำหรับเกมนี้</div>
+  </div>
+</div>
+<script>
+(function(){
+/* ================= เครื่องเสียง ================= */
+const ST=(()=>{try{return Object.assign({mus:.55,sfx:.75,mute:false},JSON.parse(localStorage.getItem('hl_snd')||'{}'))}catch(e){return{mus:.55,sfx:.75,mute:false}}})();
+const save=()=>{try{localStorage.setItem('hl_snd',JSON.stringify(ST))}catch(e){}};
+const SND=window.SND={st:ST,ctx:null,track:null,want:null,stats:{played:{},notes:0},play,unlock,setVol,setMute,pickTrack};
+let ctx,master,musBus,sfxBus,verb,noiseBuf,curGrp=null,curTrack=null,step8=0,nextT=0,schedTimer=0;
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+const NOTE={C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11};
+const n2m=s=>{const m=/^([A-G]#?)(\d)$/.exec(s);return m?12*(+m[2]+1)+NOTE[m[1]]:null};
+function unlock(){
+  if(!ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;ctx=SND.ctx=new AC();
+    master=ctx.createGain();master.connect(ctx.destination);musBus=ctx.createGain();sfxBus=ctx.createGain();musBus.connect(master);sfxBus.connect(master);
+    // เสียงก้อง (ดีเลย์สะท้อน) ให้ขลุ่ย/แคนฟังกว้างแบบหุบเขา
+    verb=ctx.createDelay(1);verb.delayTime.value=.27;const fb=ctx.createGain();fb.gain.value=.34;const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2400;const wet=ctx.createGain();wet.gain.value=.5;
+    verb.connect(lp);lp.connect(fb);fb.connect(verb);lp.connect(wet);wet.connect(musBus);
+    noiseBuf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    applyVol();schedTimer=setInterval(sched,40);setInterval(()=>pickTrack(),1000)}
+  if(ctx.state==='suspended')ctx.resume();return true}
+function applyVol(){if(!ctx)return;const t=ctx.currentTime;master.gain.setTargetAtTime(ST.mute?0:1,t,.05);musBus.gain.setTargetAtTime(ST.mus*.6,t,.1);sfxBus.gain.setTargetAtTime(ST.sfx,t,.05)}
+function setVol(k,v){ST[k]=Math.max(0,Math.min(1,+v));save();applyVol()}
+function setMute(m){ST.mute=!!m;save();applyVol();syncSndBtn()}
+/* ---------- เครื่องดนตรี ---------- */
+const env=(g,t,a,peak,hold,rel)=>{g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.setValueAtTime(peak,t+a+hold);g.gain.exponentialRampToValueAtTime(.0001,t+a+hold+rel)};
+function noise(t,dur,out,ftype,f,q,peak){const s=ctx.createBufferSource();s.buffer=noiseBuf;const bf=ctx.createBiquadFilter();bf.type=ftype;bf.frequency.value=f;bf.Q.value=q||1;const g=ctx.createGain();env(g,t,.003,peak,0,dur);s.connect(bf);bf.connect(g);g.connect(out);s.start(t,Math.random()*.5);s.stop(t+dur+.05);return{s,bf,g}}
+/* ขลุ่ย (raj): ไซน์ + สามเหลี่ยม + สั่นเสียง + ลมหายใจ */
+function flute(t,f,dur,out,vol){const o=ctx.createOscillator(),o2=ctx.createOscillator(),g=ctx.createGain(),lfo=ctx.createOscillator(),lg=ctx.createGain();
+  o.type='sine';o2.type='triangle';o.frequency.value=f;o2.frequency.value=f*2;const g2=ctx.createGain();g2.gain.value=.12;
+  lfo.frequency.value=5.2;lg.gain.setValueAtTime(0,t);lg.gain.linearRampToValueAtTime(f*.006,t+Math.min(.4,dur*.6));lfo.connect(lg);lg.connect(o.frequency);lg.connect(o2.frequency);
+  o.connect(g);o2.connect(g2);g2.connect(g);env(g,t,.07,vol,Math.max(.01,dur-.2),.22);g.connect(out);g.connect(verb);
+  noise(t,.12,out,'bandpass',f*2.2,2,vol*.18);for(const x of[o,o2,lfo]){x.start(t);x.stop(t+dur+.4)}}
+/* แคน (qeej): ฟันเลื่อยหลายลิ้น กรองช่วงกลาง เสียงคอร์ดลากยาว */
+function qeej(t,fs,dur,out,vol){const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1500;lp.Q.value=.7;const g=ctx.createGain();env(g,t,.12,vol,Math.max(.01,dur-.25),.3);lp.connect(g);g.connect(out);g.connect(verb);
+  for(const f of fs)for(const det of[-6,5]){const o=ctx.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=det;const og=ctx.createGain();og.gain.value=.22/fs.length;o.connect(og);og.connect(lp);o.start(t);o.stop(t+dur+.4)}}
+/* ดีด: สามเหลี่ยมเสียงสั้น */
+function pluck(t,f,dur,out,vol){const o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+Math.max(.25,dur));o.connect(g);g.connect(out);g.connect(verb);o.start(t);o.stop(t+dur+.3)}
+function bass(t,f,dur,out,vol){const o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.value=f;env(g,t,.02,vol,Math.max(.01,dur*.6),.2);o.connect(g);g.connect(out);o.start(t);o.stop(t+dur+.3)}
+/* กลอง: กลองหนังต่ำ, กลองทอม, เขย่า, ฆ้อง */
+function drum(t,kind,out,vol){if(kind==='k'||kind==='t'){const o=ctx.createOscillator(),g=ctx.createGain(),[a,b]=kind==='k'?[120,48]:[200,95];o.type='sine';o.frequency.setValueAtTime(a,t);o.frequency.exponentialRampToValueAtTime(b,t+.14);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+.32);o.connect(g);g.connect(out);o.start(t);o.stop(t+.35);noise(t,.03,out,'lowpass',900,1,vol*.25)}
+  else if(kind==='s')noise(t,.05,out,'highpass',6500,.7,vol*.35);
+  else if(kind==='g'){const g=ctx.createGain();g.gain.setValueAtTime(vol*.5,t);g.gain.exponentialRampToValueAtTime(.0001,t+2.4);g.connect(out);g.connect(verb);for(const r of[1,2.76,5.4,8.9]){const o=ctx.createOscillator();o.type='sine';o.frequency.value=98*r;const og=ctx.createGain();og.gain.value=.5/r;o.connect(og);og.connect(g);o.start(t);o.stop(t+2.5)}}}
+/* ---------- เพลง (แต่งเอง) : ทำนองเขียนเป็น "โน้ต:ความยาว(หน่วยเขบ็ต 1 ชั้น)" '-' = พัก ---------- */
+const parse=s=>{const out=[];let at=0;for(const tok of s.trim().split(/\s+/)){const[n,l]=tok.split(':');const len=+(l||1);if(n!=='-')out.push({at,m:n2m(n),len});at+=len}return{ev:out,len:at}};
+const TRACKS={
+  /* หน้าโหลด: ช้า แคนลากเสียงต่ำ ขลุ่ยเล่าเรื่อง (D ไมเนอร์เพนทาโทนิก) */
+  title:{bpm:72,mel:'A4:2 C5:1 D5:3 C5:1 A4:1 G4:4 -:2 F4:1 G4:1 A4:2 C5:2 A4:4 -:4 D5:2 F5:1 D5:1 C5:2 A4:2 G4:3 A4:1 F4:2 G4:2 D4:6 -:2',inst:'flute',
+    drone:[['D3','A3'],['D3','A3'],['C3','G3'],['D3','A3']],droneEvery:8,drums:''},
+  /* หมู่บ้าน: สบาย ๆ เมเจอร์เพนทาโทนิก (G) ขลุ่ย + ดีด + กลองเบา */
+  village:{bpm:88,mel:'D5:2 B4:1 A4:1 G4:2 A4:2 B4:2 D5:2 E5:4 D5:2 B4:1 D5:1 A4:4 -:2 G4:1 A4:1 B4:2 A4:1 G4:1 E4:2 G4:2 A4:3 B4:1 G4:6 -:2',inst:'flute',
+    drone:[['G3','D4'],['E3','B3'],['C3','G3'],['D3','A3']],droneEvery:8,arp:['G3','B3','D4','B3'],drums:'k---t---k-k-t---'},
+  /* ทุ่ง/ป่า: ผจญภัย A ไมเนอร์เพนทาโทนิก จังหวะเดินหน้า */
+  field:{bpm:112,mel:'A4:1 C5:1 D5:2 E5:1 D5:1 C5:2 A4:2 G4:2 A4:4 C5:1 D5:1 E5:2 G5:2 E5:1 D5:1 C5:2 D5:4 E5:2 D5:1 C5:1 A4:2 G4:2 E4:2 G4:2 A4:4 -:4',inst:'flute',
+    drone:[['A2','E3'],['F2','C3'],['G2','D3'],['E2','B2']],droneEvery:8,stab:true,bassline:['A2','A2','F2','G2'],drums:'k-s-t-s-k-k-t-s-'},
+  /* กลางคืน: เบาบาง เว้นช่องเยอะ ก้องไกล */
+  night:{bpm:66,mel:'E5:3 D5:1 B4:4 -:4 A4:2 B4:2 G4:6 -:2 E4:2 G4:2 A4:3 B4:1 A4:8 -:8',inst:'flute',
+    drone:[['E3','B3'],['C3','G3']],droneEvery:16,drums:'k---------------'},
+  /* บอส/พระจันทร์เลือด: เร็ว หนัก ฆ้องเปิดห้อง แคนกระแทก */
+  boss:{bpm:142,mel:'D5:1 D5:1 F5:1 D5:1 G5:2 F5:1 D5:1 C5:2 A4:2 C5:2 D5:2 D5:1 F5:1 A5:2 G5:1 F5:1 D5:2 C5:2 A4:4',inst:'qeejlead',
+    drone:[['D2','A2'],['D2','A2'],['A#1','F2'],['C2','G2']],droneEvery:4,stab:true,bassline:['D2','D2','A#1','C2'],drums:'k-skt-s-k-skt-ss',gong:16}
+};
+for(const k in TRACKS)TRACKS[k].p=parse(TRACKS[k].mel);
+/* ตัวจัดลำดับเวลา: ล่วงหน้า 0.25 วิ — เปลี่ยนเพลงแบบค่อย ๆ จางข้าม */
+function setTrack(name){if(!ctx||name===curTrack||!TRACKS[name])return;const t=ctx.currentTime;
+  if(curGrp){const g=curGrp;g.gain.setTargetAtTime(0,t,.5);setTimeout(()=>{try{g.disconnect()}catch(e){}},3000)}
+  curGrp=ctx.createGain();curGrp.gain.setValueAtTime(0,t);curGrp.gain.setTargetAtTime(1,t+.3,.6);curGrp.connect(musBus);curTrack=SND.track=name;step8=0;nextT=t+.12}
+function sched(){if(!ctx||!curGrp||ctx.state!=='running')return;const T=TRACKS[curTrack],sp=60/T.bpm/2,L=Math.max(T.p.len,32);
+  while(nextT<ctx.currentTime+.25){const s=step8%L,t=nextT,out=curGrp;
+    for(const e of T.p.ev)if(e.at===s%T.p.len&&e.m){const f=mtof(e.m);if(T.inst==='qeejlead')qeej(t,[f,f*1.5],e.len*sp*.9,out,.32);else flute(t,f,e.len*sp,out,.3);SND.stats.notes++}
+    if(s%T.droneEvery===0){const c=T.drone[Math.floor(s/T.droneEvery)%T.drone.length].map(n=>mtof(n2m(n)));qeej(t,c,T.droneEvery*sp*.98,out,T.stab?.16:.2)}
+    if(T.stab&&s%4===2){const c=T.drone[Math.floor(s/T.droneEvery)%T.drone.length].map(n=>mtof(n2m(n))*2);qeej(t,c,sp*1.2,out,.12)}
+    if(T.bassline&&s%2===0)bass(t,mtof(n2m(T.bassline[Math.floor(s/8)%T.bassline.length])),sp*1.6,out,.38);
+    if(T.arp&&s%2===0)pluck(t,mtof(n2m(T.arp[(s/2)%T.arp.length])),sp*2,out,.12);
+    const dc=T.drums&&T.drums[s%T.drums.length];if(dc&&dc!=='-')drum(t,dc,out,dc==='s'?.6:.5);
+    if(T.gong&&s%(T.gong*4)===0)drum(t,'g',out,.5);
+    nextT+=sp;step8++}}
+/* เลือกเพลงตามสถานการณ์: หน้าโหลด → title, บอสไล่ใกล้ ๆ/พระจันทร์เลือด → boss, หมู่บ้าน → village, กลางคืน → night, อื่น ๆ → field */
+function pickTrack(){if(!ctx)return null;const H=window.HL;let w='title';
+  if(H&&document.getElementById('splash').hidden){const p=H.player,inSafe=H.inSafeNow;
+    const boss=(H.mons||[]).some(m=>m.c&&m.c.boss&&m.state&&m.state!=='dead'&&!m.away&&Math.hypot(m.x-p.x,m.y-p.y)<520);
+    w=boss||(H.WT&&H.WT.blood&&!inSafe)?'boss':inSafe?'village':(H.WT&&H.WT.night)?'night':'field'}
+  SND.want=w;setTrack(w);return w}
+/* ---------- เสียงเอฟเฟกต์ ---------- */
+const lastAt={};
+function play(name,o){if(!ctx||ctx.state!=='running')return false;const now=ctx.currentTime;if(now-(lastAt[name]||0)<.035)return false;lastAt[name]=now;SND.stats.played[name]=(SND.stats.played[name]||0)+1;
+  const t=now+.005,out=sfxBus,O=(type,f0,f1,dur,vol)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);if(f1)o.frequency.exponentialRampToValueAtTime(f1,t+dur);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(out);o.start(t);o.stop(t+dur+.05)};
+  switch(name){
+    case'swing':{const n=noise(t,.13,out,'bandpass',900,1.4,.5);n.bf.frequency.exponentialRampToValueAtTime(3200,t+.12);break}
+    case'hit':O('sine',220,70,.12,.55);noise(t,.04,out,'highpass',2500,.8,.35);if(o&&o.crit)O('square',1400,900,.08,.12);break
+    case'die':O('square',420,110,.28,.12);noise(t,.2,out,'lowpass',700,1,.25);break
+    case'hurt':O('sine',160,55,.2,.6);noise(t,.08,out,'lowpass',500,1,.3);break
+    case'skill':{const sh=o&&o.shape;if(sh==='buff'){[0,4,7,12].forEach((s,i)=>{const tt=t+i*.06,f=mtof(74+s),oo=ctx.createOscillator(),g=ctx.createGain();oo.type='triangle';oo.frequency.value=f;g.gain.setValueAtTime(.18,tt);g.gain.exponentialRampToValueAtTime(.0001,tt+.4);oo.connect(g);g.connect(out);oo.start(tt);oo.stop(tt+.45)})}
+      else if(sh==='circle'||sh==='pillar'||sh==='spikes'){O('sine',110,40,.45,.7);noise(t,.35,out,'lowpass',400,1,.5)}
+      else if(sh==='dash'||sh==='move'||sh==='tri'){const n=noise(t,.22,out,'bandpass',600,1,.45);n.bf.frequency.exponentialRampToValueAtTime(4000,t+.2)}
+      else if(sh==='guard'||sh==='counter'){O('triangle',660,660,.25,.2);O('triangle',990,990,.25,.12)}
+      else{O('sawtooth',300,900,.18,.12);noise(t,.15,out,'bandpass',2000,2,.3)}break}
+    case'lvup':[0,3,7,12,15,19].forEach((s,i)=>{const tt=t+i*.07,oo=ctx.createOscillator(),g=ctx.createGain();oo.type='triangle';oo.frequency.value=mtof(62+s);g.gain.setValueAtTime(.22,tt);g.gain.exponentialRampToValueAtTime(.0001,tt+.6);oo.connect(g);g.connect(out);oo.start(tt);oo.stop(tt+.65)});break
+    case'jobup':[0,5,7,12].forEach((s,i)=>{const tt=t+i*.09,oo=ctx.createOscillator(),g=ctx.createGain();oo.type='sine';oo.frequency.value=mtof(67+s);g.gain.setValueAtTime(.22,tt);g.gain.exponentialRampToValueAtTime(.0001,tt+.7);oo.connect(g);g.connect(out);oo.start(tt);oo.stop(tt+.75)});break
+    case'loot':O('sine',1319,1319,.18,.2);setTimeout(()=>play('loot2'),70);break
+    case'loot2':O('sine',1976,1976,.25,.16);break
+    case'warp':{const n=noise(t,.6,out,'bandpass',300,3,.4);n.bf.frequency.exponentialRampToValueAtTime(5000,t+.55);O('sine',220,880,.55,.18);break}
+    case'click':O('square',1300,1100,.03,.06);break
+    case'dead':[0,-3,-7].forEach((s,i)=>{const tt=t+i*.18,oo=ctx.createOscillator(),g=ctx.createGain();oo.type='triangle';oo.frequency.value=mtof(57+s);g.gain.setValueAtTime(.25,tt);g.gain.exponentialRampToValueAtTime(.0001,tt+.9);oo.connect(g);g.connect(out);oo.start(tt);oo.stop(tt+1)});break
+    case'start':drum(t,'g',out,.6);break
+    default:return false}
+  return true}
+/* ปุ่ม UI ทุกปุ่ม (ยกเว้นปุ่มต่อสู้ที่มีเสียงของตัวเอง) */
+document.addEventListener('pointerdown',e=>{if(!ctx&&document.getElementById('splash').hidden){unlock();pickTrack()} /* ข้ามหน้าโหลด: แตะครั้งแรกเปิดเสียง */
+  const b=e.target.closest&&e.target.closest('button');if(b&&!b.closest('#skills')&&b.id!=='atk')play('click')},true);
+/* ---------- ปุ่มเสียงในเกม + แผงปรับเสียง ---------- */
+const app=document.getElementById('app'),sb=document.createElement('button');sb.id='sndb';sb.setAttribute('aria-label','เสียง');app.appendChild(sb);
+const sp=document.createElement('div');sp.id='sndp';sp.className='win';sp.hidden=true;sp.setAttribute('role','dialog');sp.setAttribute('aria-label','ตั้งค่าเสียง');app.appendChild(sp);
+function syncSndBtn(){sb.textContent=ST.mute?'🔇':'🔊';const s=document.getElementById('splsnd');if(s){s.textContent=ST.mute||!ctx?'🔇 เปิดเสียง':'🔊 เสียงเปิด';s.setAttribute('aria-pressed',String(!!ctx&&!ST.mute))}}
+function renderSnd(){sp.innerHTML='<div class="whd"><b>เสียง</b><button class="x" aria-label="ปิด">×</button></div><div class="wbody"><div class="card">'
+  +'<div class="row"><span>เพลงประกอบ</span><input id="snd-mus" type="range" min="0" max="100" value="'+Math.round(ST.mus*100)+'" aria-label="ระดับเพลง"><b>'+Math.round(ST.mus*100)+'%</b></div>'
+  +'<div class="row"><span>เสียงเอฟเฟกต์</span><input id="snd-sfx" type="range" min="0" max="100" value="'+Math.round(ST.sfx*100)+'" aria-label="ระดับเสียงเอฟเฟกต์"><b>'+Math.round(ST.sfx*100)+'%</b></div>'
+  +'<div class="swr"><span>ปิดเสียงทั้งหมด</span><button class="sw" id="snd-mute" role="switch" aria-checked="'+ST.mute+'" aria-label="ปิดเสียงทั้งหมด"><i></i></button></div>'
+  +'<p class="note">เพลงตอนนี้: '+({title:'หน้าแรก',village:'หมู่บ้าน',field:'ผจญภัย',night:'กลางคืน',boss:'บอส'}[curTrack]||'-')+' · เพลงและเสียงแต่งขึ้นใหม่ (แคน ขลุ่ย กลอง สังเคราะห์สด)</p></div></div>';
+  sp.querySelector('.x').onclick=()=>{sp.hidden=true};
+  for(const k of['mus','sfx'])sp.querySelector('#snd-'+k).oninput=e=>{setVol(k,e.target.value/100);e.target.nextElementSibling.textContent=e.target.value+'%';if(k==='sfx')play('click')};
+  sp.querySelector('#snd-mute').onclick=()=>{setMute(!ST.mute);renderSnd()}}
+sb.onclick=()=>{unlock();sp.hidden=!sp.hidden;if(!sp.hidden)renderSnd()};
+syncSndBtn();
+/* ================= หน้าโหลด ================= */
+const spl=document.getElementById('splash'),q=new URLSearchParams(location.search);
+// ระบบทดสอบอัตโนมัติข้ามหน้าโหลด (ยกเว้นสั่ง ?splash=1) — ผู้เล่นจริงเห็นทุกครั้ง
+const showSplash=q.get('splash')==='1'||(!navigator.webdriver&&q.get('splash')!=='0');
+const TIPS=['แตะวงเลเวลมุมซ้ายบนเพื่อลงแต้มสเตตัส','ปุ่ม ⚙ เหนือ AUTO ใช้เลือกมอนสเตอร์ที่จะล่าและสกิลที่ใช้','เปลี่ยนอาชีพได้ในหมู่บ้าน: หน้าสกิล → เปลี่ยนอาชีพ','ป้าย Lv สีแดงบนหัวมอนสเตอร์ = อันตราย','คืนพระจันทร์สีเลือด มอนสเตอร์ดุขึ้นแต่ EXP ×2','กด 🗺 แผนที่ เพื่อวาร์ประหว่างโซน','ตั้งทีมด้วยปุ่ม 👥 แบ่ง EXP และรางวัลบอส'];
+let tipI=Math.floor(Math.random()*TIPS.length);const tipEl=document.getElementById('spltip');const nextTip=()=>{tipEl.textContent='เคล็ดลับ: '+TIPS[tipI++%TIPS.length]};
+SND.splash={shown:showSplash,done:false,pct:0};
+if(showSplash){spl.hidden=false;nextTip();const tipT=setInterval(nextTip,3200);
+  document.getElementById('splsnd').onclick=e=>{e.stopPropagation();if(!ctx){unlock();setMute(false);pickTrack()}else setMute(!ST.mute)};
+  const H=window.HL,urls=(H&&H.preloadList?H.preloadList():[]);const total=urls.length+1;let done=0;
+  const what=document.getElementById('splwhat'),bar=document.getElementById('splbar'),pct=document.getElementById('splpct');
+  const tick=lbl=>{done++;const p=Math.round(100*done/total);SND.splash.pct=p;bar.style.width=p+'%';pct.textContent=p+'%';bar.parentNode.setAttribute('aria-valuenow',p);if(lbl)what.textContent=lbl;
+    if(done>=total){SND.splash.done=true;what.textContent='พร้อมแล้ว';document.getElementById('splgo').hidden=false}};
+  for(const u of urls){const im=new Image();let fin=false;const f=()=>{if(fin)return;fin=true;tick(u.label)};im.onload=f;im.onerror=f;setTimeout(f,8000);im.src=u.src}
+  setTimeout(()=>tick('เตรียมเสียงและโลกเกม'),300);
+  const go=()=>{if(!SND.splash.done)return;clearInterval(tipT);unlock();play('start');spl.classList.add('out');setTimeout(()=>{spl.hidden=true;pickTrack()},600)};
+  document.getElementById('splgo').onclick=e=>{e.stopPropagation();go()};
+}
+})();
+</script>
