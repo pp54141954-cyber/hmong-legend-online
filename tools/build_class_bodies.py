@@ -130,8 +130,9 @@ SETS = [  # (id, อาชีพ, เพศที่ใช้, ฟังก์�
     ('fighter_m', 'นักสู้', ['m'], lambda: fighter('m')),
     ('assassin_m', 'นักฆ่า', ['m'], lambda: grid4('assassin_mf4.png', (8, 8, 880, 880))),
     ('assassin_f', 'นักฆ่า', ['f'], lambda: grid4('assassin_mf4.png', (896, 8, 1766, 880))),
-    ('archer_m', 'นักธนู', ['m'], lambda: grid4('archer_m.png')),
-    ('archer_f', 'นักธนู', ['f'], lambda: grid4('archer_f.png', bg='black')),
+    # V2-R57: เจ้าของเปลี่ยนนักธนูเป็นแบบผมดำ ชุดดำลายแดง (แบบเดิม archer_m.png / archer_f.png เก็บไว้)
+    ('archer_m', 'นักธนู', ['m'], lambda: grid4('archer_m2.png')),
+    ('archer_f', 'นักธนู', ['f'], lambda: grid4('archer_f2.png')),
     ('guardian_m', 'ผู้พิทักษ์', ['m'], lambda: grid4('guardian_m4.png', (225, 70, 1200, 1200))),
     ('guardian_f', 'ผู้พิทักษ์', ['f'], lambda: grid4('guardian_f4.png', (175, 90, 1230, 1215))),
     ('healer_m', 'ผู้รักษา', ['m'], lambda: grid4('healer_m4.png')),

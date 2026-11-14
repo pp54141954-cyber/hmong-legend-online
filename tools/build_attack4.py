@@ -19,8 +19,8 @@ BODY_SETS = [  # (id, อาชีพ, เพศ, ไฟล์ต้นฉบั
     ('fighter_f', 'นักสู้', 'f', 'fighter_f_attack.png'),
     ('assassin_m', 'นักฆ่า', 'm', 'assassin_m_attack.png'),
     ('assassin_f', 'นักฆ่า', 'f', 'assassin_f_attack.png'),
-    ('archer_m', 'นักธนู', 'm', 'archer_m_attack.png'),
-    ('archer_f', 'นักธนู', 'f', 'archer_f_attack.png'),
+    ('archer_m', 'นักธนู', 'm', 'archer_m2_attack.png'),
+    ('archer_f', 'นักธนู', 'f', 'archer_f2_attack.png'),
 ]
 
 def bands(im):

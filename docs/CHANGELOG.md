@@ -1,5 +1,14 @@
 # ประวัติเวอร์ชัน
 
+## V2-R57 — 2026-11-14 (เปลี่ยนตัวละครนักธนูเป็นแบบผมดำ ชุดดำลายแดง)
+
+- ตามคำสั่งเจ้าของ: "ใช้แทนเป็นตัวละครนักธนู"
+- สำรองไฟล์ก่อนแก้: `game/versions/r56-before-archer-swap.html`, ภาพนักธนูเดิม `game/versions/assets_r56/` (ภาพต้นฉบับแบบเดิม `archer_m.png`, `archer_f.png`, `archer_{m,f}_attack.png` ยังอยู่ใน `assets/sprites_src/classbody/`)
+- ภาพเดินใหม่ ชาย/หญิง 4 ทิศ × 4 เฟรม: `archer_m2.png`, `archer_f2.png` → `game/sprites/pcl_archer_{m,f}.webp`
+- ท่ายิงธนูชุดเดียวกัน (ที่เคยเก็บไว้ใน `unused/`) ย้ายมาเป็น `archer_{m,f}2_attack.png` → `game/sprites/pca_archer_{m,f}.webp`
+- หน้าเลือกตัวละคร การ์ดอาชีพ และผู้เล่นอื่นที่เป็นนักธนู ใช้แบบใหม่ทั้งหมด; ภาพแนบชุดคำสั่ง `docs/prompts/ref/class_archer_*_walk.png` อัปเดตแล้ว
+- ทดสอบ: smoke 136/136, sim 119/119, online 97/97 · ภาพ `evidence/pcl_archer_{m,f}_check.png`, `atk4_archer_{m,f}_check.png`, `r57_archer_new.png`
+
 ## V2-R56 — 2026-11-14 (ท่าโจมตีที่วาดจริง: นักดาบหญิง)
 
 - ภาพจากเจ้าของ: นักดาบหญิง 4 ทิศ × 4 เฟรม (ต้นฉบับ `assets/sprites_src/classbody/swordsman_f_attack.png`) → `game/sprites/pc_f0_{h,b}_atk4.webp`
