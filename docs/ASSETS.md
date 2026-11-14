@@ -111,3 +111,6 @@
 | ไฟล์ | ที่มา | หมายเหตุ |
 | --- | --- | --- |
 | `game/sprites/player_f_walk.webp` / `_idle` / `_attack` | เจ้าของทำด้วย ChatGPT ตามชุดคำสั่ง `docs/prompts/female_character_sprites.md` | ต้นฉบับ `assets/sprites_src/female/`, แปลงด้วย `tools/build_female_sprites.py`, พิกเซลผม alpha=254 |
+
+## ภาพอ้างอิงสำหรับคำสั่งท่าโจมตี (V2-R53)
+- `docs/prompts/ref/class_<อาชีพ>_<m|f>_walk.png` (14 ภาพ) — ส่งออกจาก `game/sprites/pcl_*.webp` ขยาย 2 เท่า พื้นขาว ใช้แนบกับ `docs/prompts/class_attack_sprites.md`
