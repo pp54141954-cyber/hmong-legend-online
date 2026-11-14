@@ -889,27 +889,35 @@ function poseFor(cls,look){const P=CLASS_POSE[cls];if(!P)return null;const g=loo
 const CLASS_WEAPON={'นักธนู':'bow','นักฆ่า':'daggers','นักสู้':'fists','ผู้สืบวิญญาณ':'staff','ผู้รักษา':'leafstaff','ผู้ใช้มนตรา':'book','ผู้พิทักษ์':'shield'};
 const CLS_FXCOL={'นักดาบ':'#6b8cff','นักธนู':'#7bd36a','นักฆ่า':'#b06bff','นักสู้':'#ff7a4a','ผู้สืบวิญญาณ':'#5fe0b0','ผู้รักษา':'#ffd35a','ผู้ใช้มนตรา':'#9b7bff','ผู้พิทักษ์':'#5fb4ff'};
 const CLS_ATK={'นักธนู':'shot','ผู้ใช้มนตรา':'cast','ผู้รักษา':'cast','ผู้สืบวิญญาณ':'cast','นักฆ่า':'stab','นักสู้':'punch','ผู้พิทักษ์':'bash'};
-function drawBodyCast(c,CB){const K=ctx,cls=curCls(),kind=CLS_ATK[cls]||'slash',side=player.dir==='E'||player.dir==='W'?player.dir:(player.lastH||'E'),sx=side==='W'?-1:1,p=Math.min(1,c.t/c.sk.poseT);
-  const vert=player.dir==='N'||player.dir==='S',row=vert?(player.dir==='S'?0:1):(side==='W'?2:3),col=CLS_FXCOL[cls]||'#fff';
-  /* จังหวะ: ง้าง 0–.35 → พุ่ง .35–.6 → ค้าง .6–.8 → กลับ */
-  const back=p<.35?p/.35:0,fwd=p<.35?0:p<.6?(p-.35)/.25:p<.8?1:1-(p-.8)/.2,hop=kind==='punch'||kind==='stab'?Math.sin(Math.min(1,fwd)*Math.PI)*3:0;
-  const dist=kind==='shot'||kind==='cast'?2:kind==='bash'?6:9,dx=vert?0:sx*(-4*back+dist*fwd),dy=vert?(player.dir==='S'?1:-1)*(-3*back+dist*.6*fwd):-hop;
-  const lean=vert?0:sx*(-.09*back+(kind==='cast'?-.04:.15)*fwd),sq=1-.07*back+.05*fwd,dw=CWc*SCALE,dh=CHc*SCALE,fr=p<.35?0:p<.6?2:p<.8?3:1,hx=player.x+dx,hy=player.y+dy;
+/* ท่าโจมตีของตัวละครอาชีพ (V2-R52): แยกร่างท่อนบน/ท่อนล่างที่เอว → ท่อนบนเอี้ยวง้างแล้วฟาด ขาก้าวย่อ (ไม่ใช่แค่เลื่อนทั้งตัว)
+   ใช้ทั้งในเกมและหน้าเลือกตัวละคร: วาดรอบจุดเท้า (x,y) ด้วยขนาดตัวละคร S (ในเกม = SCALE) */
+const ATK_CUT=80;
+function drawAtkPose(K,CB,x,y,dir,lastH,p,cls,S){const kind=CLS_ATK[cls]||'slash',side=dir==='E'||dir==='W'?dir:(lastH||'E'),sx=side==='W'?-1:1,vert=dir==='N'||dir==='S',row=vert?(dir==='S'?0:1):(side==='W'?2:3),col=CLS_FXCOL[cls]||'#fff';
+  const melee=kind!=='shot'&&kind!=='cast',back=p<.35?Math.sin(p/.35*Math.PI/2):0,fwd=p<.35?0:p<.55?(p-.35)/.2:p<.8?1:1-(p-.8)/.2,hop=kind==='punch'||kind==='stab'?Math.sin(Math.min(1,fwd)*Math.PI)*3:0;
+  const dist=kind==='shot'||kind==='cast'?2:kind==='bash'?6:9,dw=CWc*SCALE,top=-(CHc-4)*SCALE,cy=top+ATK_CUT*SCALE;
+  /* ทิศข้าง: เอี้ยวรอบเอว · ทิศหน้า/หลัง: บิดตัวเล็กน้อย + ยุบ/ยืด */
+  const turn=vert?(sx*(-.14*back+.12*fwd)):sx*(-(kind==='shot'?.12:.3)*back+(melee?.36:kind==='shot'?-.06:.14)*fwd);
+  const ox=vert?0:sx*(-3*back+dist*fwd),oy=vert?(dir==='S'?1:-1)*(-3*back+dist*.6*fwd):-hop,sq=1-.08*back+.06*fwd,legF=p<.35?0:p<.85?1:0,upF=p<.35?0:p<.6?2:p<.8?3:1;
+  function body(dx,dy,a,al,lit){K.save();if(lit){K.globalAlpha=al;K.globalCompositeOperation='lighter'}
+    K.drawImage(CB,legF*CWc,row*CHc+ATK_CUT,CWc,CHc-ATK_CUT,-dw/2+dx,cy+dy,dw,(CHc-ATK_CUT)*SCALE);
+    K.translate(dx+(vert?0:sx*2*fwd),cy+dy);K.rotate(a);K.scale(1/sq,sq);K.drawImage(CB,upF*CWc,row*CHc,CWc,ATK_CUT+6,-dw/2,-ATK_CUT*SCALE,dw,(ATK_CUT+6)*SCALE);K.restore()}
+  K.save();K.translate(x,y);K.scale(S/SCALE,S/SCALE);
   /* ฝุ่นตอนพุ่ง */
-  if(fwd>0&&p<.7&&kind!=='cast'){K.save();K.globalAlpha=.45*(1-fwd*.5);K.fillStyle='#d8c9a8';for(let i=0;i<4;i++){const t=fwd+i*.15;K.beginPath();K.ellipse(hx-sx*(6+t*10)*(vert?0:1)+(i-1.5)*4,player.y+1-i%2,3+t*3,1.6+t,0,0,7);K.fill()}K.restore()}
-  /* ร่างเงาตามหลัง 2 ชั้น */
-  for(const [o,a] of [[10,.18],[5,.3]])if(fwd>.15&&kind!=='cast'){K.save();K.globalAlpha=a*fwd;K.globalCompositeOperation='lighter';K.translate(hx-(vert?0:sx*o),hy-(vert?(player.dir==='S'?o:-o):0));K.rotate(lean);K.drawImage(CB,fr*CWc,row*CHc,CWc,CHc,-dw/2,-(CHc-4)*SCALE,dw,dh);K.restore()}
-  K.save();K.translate(hx,hy);K.rotate(lean);K.scale(1/sq,sq);K.drawImage(CB,fr*CWc,row*CHc,CWc,CHc,-dw/2,-(CHc-4)*SCALE,dw,dh);K.restore();
-  /* เส้นแรง/แสงของอาวุธ ตามอาชีพ */
-  const ux=vert?0:sx,uy=vert?(player.dir==='S'?1:-1):0,cx=hx+ux*14,cy=hy-22+uy*10,glow=(r,a)=>{const g=K.createRadialGradient(cx,cy,0,cx,cy,r);g.addColorStop(0,col);g.addColorStop(1,'rgba(0,0,0,0)');K.globalAlpha=a;K.fillStyle=g;K.fillRect(cx-r,cy-r,r*2,r*2)};
-  K.save();K.globalCompositeOperation='lighter';K.lineCap='round';K.strokeStyle=col;K.shadowColor=col;K.shadowBlur=10;
-  if(kind==='cast'){glow(10+back*8+fwd*6,.25+.5*Math.max(back,fwd));if(fwd>.2){K.globalAlpha=.7*fwd;K.lineWidth=1.5;for(let i=0;i<6;i++){const a=i/6*6.28+p*8;K.beginPath();K.arc(cx,cy,7+fwd*7,a,a+.5);K.stroke()}}}
-  else if(kind==='shot'){if(back>0){K.globalAlpha=.5*back;K.lineWidth=1;K.beginPath();K.moveTo(cx-ux*10,cy-uy*10);K.lineTo(cx+ux*6,cy+uy*6);K.stroke()}if(fwd>0&&p<.7){glow(9,.6*fwd);K.globalAlpha=.8*fwd;K.lineWidth=2;for(let i=-1;i<=1;i++){K.beginPath();K.moveTo(cx+ux*4,cy+uy*4+i*3*(vert?0:1));K.lineTo(cx+ux*(14+fwd*10),cy+uy*(14+fwd*10)+i*2)}K.stroke()}}
-  else if(fwd>0&&p<.82){/* ประชิด: โค้งฟัน/แรงหมัด/คลื่นโล่ */const r=kind==='punch'?9:kind==='bash'?12:16,a0=vert?(uy>0?Math.PI/2:-Math.PI/2):(sx>0?0:Math.PI),sw=kind==='stab'?.5:kind==='punch'?.6:1.4;
-    K.globalAlpha=.85*Math.min(1,fwd*1.5)*(p>.6?1-(p-.6)/.22:1);K.lineWidth=kind==='slash'?3.2:2.4;K.beginPath();K.arc(cx-ux*4,cy-uy*4,r+fwd*4,a0-sw,a0-sw+sw*2*Math.min(1,fwd*1.3));K.stroke();
-    K.lineWidth=1.2;K.globalAlpha*=.7;K.beginPath();K.arc(cx-ux*4,cy-uy*4,r+fwd*4-4,a0-sw*.8,a0-sw*.8+sw*1.6*Math.min(1,fwd*1.3));K.stroke();
-    if(p>.45&&p<.7){glow(kind==='bash'?14:8,.6);if(kind!=='slash'){K.globalAlpha=.8;K.lineWidth=1.5;for(let i=0;i<5;i++){const a=a0+(i-2)*.45;K.beginPath();K.moveTo(cx+Math.cos(a)*6,cy+Math.sin(a)*6);K.lineTo(cx+Math.cos(a)*(12+fwd*6),cy+Math.sin(a)*(12+fwd*6));K.stroke()}}}}
+  if(fwd>0&&p<.7&&melee){K.save();K.globalAlpha=.45*(1-fwd*.5);K.fillStyle='#d8c9a8';for(let i=0;i<4;i++){const t=fwd+i*.15;K.beginPath();K.ellipse(ox-sx*(6+t*10)*(vert?0:1)+(i-1.5)*4,1-i%2,3+t*3,1.6+t,0,0,7);K.fill()}K.restore()}
+  /* ร่างเงาตามหลัง */
+  if(fwd>.15&&melee)for(const [o,a] of [[10,.16],[5,.28]])body(ox-(vert?0:sx*o),oy-(vert?(dir==='S'?o:-o):0),turn*.6,a*fwd,true);
+  body(ox,oy,turn,1,false);
+  /* เส้นแรง/แสงของอาวุธ: ตามมือที่เอี้ยวไปกับท่อนบน */
+  const ux=vert?0:sx,uy=vert?(dir==='S'?1:-1):0,hx=ox+ux*14+Math.sin(turn)*16,hy=oy+cy-6+uy*10-(1-Math.cos(turn))*10,glow=(r,a)=>{const g=K.createRadialGradient(hx,hy,0,hx,hy,r);g.addColorStop(0,col);g.addColorStop(1,'rgba(0,0,0,0)');K.globalAlpha=a;K.fillStyle=g;K.fillRect(hx-r,hy-r,r*2,r*2)};
+  K.globalCompositeOperation='lighter';K.lineCap='round';K.strokeStyle=col;K.shadowColor=col;K.shadowBlur=10;
+  if(kind==='cast'){glow(10+back*8+fwd*6,.25+.5*Math.max(back,fwd));if(fwd>.2){K.globalAlpha=.7*fwd;K.lineWidth=1.5;for(let i=0;i<6;i++){const a=i/6*6.28+p*8;K.beginPath();K.arc(hx,hy,7+fwd*7,a,a+.5);K.stroke()}}}
+  else if(kind==='shot'){if(back>0){K.globalAlpha=.6*back;K.lineWidth=1.2;K.beginPath();K.moveTo(hx-ux*(4+back*8),hy-uy*(4+back*8));K.lineTo(hx+ux*8,hy+uy*8);K.stroke()}if(fwd>0&&p<.7){glow(9,.6*fwd);K.globalAlpha=.8*fwd;K.lineWidth=2;for(let i=-1;i<=1;i++){K.beginPath();K.moveTo(hx+ux*4,hy+uy*4+i*3*(vert?0:1));K.lineTo(hx+ux*(14+fwd*10),hy+uy*(14+fwd*10)+i*2);K.stroke()}}}
+  else if(fwd>0&&p<.82){const r=kind==='punch'?9:kind==='bash'?12:16,a0=vert?(uy>0?Math.PI/2:-Math.PI/2):(sx>0?0:Math.PI),sw=kind==='stab'?.5:kind==='punch'?.6:1.4,dir2=sx;
+    K.globalAlpha=.85*Math.min(1,fwd*1.5)*(p>.6?1-(p-.6)/.22:1);K.lineWidth=kind==='slash'?3.2:2.4;K.beginPath();K.arc(hx-ux*4,hy-uy*4,r+fwd*4,a0-sw*dir2,a0-sw*dir2+sw*2*dir2*Math.min(1,fwd*1.3),dir2<0);K.stroke();
+    K.lineWidth=1.2;K.globalAlpha*=.7;K.beginPath();K.arc(hx-ux*4,hy-uy*4,r+fwd*4-4,a0-sw*.8*dir2,a0-sw*.8*dir2+sw*1.6*dir2*Math.min(1,fwd*1.3),dir2<0);K.stroke();
+    if(p>.45&&p<.7){glow(kind==='bash'?14:8,.6);if(kind!=='slash'){K.globalAlpha=.8;K.lineWidth=1.5;for(let i=0;i<5;i++){const a=a0+(i-2)*.45;K.beginPath();K.moveTo(hx+Math.cos(a)*6,hy+Math.sin(a)*6);K.lineTo(hx+Math.cos(a)*(12+fwd*6),hy+Math.sin(a)*(12+fwd*6));K.stroke()}}}}
   K.restore()}
+function drawBodyCast(c,CB){drawAtkPose(ctx,CB,player.x,player.y,player.dir,player.lastH,Math.min(1,c.t/c.sk.poseT),curCls(),SCALE)}
 function drawClassCast(c){{const CB=classBody(curCls(),PS.look);if(CB){drawBodyCast(c,CB);return}}drawClassCast.n=(drawClassCast.n||0)+1;drawClassCast.w=CLASS_WEAPON[curCls()];const K=ctx,w=CLASS_WEAPON[curCls()],side=player.dir==='E'||player.dir==='W'?player.dir:(player.lastH||'E'),sx=side==='W'?-1:1,p=Math.min(1,c.t/c.sk.poseT);
   const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2,hit=p<.45?ease(p/.45)*.35:p<.7?.35+ease((p-.45)/.25)*.65:1-ease((p-.7)/.3)*.6;
   const lunge=(w==='daggers'||w==='fists'||w==='shield')?sx*hit*7:0,crouch=(w==='daggers'&&p<.45)?2:0;
@@ -1187,7 +1195,7 @@ function drawFx(){
   ctx.textAlign='center';for(const n of nums){ctx.globalAlpha=Math.min(1,n.t*2);ctx.font='bold 14px sans-serif';ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(n.s,n.x,n.y);ctx.fillStyle=n.c;ctx.fillText(n.s,n.x,n.y)}ctx.globalAlpha=1}
 function draw(){
   const zoom=fitAll?Math.min(cw/W,ch/H):Math.max(.15,Math.min(4,Math.min(cw,ch)/520*zoomMul)),vw=cw/zoom,vh=ch/zoom;
-  const cx=W>vw?Math.min(W-vw,Math.max(0,player.x-vw/2)):(W-vw)/2,cy=H>vh?Math.min(H-vh,Math.max(0,player.y-vh/2)):(H-vh)/2;
+  const cx=W>vw?Math.min(W-vw,Math.max(0,player.x-vw/2)):(W-vw)/2,pT=fitAll?0:56/zoom,pB=fitAll?0:150/zoom,cy=H+pT+pB>vh?Math.min(H-vh+pB,Math.max(-pT,player.y-vh/2)):(H-vh)/2; /* V2-R52: เผื่อขอบบน/ล่างใต้แถบปุ่ม ตัวละครที่ยืนชิดขอบแผนที่ไม่ถูกปุ่มสกิลบัง */
   ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#1b2a1f';ctx.fillRect(0,0,cv.width,cv.height);
   const shx=shakeT>0?(Math.random()-.5)*shakeA*2:0,shy=shakeT>0?(Math.random()-.5)*shakeA*2:0;ctx.setTransform(dpr*zoom,0,0,dpr*zoom,-(cx+shx)*dpr*zoom,-(cy+shy)*dpr*zoom);ctx.imageSmoothingEnabled=false;ctx.drawImage(Z.ground,0,0);if(Z.D.painted){const mi=mapImg(Z.D.painted);if(mi&&mi.complete&&mi.naturalWidth){ctx.imageSmoothingEnabled=true;ctx.drawImage(mi,0,0,W,H)}else if(mi&&!mi.failed&&Math.floor(tNow*2)%2===0)say('กำลังโหลดแผนที่…')}
   ctx.fillStyle='rgba(220,245,255,.75)';for(const[x,y]of Z.falls)for(let k=0;k<4;k++){const yy=(tNow*90+k*8+x*5)%T;ctx.fillRect(x*T+3+k*7,y*T+yy,3,8)}
@@ -1361,7 +1369,7 @@ enterZone(CFG.player.home,ZONES[CFG.player.home].start[0],ZONES[CFG.player.home]
 let last=performance.now();
 function loop(n){const dt=Math.min((n-last)/1000,.05);last=n;update(dt);draw();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
-window.HL={skfxImg:c=>skfxImg(c),classBody:(c,l)=>classBody(c,l||PS.look),CLASS_BODY,SKILL_FXUD,skfxudReady:c=>!!skfxudImg(c),SKILL_FX4,skfx4Ready:c=>!!skfx4Img(c),DV,SKILL_FX,skfxReady:c=>!!skfxImg(c),get fxList(){return fx},CLASS_WEAPON,get castDraw(){return[drawClassCast.n||0,drawClassCast.w]},poseFor:(c,l)=>poseFor(c,l||PS.look),get CLASS_POSE(){return CLASS_POSE},skillFor:i=>CFG.skillFor(curCls(),i),basicNow:()=>CFG.basicFor(curCls()),get shotsN(){return shots.length},CHAR_CAT,lookSets,femReady,get femDraws(){return femHair.n||0},HAIRS,OUTFITS,cleanLook,setLook,sheetsFor,femHair,get SPRcur(){return SPR},preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
+window.HL={drawAtkPose:(...a)=>drawAtkPose(...a),skfxImg:c=>skfxImg(c),classBody:(c,l)=>classBody(c,l||PS.look),CLASS_BODY,SKILL_FXUD,skfxudReady:c=>!!skfxudImg(c),SKILL_FX4,skfx4Ready:c=>!!skfx4Img(c),DV,SKILL_FX,skfxReady:c=>!!skfxImg(c),get fxList(){return fx},CLASS_WEAPON,get castDraw(){return[drawClassCast.n||0,drawClassCast.w]},poseFor:(c,l)=>poseFor(c,l||PS.look),get CLASS_POSE(){return CLASS_POSE},skillFor:i=>CFG.skillFor(curCls(),i),basicNow:()=>CFG.basicFor(curCls()),get shotsN(){return shots.length},CHAR_CAT,lookSets,femReady,get femDraws(){return femHair.n||0},HAIRS,OUTFITS,cleanLook,setLook,sheetsFor,femHair,get SPRcur(){return SPR},preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
   for(let i=0;i<=11;i++)out.push({src:'icons/sk_'+i+'.png',label:'ไอคอนสกิล'});for(const c of Object.values(CLASS_BODY))for(const e of Object.values(c))if(!out.some(o=>o.src==='sprites/pcl_'+e.id+'.webp'))out.push({src:'sprites/pcl_'+e.id+'.webp',label:'ตัวละครอาชีพ'});for(const n of Object.values(SKILL_FXUD.cls||{}))out.push({src:'sprites/skfxud_'+n+'.webp',label:'เอฟเฟกต์สกิล'});for(const n of Object.values(SKILL_FX4.cls||{}))out.push({src:'sprites/skfx4_'+n+'.webp',label:'เอฟเฟกต์สกิล'});for(const n of Object.values(SKILL_FX.cls||{}))out.push({src:'sprites/skfx_'+n+'.webp',label:'เอฟเฟกต์สกิล'});for(const g of['m','f']){const ls=lookSets({g,hs:0,of:0});if(ls)for(const f of['walk','idle','attack'])for(const[id,pt]of[[ls.h,'h'],[ls.b,'b']])out.push({src:'sprites/pc_'+id+'_'+pt+'_'+f+'.webp',label:'ภาพตัวละคร'})}out.push({src:'icons/sk_p.png',label:'ไอคอนสกิล'});
   for(const t of new Set((ZONES.field2.spawns||[]).map(s=>s.type))){const d=MON_SPR[t];if(!d)continue;if(d.walk)out.push({src:d.walk,label:'ภาพ'+t});if(d.act)out.push({src:d.act,label:'ภาพ'+t})}return out},CLASSES,CLS_ACTIVE,CLS_PATHS,curCls,skName,setClassLocal(c){if(!CLS_ACTIVE[c])return'invalid';if(!inSafe(player.x,player.y))return'not-safe';PS.cls=c;buildSkills();hudT=0;return'ok'},get inSafeNow(){return inSafe(player.x,player.y)},buildSkills,adminLocal,clearWarpCd(){warpCd=0},monShown,warp,openWorld,openAutoCfg,statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
 })();
@@ -1543,13 +1551,11 @@ function drawLookPrev(){const cv=document.getElementById('lkcv');if(!cv||csEl.hi
   k.fillStyle='rgba(0,0,0,.35)';k.beginPath();k.ellipse(cx,fy,30,8,0,0,7);k.fill();
   /* ประกายลอยขึ้น */for(let i=0;i<10;i++){const t=(csAnim*.6+i*37)%100/100,x=cx+Math.sin(i*2.1+csAnim*.03)*70*(1-t*.3),y=fy-t*150;k.globalAlpha=(1-t)*.8;k.fillStyle=col;k.fillRect(x,y,2,2)}k.globalAlpha=1;
   const fr=fx?Math.min(3,Math.floor((T-64)/6)):csAnim%4;
-  try{k.drawImage(S,fr*96,row*124,96,124,cx-48*sc,fy-118*sc,96*sc,124*sc)}catch(e){}
+  /* ช่วงท้ายของรอบ: แสดงท่าโจมตีของอาชีพ (ไม่มีภาพเอฟเฟกต์ติดมา) V2-R52 */
+  if(fx&&CBp){try{HL.drawAtkPose(k,CBp,cx,fy+2*sc,'E','E',((T-64)%16)/16,cls,sc)}catch(e){}}
+  else try{k.drawImage(S,fr*96,row*124,96,124,cx-48*sc,fy-118*sc,96*sc,124*sc)}catch(e){}
   if(!CBp&&csLook.g==='f'&&!HL.sheetsFor(csLook).fem&&!HL.sheetsFor(csLook).tmp)HL.femHair(cx,fy,dir,csLook,sc,k);
   /* เอฟเฟกต์ท่าไม้ตาย (แถว 09 ของตาราง) ทุก ๆ รอบ */
-  if(fx){const im=HL.skfxImg(cls),F=HL.SKILL_FX;if(im){const p=(T-64)/32,f=1+Math.min(3,Math.floor(p*4)),s2=107*sc/F.fig*.8,tc=drawLookPrev.tc||(drawLookPrev.tc=document.createElement('canvas'));tc.width=W;tc.height=H;const t=tc.getContext('2d');
-    t.save();t.translate(cx,fy);t.scale(s2,s2);t.drawImage(im,f*F.cw,8*F.ch,F.cw,F.ch,-F.ax,-F.ay,F.cw,F.ch);t.restore();
-    /* จางเป็นวงรี ไม่ให้เห็นขอบสี่เหลี่ยมของภาพเอฟเฟกต์ */t.globalCompositeOperation='destination-in';const g=t.createRadialGradient(cx,fy-60,20,cx,fy-60,Math.min(W,H)*.52);g.addColorStop(0,'#000');g.addColorStop(.7,'rgba(0,0,0,.6)');g.addColorStop(1,'rgba(0,0,0,0)');t.fillStyle=g;t.fillRect(0,0,W,H);
-    k.save();k.globalCompositeOperation='lighter';k.globalAlpha=Math.min(.85,(1-p)*4);k.drawImage(tc,0,0);k.restore()}}
   csAnim++}
 function lookHtml(){const L=csLook,hasCB=!!HL.CLASS_BODY[csMode==='edit'?HL.curCls():csPick];return '<div class="lk"><canvas id="lkcv" width="240" height="230" aria-label="ตัวอย่างตัวละคร"></canvas><div class="lko">'
    +'<div class="lkr"><span>เพศ</span><div class="seg"><button data-g="m" class="'+(L.g==='m'?'on':'')+'" aria-pressed="'+(L.g==='m')+'">ชาย</button><button data-g="f" class="'+(L.g==='f'?'on':'')+'" aria-pressed="'+(L.g==='f')+'">หญิง</button></div></div>'

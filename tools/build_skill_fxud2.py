@@ -8,6 +8,8 @@
 import json, os, re
 import numpy as np
 from PIL import Image, ImageFilter
+import sys; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from fx_figures import strong_only
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'assets/design_refs/skills/updown2')
 CW, CH, FIG, AXY = 300, 300, 92, (150, 200)        # ช่องผลลัพธ์, ความสูงตัวละครหลังย่อ, จุดเท้า
@@ -34,6 +36,7 @@ def glow(cell, ready, bg):
     gain = lc - lr_max; sat = c.max(2) - c.min(2)
     w = np.clip((gain - 42) / 50, 0, 1) * np.clip((lc - 105) / 60, 0, 1) * np.clip((sat + 40) / 80, 0, 1)
     out = np.clip(c - bg[None, None, :] * 1.05, 0, 255) * w[..., None]
+    out = strong_only(out, om_min=70)                        # V2-R52: ตัดส่วนตัวละครสีซีดที่สว่างขึ้นตอนขยับ
     h, ww = out.shape[:2]; e = 10
     fy = np.clip(np.minimum(np.arange(h), h - 1 - np.arange(h)) / e, 0, 1); fx = np.clip(np.minimum(np.arange(ww), ww - 1 - np.arange(ww)) / e, 0, 1)
     return (out * (fy[:, None] * fx[None, :])[..., None]).astype(np.uint8)

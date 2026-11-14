@@ -479,8 +479,9 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
         for (let i = 3; i <= 11; i++) { const sk = HL.skillFor(i); HL.PS.job = 30; HL.PS.dead = false; HL.PS.cast = null; HL.PS.cd = {}; HL.PS.buffT = 0; HL.PS.guardT = 0; HL.recalc(); HL.PS.hp = Math.round(HL.PS.maxHp * .3);
           HL.player.x = s0[0]; HL.player.y = s0[1]; HL.player.dir = 'E'; for (const m of HL.mons) { m.state = 'dead'; m.respT = 1e9 }
           const m = HL.mons.find(m => !m.c.boss), far = sk.dist || (sk.shape === 'shot' || sk.shape === 'wave' ? 110 : 26); Object.assign(m, { state: 'idle', hp: 1e6, x: s0[0] + far, y: s0[1] + (sk.dist ? 14 : 0) + m.c.size * .6 - 14, hx: s0[0] + far, hy: s0[1], respT: 0, atkT: 99 });
-          const hp0 = HL.PS.hp, res = HL.useSkill(i); await sleep(900);
-          const ok = res === 'ok' && (sk.shape === 'heal' ? HL.PS.hp > hp0 : sk.shape === 'buff' ? HL.PS.buffT > 0 : sk.shape === 'guard' ? HL.PS.guardT > 0 : m.hp < 1e6);
+          const hp0 = HL.PS.hp, res = HL.useSkill(i), eff = () => sk.shape === 'heal' ? HL.PS.hp > hp0 : sk.shape === 'buff' ? HL.PS.buffT > 0 : sk.shape === 'guard' ? HL.PS.guardT > 0 : m.hp < 1e6;
+          for (let w = 0; w < 30 && !eff(); w++) await sleep(60);   // กับดักมีหน่วงเวลา: รอผลสูงสุด ~1.8 วินาที (เดิมรอตายตัว 0.9 วิ ทำให้บางรอบไม่ทัน)
+          const ok = res === 'ok' && eff();
           if (!ok) out.push(cls + '#' + i + ' ' + sk.shape + ' ' + res + ' dmg=' + Math.round(1e6 - m.hp)) } }
       HL.PS.cls = 'นักดาบ'; HL.buildSkills(); for (const m of HL.mons) { m.respT = 1 } return out });
     rec('ออฟไลน์: ทุกอาชีพ ทุกสกิล (72 ท่า) ใช้ได้และมีผล (ดาเมจ/ฟื้น/บัฟ/ป้องกัน)', r.length === 0, r.slice(0, 6).join(' | '));

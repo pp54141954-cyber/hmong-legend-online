@@ -158,3 +158,4 @@ js = 'const CLASS_BODY=' + json.dumps(cat, ensure_ascii=False, separators=(',', 
 s, n = re.subn(r'const CLASS_BODY=\{.*?\};/\*CLASS_BODY\*/', lambda m: js, s, count=1, flags=re.S)
 if n != 1: raise SystemExit('ไม่พบจุดฝัง CLASS_BODY')
 open(p, 'w', encoding='utf-8').write(s); print(js)
+import runpy; runpy.run_path(os.path.join(ROOT, 'tools', 'clean_floor_shadow.py'))  # V2-R52: ลบเงาพื้นสีขาวใต้เท้า

@@ -7,6 +7,8 @@
 import json, os, re
 import numpy as np
 from PIL import Image, ImageFilter
+import sys; sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from fx_figures import grey, silhouettes, dilate, grow_pale, target_templates, match_targets
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'assets/design_refs/skills/v2')
 CW, CH, AX, AY, FIG = 320, 200, 70, 172, 92   # ช่องในแผ่นผลลัพธ์, จุดเท้า, ความสูงหุ่นหลังย่อ
@@ -22,15 +24,24 @@ GRID = {
  'ผู้พิทักษ์':   ('guardian',    [115, 255, 396, 549, 692, 831, 970, 1109, 1251, 1419], [70, 252, 436, 613, 910, 1084]),
 }
 
-def fx_layer(cell, bg):
+def fx_layer(cell, bg, tm=()):
     a = cell.astype(int); lum = a.mean(2); sat = a.max(2) - a.min(2)
     col = sat > 40
-    near = np.asarray(Image.fromarray((col * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(13))) > 0
+    near = np.asarray(Image.fromarray((col * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(7))) > 0   # แกนขาวต้องติดแสงสี (ใบดาบขาวของหุ่นไม่ผ่าน)
     keep = col | ((lum > 232) & near)                       # สีเรือง + แกนขาวติดสี (หุ่นเทาไม่ผ่าน)
     out = np.clip(a - bg[None, None, :] * 1.05, 0, 255)      # ลบสีพื้น → วาดแบบบวกแสง
+    # V2-R52: ลบหุ่น ไม่ให้ติดมาในเกม — หุ่น (แม้ถูกแสงสาดจนมีสี) เป็นสีหม่น ส่วนเอฟเฟกต์เป็นแสงสว่าง
+    mx = a.max(2); keep &= (mx >= 105) | ((lum > 232) & near)
+    fig, _ = silhouettes(grey(cell, bg)); fig = dilate(grow_pale(fig, cell, bg), 2)
+    keep &= ~(fig & (mx < 190))                              # ในตัวหุ่น: เหลือเฉพาะแสงจ้าที่ทับตัว
+    if tm: keep &= ~match_targets(cell, bg, tm)[0]             # หุ่นเป้า (รวมที่ถูกแสงสาดทั้งตัว)
     out[~keep] = 0
-    soft = np.clip((sat - 25) / 30, 0, 1); soft[(lum > 232) & near] = 1
+    soft = np.clip((sat - 25) / 30, 0, 1) * np.clip((mx - 105) / 45, 0, 1); soft[(lum > 232) & near] = 1
     out = out * np.maximum(soft, keep * .0)[..., None]
+    # V2-R52: หลังลบสีพื้น แสงเอฟเฟกต์ยังมีสีจัด ส่วนขอบใบดาบ/อาวุธของหุ่นกลายเป็นสีครีมซีด → เก็บเฉพาะสีจัด + แกนขาวที่ติดสีจัด
+    om = out.max(2); oc = (om - out.min(2)) / np.maximum(om, 1); strong = (oc > .3) & (om > 50)
+    nearS = np.asarray(Image.fromarray((strong * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(9))) > 0
+    out[~(strong | (nearS & (om > 170)))] = 0
     h, w = out.shape[:2]; e = 18                                 # จางขอบช่อง: แสงที่เต็มช่องไม่เป็นขอบสี่เหลี่ยม
     fy = np.clip(np.minimum(np.arange(h), h - 1 - np.arange(h)) / e, 0, 1); fx = np.clip(np.minimum(np.arange(w), w - 1 - np.arange(w)) / e, 0, 1)
     out = out * (fy[:, None] * fx[None, :])[..., None]
@@ -61,9 +72,10 @@ def build(cls, name, rows, cols):
         c = caster(im[y0:y1, cols[0] + 3:cols[1] - 2], bg)
         if not c: c = ((cols[1] - cols[0]) * .3, (y1 - y0) * .9, (y1 - y0) * .7)
         cx, fy, fh = c; s = FIG / max(40, fh)
+        tm = target_templates(im[y0:y1, cols[0] + 3:cols[1] - 2], bg)
         for k in range(5):
             x0, x1 = cols[k] + 3, cols[k + 1] - 2
-            cell = im[y0:y1, x0:x1]; L = fx_layer(cell, bg)
+            cell = im[y0:y1, x0:x1]; L = fx_layer(cell, bg, tm)
             # ขยับให้เท้าหุ่น (อ้างอิงจากช่อง READY, x นับจากขอบซ้ายช่อง) อยู่ที่ AX,AY ของช่องผลลัพธ์
             alpha = (L.max(2) > 6).astype(np.uint8) * 255
             rgba = Image.fromarray(np.dstack([L, alpha]))
