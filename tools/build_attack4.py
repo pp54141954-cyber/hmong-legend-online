@@ -13,6 +13,7 @@ SRC = os.path.join(ROOT, 'assets/sprites_src/classbody')
 CW4, AX4 = 240, 120
 ATK4_SETS = [  # (ชุด, ไฟล์ต้นฉบับ) — ตัวละครพื้นฐานแบบแยกชั้น (นักดาบ)
     ('m0', 'swordsman_m_attack.png'),
+    ('f0', 'swordsman_f_attack.png'),
 ]
 BODY_SETS = [  # (id, อาชีพ, เพศ, ไฟล์ต้นฉบับ) — ตัวละครประจำอาชีพ → game/sprites/pca_<id>.webp (V2-R54) จำนวนเฟรมต่อแถวตามภาพ (4 หรือ 5)
     ('fighter_f', 'นักสู้', 'f', 'fighter_f_attack.png'),
@@ -88,9 +89,42 @@ def check(out, sid, n):
             for k in range(-4, 5): d[c * CW4 + AX4 + k, r * CH + FOOT] = (255, 255, 0, 255)
     chk.resize((out.size[0] * 2, out.size[1] * 2), Image.NEAREST).save(os.path.join(ROOT, 'docs/evidence', 'atk4_%s_check.png' % sid))
 
+def mark_hair_atk(im, warm=7, front_warm=6.5):
+    """ทำเครื่องหมายผม (alpha 254) สำหรับท่าโจมตี (ตัวละครหญิงผมยาว):
+    - ไล่จากผมด้านบนเหมือน mark_hair แต่ไม่ลามเข้าผ้าดำอมแดง (r−b > warm) และไม่เกินความกว้างของหัวด้านที่หัน
+    - ด้านหน้าหัว ใต้ระดับตา (ที่แขนยื่นฟัน): ต้องเป็นสีดำอมเทาจริง — ค่าเฉลี่ย r−b รอบ ๆ ≤ front_warm (ผมดำ ≈ 4–5, ผ้าดำ ≈ 8–11)"""
+    import numpy as np
+    from collections import deque
+    A = np.asarray(im).astype(float); dk = (A[..., 3] > 0) & (A[..., :3].max(2) < 100)
+    rb = np.where(dk, A[..., 0] - A[..., 2], 0); k = np.ones(7)
+    conv = lambda m: np.apply_along_axis(lambda v: np.convolve(v, k, 'same'), 0, np.apply_along_axis(lambda v: np.convolve(v, k, 'same'), 1, m))
+    WARM = conv(rb) / np.maximum(conv(dk.astype(float)), 1)
+    W, H = im.size; px = im.load(); seen = set()
+    def dark(x, y):
+        r, g, b, a = px[x, y]; return a and max(r, g, b) < 100 and max(r, g, b) - min(r, g, b) < 40 and r - b <= warm
+    for ri, fy in enumerate(range(0, H, CH)):
+        for fx in range(0, W, CW4):
+            top = [y for y in range(fy, fy + CH) if any(px[x, y][3] for x in range(fx, fx + CW4))]
+            if not top: continue
+            hx = [x for y in range(top[0], top[0] + 26) for x in range(fx, fx + CW4) if px[x, y][3]]
+            lo, hi, cxh = min(hx) - 22, max(hx) + 22, (min(hx) + max(hx)) / 2
+            if ri == 2: lo = min(hx) - 2      # หันซ้าย
+            if ri == 3: hi = max(hx) + 2      # หันขวา
+            front = (lambda x, y: x > cxh) if ri == 3 else (lambda x, y: x < cxh) if ri == 2 else (lambda x, y: False)
+            ok = lambda x, y: dark(x, y) and not (front(x, y) and y > top[0] + 24 and WARM[y, x] > front_warm)
+            q = deque((x, y) for y in range(fy, fy + 44) for x in range(max(fx, lo), min(fx + CW4, hi + 1)) if ok(x, y)); seen.update(q)
+            while q:
+                x, y = q.popleft()
+                for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if not (max(fx, lo) <= nx <= min(fx + CW4 - 1, hi) and fy <= ny < fy + 110) or (nx, ny) in seen or not ok(nx, ny): continue
+                    seen.add((nx, ny)); q.append((nx, ny))
+    for x, y in seen:
+        r, g, b, a = px[x, y]; px[x, y] = (r, g, b, 254)
+    return len(seen)
+
 def build(sid, name):
     out, n, s = cut(name); assert n == 4, (sid, 'ชุดแยกชั้นต้องมี 4 เฟรม')
-    mark_hair(out)
+    (mark_hair_atk if sid.startswith('f') else mark_hair)(out)
     head, body = split(out)
     head.save(os.path.join(ROOT, 'game/sprites', 'pc_%s_h_atk4.webp' % sid), 'WEBP', lossless=True)
     body.save(os.path.join(ROOT, 'game/sprites', 'pc_%s_b_atk4.webp' % sid), 'WEBP', lossless=True)

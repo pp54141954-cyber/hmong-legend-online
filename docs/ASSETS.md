@@ -118,3 +118,4 @@
 - `game/sprites/pca_fighter_f.webp`, `pca_assassin_m.webp`, `pca_assassin_f.webp` — ท่าโจมตีที่วาดจริง เจ้าของทำด้วย ChatGPT ต้นฉบับ `assets/sprites_src/classbody/*_attack.png` แปลงด้วย `tools/build_attack4.py` (V2-R54)
 - `game/sprites/pca_archer_m.webp`, `pca_archer_f.webp` — ท่าโจมตีนักธนูที่วาดจริง (V2-R55) ต้นฉบับ `assets/sprites_src/classbody/archer_{m,f}_attack.png`
 - `assets/sprites_src/unused/archer_base_{m,f}_attack.png` — ท่ายิงธนูของ "ตัวละครพื้นฐานนักดาบ" (ผมดำ ชุดดำแดง) ส่งมา 2026-11-14 · **ยังไม่ได้ใช้**: นักธนูในเกมใช้ตัวละครประจำอาชีพ (ผมน้ำตาล ชุดเขียว/แดง) ซึ่งมีท่าโจมตีแล้ว (V2-R55) — เก็บไว้เผื่อเจ้าของต้องการให้ตัวละครพื้นฐานเป็นนักธนูได้
+- `game/sprites/pc_f0_h_atk4.webp` / `pc_f0_b_atk4.webp` — ท่าโจมตี 4 ทิศนักดาบหญิง (V2-R56) ต้นฉบับ `assets/sprites_src/classbody/swordsman_f_attack.png`

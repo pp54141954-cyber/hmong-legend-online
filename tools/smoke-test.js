@@ -474,13 +474,13 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     await lp.evaluate(() => localStorage.removeItem('hl_look_off')); await lp.close(); }
   // ===== V2-R53: ท่าโจมตี 4 ทิศที่วาดจริง (นักดาบชาย) =====
   { const r = await page.evaluate(async () => { const sleep = ms => new Promise(r => setTimeout(r, ms)), get = async l => { for (let i = 0; i < 100; i++) { const a = HL.atk4For(l); if (a) return a; await sleep(50) } return null };
-      const A = await get({ g: 'm', hs: 0, of: 0, hair: 0, outfit: 0 }), B = await get({ g: 'm', hs: 0, of: 0, hair: 1, outfit: 0 }), F = HL.atk4For({ g: 'f', hs: 0, of: 0, hair: 0, outfit: 0 });
+      const A = await get({ g: 'm', hs: 0, of: 0, hair: 0, outfit: 0 }), B = await get({ g: 'm', hs: 0, of: 0, hair: 1, outfit: 0 }), F = await get({ g: 'f', hs: 0, of: 0, hair: 0, outfit: 0 });
       if (!A || !B) return { ok: false };
       const px = c => c.getContext('2d').getImageData(0, 0, c.width, c.height).data, a = px(A), b = px(B); let head = 0, body = 0, filled = 0;
       for (let i = 0; i < a.length; i += 4) { const y = ((i >> 2) / A.width | 0) % 124, d = a[i] !== b[i] || a[i + 1] !== b[i + 1]; if (a[i + 3]) filled++; if (d) { if (y < 52) head++; else body++ } }
       const cells = []; const k = A.getContext('2d'); for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { const d = k.getImageData(c * 240, r * 124, 240, 124).data; let n = 0; for (let i = 3; i < d.length; i += 4) n += d[i] > 0; cells.push(n) }
       return { ok: true, w: A.width, h: A.height, head, body, filled, minCell: Math.min(...cells), fem: !!F } });
-    rec('ท่าโจมตี 4 ทิศ นักดาบชาย: 16 เฟรมครบ (960×496), เปลี่ยนสีผม → ผมในท่าโจมตีเปลี่ยน, หญิงยังใช้ท่าเดิม', r.ok && r.w === 960 && r.h === 496 && r.minCell > 1500 && r.head > 1000 && !r.fem, JSON.stringify(r)); }
+    rec('ท่าโจมตี 4 ทิศ นักดาบชาย/หญิง: 16 เฟรมครบ (960×496), เปลี่ยนสีผม → ผมในท่าโจมตีเปลี่ยน, หญิงมีภาพของตัวเอง', r.ok && r.w === 960 && r.h === 496 && r.minCell > 1500 && r.head > 1000 && r.fem, JSON.stringify(r)); }
   // ===== V2-R54: ภาพท่าโจมตีของตัวละครประจำอาชีพ (นักสู้หญิง 5 เฟรม) =====
   { const r = await page.evaluate(async () => { const sleep = ms => new Promise(r => setTimeout(r, ms)); let A = null; for (let i = 0; i < 100; i++) { A = HL.classAtk('นักสู้', { g: 'f' }); const m = HL.classAtk('นักฆ่า', { g: 'm' }), f = HL.classAtk('นักฆ่า', { g: 'f' }), am = HL.classAtk('นักธนู', { g: 'm' }), af = HL.classAtk('นักธนู', { g: 'f' }); if (A && m && f && am && af) break; await sleep(50) }
       if (!A) return { ok: false }; const c = document.createElement('canvas'); c.width = A.img.naturalWidth; c.height = A.img.naturalHeight; const k = c.getContext('2d'); k.drawImage(A.img, 0, 0); const cells = [];

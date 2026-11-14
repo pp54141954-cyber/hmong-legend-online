@@ -858,7 +858,7 @@ function drawPlayer(){if(PS.dead)return;if(PS.hurt>0&&Math.floor(PS.hurt*20)%2)r
   drawPlayerBody();if(PS.look&&PS.look.g==='f'&&!sheetsFor(PS.look).fem&&!sheetsFor(PS.look).tmp){const d=PS.cast?(player.dir==='E'||player.dir==='W'?player.dir:player.lastH==='W'?'W':'E'):player.dir;femHair(player.x,player.y,PS.cast&&(player.dir==='N'||player.dir==='S')?player.dir:d,PS.look,SCALE)}}
 /* ท่าทางอาชีพ (V2-R38): ภาพจากเจ้าของ tools/build_class_poses.py — ใช้ตอนโจมตี/ใช้สกิล ถ้ามีภาพของอาชีพ+เพศนั้น */
 /* ตัวละครต้นแบบแต่ละอาชีพ (tools/build_class_bodies.py) */
-const ATK4={cw:240,ax:120,sets:["m0"],body:{"นักสู้":{"f":{"id":"fighter_f","n":5}},"นักฆ่า":{"m":{"id":"assassin_m","n":4},"f":{"id":"assassin_f","n":4}},"นักธนู":{"m":{"id":"archer_m","n":4},"f":{"id":"archer_f","n":4}}}};/*ATK4*/
+const ATK4={cw:240,ax:120,sets:["m0", "f0"],body:{"นักสู้":{"f":{"id":"fighter_f","n":5}},"นักฆ่า":{"m":{"id":"assassin_m","n":4},"f":{"id":"assassin_f","n":4}},"นักธนู":{"m":{"id":"archer_m","n":4},"f":{"id":"archer_f","n":4}}}};/*ATK4*/
 /* ท่าโจมตี 4 ทิศที่วาดจริง (V2-R53): ชั้นหัว/ตัว pc_<ชุด>_<h|b>_atk4 ช่อง 240×124 เท้าที่ x=120 — ใช้เมื่อทรงผมและแบบชุดมีภาพนี้ (เปลี่ยนสีผม/ชุดได้) */
 const ATK4C={};function atk4For(l){l=cleanLook(l);const ls=lookSets(l);if(!ls||!ATK4.sets.includes(ls.h)||!ATK4.sets.includes(ls.b))return null;const key=lookKey(l);if(ATK4C[key])return ATK4C[key];
   const H=layer(ls.h,'h','atk4'),B=layer(ls.b,'b','atk4');if(!imOk(H)||!imOk(B))return null;return ATK4C[key]=recolor(composeLayers(H,B),l,true)}
