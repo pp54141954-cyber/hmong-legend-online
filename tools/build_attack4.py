@@ -19,10 +19,14 @@ ATK4_SETS = [  # (ชุด, ไฟล์ต้นฉบับ) — ตัวล
 BODY_SETS = [  # (id, อาชีพ, เพศ, ไฟล์ต้นฉบับ) — ตัวละครประจำอาชีพ → game/sprites/pca_<id>.webp (V2-R54) จำนวนเฟรมต่อแถวตามภาพ (4 หรือ 5)
     ('fighter_f', 'นักสู้', 'f', 'fighter_f_attack.png'),
     ('fighter_m', 'นักสู้', 'm', 'fighter_m_attack.png'),  # V2-R60: นักสู้ชาย 5 เฟรม (ชุดเดียวกับชุดเดินใหม่)
-    ('assassin_m', 'นักฆ่า', 'm', 'assassin_m_attack.png'),
-    ('assassin_f', 'นักฆ่า', 'f', 'assassin_f_attack.png'),
+    ('assassin_m', 'นักฆ่า', 'm', 'assassin_m_attack_daggers.png'),  # V2-R61: ท่าโจมตี 4 เฟรมของนักฆ่าชุดใหม่ (ภาพจากมือถือ คัดพื้นดำออก)
+    ('assassin_f', 'นักฆ่า', 'f', 'assassin_f_attack_daggers.png'),  # V2-R61
     ('archer_m', 'นักธนู', 'm', 'archer_m2_attack.png'),
     ('archer_f', 'นักธนู', 'f', 'archer_f2_attack.png'),
+    ('spirit_m', 'ผู้สืบวิญญาณ', 'm', 'spirit_m_attack_v2.png'),  # V2-R61: ท่าโจมตีใหม่ (ยังไม่เคยมีท่าโจมตีของอาชีพนี้)
+    ('spirit_f', 'ผู้สืบวิญญาณ', 'f', 'spirit_f_attack_v2.png'),
+    ('mage_m', 'ผู้ใช้มนตรา', 'm', 'mage_m_attack_v2.png'),
+    ('mage_f', 'ผู้ใช้มนตรา', 'f', 'mage_f_attack_v2.png'),
 ]
 
 def bands(im):
@@ -87,15 +91,16 @@ def merge_small(segs, maxn=5):
         a, b = sorted((i, j)); segs[a:b + 1] = [(segs[a][0], segs[b][1])]
     return segs
 
-def cut(name):
+def cut(name, nframes=4):
+    """แยกแถว/เฟรมของตาราง: nframes = จำนวนเฟรมต่อทิศ (4 ตามค่าเริ่มต้น; นักสู้ใช้ 5) — เกินจำนวนจะรวมชิ้นที่แคบที่สุด (V2-R61)"""
     im = unbg(os.path.join(SRC, name)); print('  พื้นขาวที่ถูกล้อม:', holes(im), 'ก้อน'); B = bands(im)
     if len(B) != 4: B = bands_strong(im)
     assert len(B) == 4, (name, 'แถว', B)
     rows = []
     for b0, b1 in B:
-        band = im.crop((0, b0, im.size[0], b1)); segs = merge_small(col_segments(band))
+        band = im.crop((0, b0, im.size[0], b1)); segs = merge_small(col_segments(band), maxn=nframes)
         fr = [band.crop((x0, 0, x1, band.size[1])) for x0, x1 in segs]; fr = [f.crop(f.getbbox()) for f in fr]
-        assert len(fr) in (4, 5), (name, 'เฟรมในแถว', len(fr)); rows.append(fr)
+        assert len(fr) == nframes, (name, 'เฟรมในแถว', len(fr), nframes); rows.append(fr)
     assert len({len(r) for r in rows}) == 1, (name, 'จำนวนเฟรมแต่ละแถวไม่เท่ากัน', [len(r) for r in rows])
     ref = sorted(r[0].size[1] for r in rows); s = H_TARGET / ref[len(ref) // 2]   # เฟรมแรก = ท่าพร้อม (ยืนตรง)
     n = len(rows[0]); out = Image.new('RGBA', (CW4 * n, CH * 4), (0, 0, 0, 0))
@@ -164,7 +169,7 @@ for sid, name in ATK4_SETS:
 body = {}
 for sid, cls, g, name in BODY_SETS:
     if not os.path.exists(os.path.join(SRC, name)): print('ข้าม', sid); continue
-    out, n, sc = cut(name); out.save(os.path.join(ROOT, 'game/sprites', 'pca_%s.webp' % sid), 'WEBP', lossless=True); check(out, sid, n)
+    out, n, sc = cut(name, 5 if sid.startswith('fighter') else 4); out.save(os.path.join(ROOT, 'game/sprites', 'pca_%s.webp' % sid), 'WEBP', lossless=True); check(out, sid, n)
     body.setdefault(cls, {})[g] = {'id': sid, 'n': n}; print('สร้าง', sid, 'เฟรม', n, 'scale', round(sc, 3))
 p = os.path.join(ROOT, 'game/index.html'); s = open(p, encoding='utf-8').read()
 js = 'const ATK4={cw:%d,ax:%d,sets:%s,body:%s};/*ATK4*/' % (CW4, AX4, json.dumps(done), json.dumps(body, ensure_ascii=False, separators=(',', ':')))

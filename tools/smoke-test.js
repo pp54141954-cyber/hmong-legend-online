@@ -481,6 +481,14 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
       const cells = []; const k = A.getContext('2d'); for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) { const d = k.getImageData(c * 240, r * 124, 240, 124).data; let n = 0; for (let i = 3; i < d.length; i += 4) n += d[i] > 0; cells.push(n) }
       return { ok: true, w: A.width, h: A.height, head, body, filled, minCell: Math.min(...cells), fem: !!F } });
     rec('ท่าโจมตี 4 ทิศ นักดาบชาย/หญิง: 16 เฟรมครบ (960×496), เปลี่ยนสีผม → ผมในท่าโจมตีเปลี่ยน, หญิงมีภาพของตัวเอง', r.ok && r.w === 960 && r.h === 496 && r.minCell > 1500 && r.head > 1000 && r.fem, JSON.stringify(r)); }
+  // ===== V2-R61: ผู้สืบวิญญาณ/ผู้ใช้มนตรา ชุดใหม่ (เดิน 4 ทิศ + ท่าโจมตี 4 เฟรม ชาย-หญิง) =====
+  { const r = await page.evaluate(async () => { const sleep = ms => new Promise(r => setTimeout(r, ms)); const out = {};
+      for (let i = 0; i < 100; i++) { const ok = ['ผู้สืบวิญญาณ', 'ผู้ใช้มนตรา'].every(c => ['m', 'f'].every(g => HL.classAtk(c, { g }))); if (ok) break; await sleep(50) }
+      for (const c of ['ผู้สืบวิญญาณ', 'ผู้ใช้มนตรา']) for (const g of ['m', 'f']) {
+        const a = HL.classAtk(c, { g }), b = HL.CLASS_BODY && HL.CLASS_BODY[c] && HL.CLASS_BODY[c][g];
+        out[c + '-' + g] = { atk: a ? a.n + ':' + a.img.naturalWidth + 'x' + a.img.naturalHeight : null, walk: !!b && b.dirs === 'SNWE' }; }
+      return out; });
+    rec('ผู้สืบวิญญาณ/ผู้ใช้มนตรา ชาย-หญิง: เดิน 4 ทิศ + ท่าโจมตี 4 เฟรม 960×496 ครบ', Object.values(r).every(v => v.atk === '4:960x496' && v.walk), JSON.stringify(r)); }
   // ===== V2-R54: ภาพท่าโจมตีของตัวละครประจำอาชีพ (นักสู้หญิง 5 เฟรม) =====
   { const r = await page.evaluate(async () => { const sleep = ms => new Promise(r => setTimeout(r, ms)); let A = null; for (let i = 0; i < 100; i++) { A = HL.classAtk('นักสู้', { g: 'f' }); const m = HL.classAtk('นักฆ่า', { g: 'm' }), f = HL.classAtk('นักฆ่า', { g: 'f' }), am = HL.classAtk('นักธนู', { g: 'm' }), af = HL.classAtk('นักธนู', { g: 'f' }), fm = HL.classAtk('นักสู้', { g: 'm' }); if (A && m && f && am && af && fm) break; await sleep(50) }
       if (!A) return { ok: false }; const c = document.createElement('canvas'); c.width = A.img.naturalWidth; c.height = A.img.naturalHeight; const k = c.getContext('2d'); k.drawImage(A.img, 0, 0); const cells = [];
@@ -514,7 +522,7 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
       for (const cls of HL.CLASSES) { HL.PS.cls = cls; HL.buildSkills(); HL.player.dir = 'E'; const n0 = HL.castDraw[0]; HL.PS.cast = { sk: Object.assign({}, HL.basicNow(), { poseT: 9 }), t: 1, done: true, key: 'b' };
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); out[cls] = HL.castDraw[0] > n0 ? HL.castDraw[1] : HL.classAtk(cls, HL.PS.look) ? 'ภาพท่าโจมตี' : 'เดิม'; HL.PS.cast = null }
       HL.PS.cls = 'นักดาบ'; HL.buildSkills(); HL.setLook({ g: 'm', hair: 0, outfit: 0 }); return out });
-    const want = { 'นักดาบ': 'เดิม', 'นักธนู': 'ภาพท่าโจมตี', 'นักฆ่า': 'ภาพท่าโจมตี', 'นักสู้': 'ภาพท่าโจมตี' /* V2-R54: นักสู้หญิงมีภาพท่าโจมตีที่วาดจริง */, 'ผู้สืบวิญญาณ': 'staff', 'ผู้รักษา': 'leafstaff', 'ผู้ใช้มนตรา': 'book', 'ผู้พิทักษ์': 'shield' };
+    const want = { 'นักดาบ': 'เดิม', 'นักธนู': 'ภาพท่าโจมตี', 'นักฆ่า': 'ภาพท่าโจมตี', 'นักสู้': 'ภาพท่าโจมตี' /* V2-R54: นักสู้หญิงมีภาพท่าโจมตีที่วาดจริง */, 'ผู้สืบวิญญาณ': 'ภาพท่าโจมตี' /* V2-R61: มีภาพท่าโจมตีที่วาดจริงแล้ว */, 'ผู้รักษา': 'leafstaff', 'ผู้ใช้มนตรา': 'ภาพท่าโจมตี' /* V2-R61 */, 'ผู้พิทักษ์': 'shield' };
     rec('ท่าใช้สกิลครบทุกอาชีพ: แต่ละอาชีพถืออาวุธของตัวเอง (นักดาบใช้ภาพเดิม, อาชีพที่มีภาพท่าโจมตีจริงใช้ภาพนั้น)', Object.keys(want).every(k => r[k] === want[k]), JSON.stringify(r)); }
   { const r = await page.evaluate(async () => { for (let i = 0; i < 200 && !Object.keys(HL.SKILL_FX.cls).every(c => HL.skfxReady(c)); i++) await new Promise(r => setTimeout(r, 50));
       const out = {}; for (const cls of ['นักธนู', 'นักฆ่า', 'นักสู้', 'ผู้สืบวิญญาณ', 'ผู้รักษา', 'ผู้ใช้มนตรา', 'ผู้พิทักษ์', 'นักดาบ']) { HL.PS.cls = cls; HL.buildSkills(); HL.PS.job = 30; HL.PS.cd = {}; HL.PS.cast = null; HL.PS.dead = false; HL.fxList.length = 0; HL.useSkill(4);

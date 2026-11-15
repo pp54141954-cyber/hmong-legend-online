@@ -1,5 +1,20 @@
 # ประวัติเวอร์ชัน
 
+## V2-R61 — 2026-11-15 (นักฆ่าชุดมีดสั้น + ผู้สืบวิญญาณ/ผู้ใช้มนตราชุดใหม่)
+
+- นักฆ่า (ตามคำสั่ง "แทนนักฆ่า"): ใช้ภาพมีดสั้นจากเจ้าของ แทนชุดเดิมที่มีหน้ากาก
+  - เดิน 4 ทิศ 4×4: `assets/sprites_src/classbody/assassin_{m,f}_walk_daggers.png` → `game/sprites/pcl_assassin_{m,f}.webp`
+  - ท่าโจมตี 4 ทิศ × 4 เฟรม: `assassin_{m,f}_attack_daggers.png` (คัดพื้นดำออกจากภาพมือถือ) → `game/sprites/pca_assassin_{m,f}.webp`
+  - ภาพหญิงชุดที่สอง (มือเปล่า ไม่มีมีด) ยังไม่ได้ใช้ เก็บไว้ที่ `assets/sprites_src/incoming/female_daggers_walk_b.png`
+- ผู้สืบวิญญาณ ชาย/หญิง (ตามคำสั่ง "ใช้แทนแต่ละตัวละครเก่า"): เดิน 4 ทิศ + ท่าโจมตี 4 เฟรม จากภาพของเจ้าของ → `pcl_spirit_{m,f}`, `pca_spirit_{m,f}`
+- ผู้ใช้มนตรา ชาย/หญิง: เดิน 4 ทิศ + ท่าโจมตี 4 เฟรม → `pcl_mage_{m,f}`, `pca_mage_{m,f}`
+- `tools/build_class_bodies.py`: ผู้สืบวิญญาณและผู้ใช้มนตราอ่านตารางโปร่งใส 4×4 (`grid_tr`) แทนชุดเดิม; นักฆ่าใช้ชุดมีดสั้น
+- `tools/build_attack4.py`: `cut(name, nframes)` รองรับจำนวนเฟรมต่อทิศ (นักสู้ 5, อาชีพอื่น 4) และรวมเศษชิ้นตามความกว้าง
+- ภาพอ้างอิงชุดคำสั่ง `docs/prompts/ref/class_*_walk.png` ของ 7 อาชีพที่เปลี่ยน อัปเดตตามตัวละครปัจจุบัน
+- ชุดทดสอบ: ข้อ "แต่ละอาชีพถืออาวุธของตัวเอง" ให้ผู้สืบวิญญาณและผู้ใช้มนตรามีภาพท่าโจมตีแล้ว; ข้อใหม่ตรวจชาย-หญิงของทั้งสองอาชีพ (4 ทิศ × 4 เฟรม, 960×496)
+- ทดสอบ: smoke 147/147, sim 119/119, online 102/102 · ภาพ `evidence/atk4_{spirit,mage}_*_check.png`, `evidence/pcl_{spirit,mage}_*_check.png`
+- `/healthz` แสดงเวอร์ชัน `V2-R61`
+
 ## V2-R60 — 2026-11-15 (นักสู้ชายตามภาพของเจ้าของ + ชุดคำสั่งทำโซนถ้ำ)
 
 - นักสู้ชาย: ท่าเดิน 4 ทิศ (`assets/sprites_src/classbody/fighter_m_walk.png`, โปร่งใส 4×4) → `game/sprites/pcl_fighter_m.webp`; ท่าโจมตี 4 ทิศ 5 เฟรม (`fighter_m_attack.png`) → `game/sprites/pca_fighter_m.webp`

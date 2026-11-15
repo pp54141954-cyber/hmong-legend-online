@@ -124,3 +124,6 @@
 - `docs/prompts/ref/mine_sheet_clean.jpg` และ `zone_mine_<โซน>_crop.jpg`, `zone_mine_<โซน>_now.jpg` — ภาพอ้างอิงของชุดคำสั่งทำโซนถ้ำ (V2-R60) สร้างโดย `tools/make_zone_prompt_refs.py`
 - `assets/sprites_src/classbody/fighter_m_walk.png`, `fighter_m_attack.png` — นักสู้ชาย (V2-R60) → `pcl_fighter_m.webp`, `pca_fighter_m.webp`
 - `assets/sprites_src/incoming/` — ภาพมีดสั้น 3 ชุดที่ยังไม่ได้ใช้ (`female_daggers_walk_{a,b}.png`, `male_daggers_walk.png`) รอยืนยันอาชีพ
+- `assets/sprites_src/classbody/assassin_{m,f}_{walk,attack}_daggers.png` — นักฆ่าชุดมีดสั้น (V2-R61) ต้นฉบับ `assets/sprites_src/incoming/{male,female}_daggers_walk_a.png` และภาพมือถือ (ท่าโจมตี) → `pcl_assassin_*`, `pca_assassin_*`
+- `assets/sprites_src/classbody/{spirit,mage}_{m,f}_{walk,attack}_v2.png` — ผู้สืบวิญญาณและผู้ใช้มนตราชุดใหม่ (V2-R61) → `pcl_spirit_*`, `pcl_mage_*`, `pca_spirit_*`, `pca_mage_*`
+- `assets/sprites_src/incoming/female_daggers_walk_b.png` — ภาพหญิงมือเปล่า (ไม่มีมีด) ยังไม่ได้ใช้

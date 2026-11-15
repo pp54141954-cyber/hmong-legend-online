@@ -133,8 +133,10 @@ def grid4(name, box=None, bg='light'):
 
 SETS = [  # (id, อาชีพ, เพศที่ใช้, ฟังก์ชัน)
     ('fighter_m', 'นักสู้', ['m'], lambda: grid_tr('fighter_m_walk.png')),  # V2-R60: ชุดเดินใหม่ของนักสู้ชาย (โปร่งใส)
-    ('assassin_m', 'นักฆ่า', ['m'], lambda: grid4('assassin_mf4.png', (8, 8, 880, 880))),
-    ('assassin_f', 'นักฆ่า', ['f'], lambda: grid4('assassin_mf4.png', (896, 8, 1766, 880))),
+    ('assassin_m', 'นักฆ่า', ['m'], lambda: grid_tr('assassin_m_walk_daggers.png')),  # V2-R61: นักฆ่าชุดใหม่ (มีดสั้น ผ้าโพกแดง) แทนชุดเดิมที่มีหน้ากาก
+
+    ('assassin_f', 'นักฆ่า', ['f'], lambda: grid_tr('assassin_f_walk_daggers.png')),  # V2-R61
+
     # V2-R57: เจ้าของเปลี่ยนนักธนูเป็นแบบผมดำ ชุดดำลายแดง (แบบเดิม archer_m.png / archer_f.png เก็บไว้)
     ('archer_m', 'นักธนู', ['m'], lambda: grid4('archer_m2.png')),
     ('archer_f', 'นักธนู', ['f'], lambda: grid4('archer_f2.png')),
@@ -142,11 +144,11 @@ SETS = [  # (id, อาชีพ, เพศที่ใช้, ฟังก์�
     ('guardian_f', 'ผู้พิทักษ์', ['f'], lambda: grid4('guardian_f4.png', (175, 90, 1230, 1215))),
     ('healer_m', 'ผู้รักษา', ['m'], lambda: grid4('healer_m4.png')),
     ('healer_f', 'ผู้รักษา', ['f'], lambda: grid4('healer_f4.png')),
-    ('mage_m', 'ผู้ใช้มนตรา', ['m'], lambda: grid4('mage_mf4.png', (6, 6, 880, 880), bg='black')),
-    ('mage_f', 'ผู้ใช้มนตรา', ['f'], lambda: grid4('mage_mf4.png', (894, 6, 1768, 880), bg='black')),
+    ('mage_m', 'ผู้ใช้มนตรา', ['m'], lambda: grid_tr('mage_m_walk_v2.png')),  # V2-R61: ผู้ใช้มนตราชุดใหม่ (หมวกแหลม ไม้เท้าอัญมณีม่วง)
+    ('mage_f', 'ผู้ใช้มนตรา', ['f'], lambda: grid_tr('mage_f_walk_v2.png')),  # V2-R61
     ('fighter_f', 'นักสู้', ['f'], lambda: quad('fighter_f2.png')),  # แบบใหม่ (ชุดแดงหางม้า) แทนชุดในภาพนักสู้ชาย/หญิง
-    ('spirit_m', 'ผู้สืบวิญญาณ', ['m'], lambda: panels('spirit_m.png')),
-    ('spirit_f', 'ผู้สืบวิญญาณ', ['f'], lambda: quad('spirit_f.png')),
+    ('spirit_m', 'ผู้สืบวิญญาณ', ['m'], lambda: grid_tr('spirit_m_walk_v2.png')),  # V2-R61: ผู้สืบวิญญาณชุดใหม่ (ไม้เท้าแหวนเงินปอยแดง)
+    ('spirit_f', 'ผู้สืบวิญญาณ', ['f'], lambda: grid_tr('spirit_f_walk_v2.png')),  # V2-R61
 ]
 cat = {}
 for sid, cls, gs, fn in SETS:
