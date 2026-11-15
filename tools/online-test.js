@@ -297,7 +297,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
     await A.page.click('#wmp .wp[data-z="' + to + '"]');
     const ok = await until(async () => SA().c.zone === to && (await st(A.page)).zone === to && Math.hypot(SA().c.x - W.ZONES[to].start[0], SA().c.y - W.ZONES[to].start[1]) < 40);
     rec('วาร์ปผ่านแผนที่โลก → เซิร์ฟเวอร์ย้ายตัวไปจุดเริ่มโซน และจอตรงกัน', ok, z0 + ' → ' + SA().c.zone);
-    const d0 = SA().denied || 0; A.page.evaluate(() => HLNET.send({ t: 'warp', zone: 'mine' }));
+    const d0 = SA().denied || 0; A.page.evaluate(() => HLNET.send({ t: 'warp', zone: 'mine_plaza' }));
     rec('วาร์ปซ้ำภายใน 5 วิ → เซิร์ฟเวอร์ปฏิเสธ (cooldown)', await until(async () => (SA().denied || 0) > d0) && SA().c.zone === to);
     SA().warpAt = 0; const d1 = SA().denied || 0; A.page.evaluate(() => HLNET.send({ t: 'warp', zone: 'nowhere' }));
     rec('วาร์ปไปโซนที่ไม่มี → ปฏิเสธ', await until(async () => (SA().denied || 0) > d1) && SA().c.zone === to);

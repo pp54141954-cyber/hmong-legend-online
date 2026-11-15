@@ -143,7 +143,7 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
   // ===== 6 โซนแผนที่ภาพ (V2-R15): ตรวจทุกโซนแบบเดียวกัน =====
   await page.evaluate(() => { HL.PS.dead = false; HL.PS.cast = null; HL.PS.hp = HL.PS.maxHp; });
   const PZ = await page.evaluate(() => Object.keys(HL.ZONES).filter(z => HL.ZONES[z].painted));
-  rec('มีโซนแผนที่ภาพ 6 โซน', PZ.length === 6, PZ.join(','));
+  rec('มีโซนแผนที่ภาพ 11 โซน (5 เดิม + ถ้ำ 6 โซน V2-R58)', PZ.length === 11, PZ.join(','));
   for (const zid of PZ) {
     await page.evaluate(z => { const s = HL.ZONES[z].start; HL.enterZone(z, s[0], s[1]); }, zid);
     const r = await page.evaluate(() => new Promise(res => {
@@ -317,7 +317,7 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     rec('มอนสเตอร์ตาย: แสดงท่าตายช่วงสั้นแล้วหาย, ตัวที่ตายอยู่แล้วไม่ค้างภาพ', !r.fresh && r.dying && !r.old, JSON.stringify(r)); }
   { await page.click('#wmb'); await page.waitForSelector('#wmp:not([hidden]) .zc');
     const w = await page.evaluate(() => ({ n: document.querySelectorAll('#wmp .zc').length, here: document.querySelector('#wmp .zc.here b').textContent, imgs: document.querySelectorAll('#wmp .zt img').length, lv: [...document.querySelectorAll('#wmp .zl')].map(e => e.textContent) }));
-    rec('แผนที่โลก: 7 โซน รูปย่อ + ช่วงเลเวล + บอก "อยู่ที่นี่"', w.n === 7 && w.imgs >= 6 && w.here === await page.evaluate(() => HL.Z.D.name), JSON.stringify(w));
+    rec('แผนที่โลก: 12 โซน รูปย่อ + ช่วงเลเวล + บอก "อยู่ที่นี่"', w.n === 12 && w.imgs >= 11 && w.here === await page.evaluate(() => HL.Z.D.name), JSON.stringify(w));
     await page.screenshot({ path: 'tools/last-world.png' });
     await page.click('#wmp .wp[data-z="bamboo"]');
     rec('กดวาร์ป → ไปโซนป่าไผ่ทันที (ออฟไลน์)', await page.evaluate(() => HL.Z.id === 'bamboo' && document.getElementById('wmp').hidden));
@@ -369,8 +369,8 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     rec('ท่าชั่วคราวของอาชีพใหม่ใช้ได้ (กลไกเดียวกับนักดาบ)', await page.evaluate(() => { HL.PS.cd = {}; HL.PS.cast = null; return HL.useSkill(6) === 'ok' }));
     await page.evaluate(() => HL.setClassLocal('นักดาบ')); }
   { const r = await page.evaluate(() => { const o = []; o.push(HL.adminLocal({ op: 'lv', n: 40 }), HL.PS.lv); o.push(HL.adminLocal({ op: 'job', n: 20 }), HL.PS.job); o.push(HL.adminLocal({ op: 'lv', n: 0 }));
-      HL.adminLocal({ op: 'warp', zone: 'mine' }); o.push(HL.Z.id); HL.adminLocal({ op: 'clear' }); o.push(HL.mons.filter(m => !m.c.boss).every(m => m.state === 'dead')); return o });
-    rec('แอดมินออฟไลน์: ตั้งเลเวล/Job, ค่าผิดถูกปฏิเสธ, วาร์ป, ล้างมอนสเตอร์', r[1] === 40 && r[3] === 20 && r[4] === 'ค่าไม่ถูกต้อง' && r[5] === 'mine' && r[6], JSON.stringify(r));
+      HL.adminLocal({ op: 'warp', zone: 'mine_plaza' }); o.push(HL.Z.id); HL.adminLocal({ op: 'clear' }); o.push(HL.mons.filter(m => !m.c.boss).every(m => m.state === 'dead')); return o });
+    rec('แอดมินออฟไลน์: ตั้งเลเวล/Job, ค่าผิดถูกปฏิเสธ, วาร์ป, ล้างมอนสเตอร์', r[1] === 40 && r[3] === 20 && r[4] === 'ค่าไม่ถูกต้อง' && r[5] === 'mine_plaza' && r[6], JSON.stringify(r));
     await page.evaluate(() => HL.adminLocal({ op: 'time', mode: 'blood' })); await page.waitForTimeout(1300);
     rec('แอดมินออฟไลน์: เปลี่ยนเวลาเป็นพระจันทร์เลือด', await page.evaluate(() => HL.WT.blood));
     await page.evaluate(() => HL.adminLocal({ op: 'time', mode: 'day' })); await page.waitForTimeout(1300);

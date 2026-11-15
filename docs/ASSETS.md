@@ -119,3 +119,5 @@
 - `game/sprites/pca_archer_m.webp`, `pca_archer_f.webp` — ท่าโจมตีนักธนูที่วาดจริง (V2-R55) ต้นฉบับ `assets/sprites_src/classbody/archer_{m,f}_attack.png`
 - `game/sprites/pc_f0_h_atk4.webp` / `pc_f0_b_atk4.webp` — ท่าโจมตี 4 ทิศนักดาบหญิง (V2-R56) ต้นฉบับ `assets/sprites_src/classbody/swordsman_f_attack.png`
 - นักธนูแบบใหม่ (V2-R57, ผมดำ ชุดดำลายแดง): ภาพเดิน `assets/sprites_src/classbody/archer_{m,f}2.png`, ท่ายิง `archer_{m,f}2_attack.png` → `pcl_archer_*.webp`, `pca_archer_*.webp` · แบบเดิม (ผมน้ำตาล) เก็บไว้ ไม่ได้ใช้แล้ว
+- `game/maps/mine_{camp,tunnel,plaza,river,station,cliff}.webp` — ภาพโซนถ้ำ 6 โซน (V2-R58) ขยายจาก `assets/maps_src/mine.png` ตามวงใน `assets/maps_src/mine_regions.png` (ค่า 1–6 ทำจากวงที่เจ้าของวงไว้) สร้างโดย `tools/build_mine_split.py`; ผังช่อง `assets/maps/mine_*.mask.txt`
+- `game/maps/mine.webp` ถูกลบแล้ว (ไม่ได้ใช้; ยังอยู่ในประวัติ git)
