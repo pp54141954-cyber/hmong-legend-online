@@ -1,0 +1,62 @@
+name: Inventory R81 — mobile + server integrity (isolated)
+on:
+  push:
+    branches: [feature/inventory-ux-validation-r81]
+  workflow_dispatch:
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Install isolated browser engines
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-browser-test playwright@1.56.1
+          node /tmp/hl-browser-test/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-browser-test/node_modules" >> "$GITHUB_ENV"
+      - name: Check server and inventory test syntax
+        run: |
+          node --check server/sim.js
+          node --check tools/inventory-integrity-r81-test.js
+          node --check tools/equipment-mobile-test.js
+      - name: Check inline game JavaScript syntax
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),vm=require('vm');
+          const html=fs.readFileSync('game/index.html','utf8');
+          const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(x=>x[1]).filter(x=>x.trim());
+          if(!scripts.length)throw Error('missing inline script');
+          for(const js of scripts)new vm.Script(js);
+          console.log('PASS '+scripts.length+' inline JS scripts parse');
+          NODE
+      - name: Ensure world rules unchanged
+        run: |
+          node tools/extract-shared.js
+          git diff --exit-code -- shared/world.js
+      - name: Inventory R81 regression (enhancement after shifted stone slots, save)
+        run: node tools/inventory-integrity-r81-test.js
+      - name: Existing equipment and enhancement regressions
+        run: |
+          node tools/equipment-r78-migration-test.js
+          node tools/equipment-class-logic-test.js
+          node tools/enh-test.js
+      - name: Mobile Android bag UI — Chromium Pixel 7
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: Mobile iPhone bag UI — WebKit iPhone 13
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Upload isolated screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: inventory-r81-mobile-screenshots
+          path: tools/test-artifacts/bag-*.png
+          if-no-files-found: ignore
