@@ -27,4 +27,5 @@ jobs:
       - name: Existing class weapon regression
         run: node tools/class-weapon-test.js
       - name: Mobile bag sizing and rendering
+        if: ${{ always() }}
         run: node tools/equipment-mobile-test.js
