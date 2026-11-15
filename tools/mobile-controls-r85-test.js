@@ -127,6 +127,7 @@ const ios=process.env.MOBILE_BROWSER==='webkit';
 
 
     // R85 tap-to-move: use an actual valid path tile, not a fake unlocked map.
+    await page.waitForFunction(()=>!window.HL.PS.cast,null,{timeout:10000});
     const chooseGoal=async()=>page.evaluate(()=>{
       const H=window.HL,p=H.player,step=H.T;
       const candidates=[];
@@ -142,7 +143,7 @@ const ios=process.env.MOBILE_BROWSER==='webkit';
     assert(dest,'No reachable test destination found within the same zone');
     assert(await page.evaluate(()=>!!window.HL.tapDestination),'destination not installed');
     const from=await page.evaluate(()=>({x:window.HL.player.x,y:window.HL.player.y}));
-    await page.waitForTimeout(175);
+    await page.waitForTimeout(350);
     const after=await page.evaluate(()=>({x:window.HL.player.x,y:window.HL.player.y}));
     assert(Math.hypot(after.x-from.x,after.y-from.y)>.3,'tap navigation did not move player');
 
