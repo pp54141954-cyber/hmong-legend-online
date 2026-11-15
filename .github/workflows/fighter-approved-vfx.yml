@@ -1,0 +1,36 @@
+name: Fighter approved-character VFX integration (staging)
+on:
+  push:
+    branches: [feature/fighter-nine-approved-character-vfx]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  fighter-vfx:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Inspect original fighter character and actual skill hooks
+        run: node tools/inspect-fighter-character-hooks.js
+      - name: Package approved character sprites and skill-reference assets for visual QA
+        run: |
+          mkdir -p dist
+          cp game/sprites/pcl_fighter_m.webp dist/
+          cp game/sprites/pcl_fighter_f.webp dist/
+          cp game/sprites/pca_fighter_m.webp dist/
+          cp game/sprites/pca_fighter_f.webp dist/
+          cp game/sprites/skfx_fighter.webp dist/
+          cp game/sprites/skfxud_fighter.webp dist/
+          cp game/martial-vfx.js dist/
+          cp game/skill-vfx-bridge.js dist/
+          node --check game/martial-vfx.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fighter-existing-sprites-and-vfx
+          path: dist/
+          if-no-files-found: warn
