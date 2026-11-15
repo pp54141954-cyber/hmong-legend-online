@@ -418,7 +418,16 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     await sp.click('#snd-mute'); await sp.fill('#snd-mus', '55'); await sp.dispatchEvent('#snd-mus', 'input');
     await sp.close(); }
   { const cp = await ctx.newPage(); cp.on('pageerror', e => errors.push('pick pageerror: ' + e.message));
-    await cp.goto(url + '?pick=1'); await cp.waitForSelector('#cstart:not([hidden]) .csc');
+    await cp.goto(url + '?pick=1'); await cp.waitForSelector('#cstart:not([hidden]) #nmin, #cstart:not([hidden]) .csc');
+    if (await cp.$('#cstart:not([hidden]) #nmin')) { // V2-R69: ตั้งชื่อก่อนเลือกอาชีพ — ชื่อสั้นหรือมีสัญลักษณ์กดถัดไปไม่ได้
+      await cp.fill('#cstart #nmin', 'a'); const d1 = await cp.$eval('#cstart #nmgo', e => e.disabled);
+      await cp.fill('#cstart #nmin', 'ab!'); const d2 = await cp.$eval('#cstart #nmgo', e => e.disabled);
+      await cp.fill('#cstart #nmin', 'ทดสอบ ชื่อ'); const d3 = await cp.$eval('#cstart #nmgo', e => e.disabled);
+      rec('ตั้งชื่อตัวละครก่อนเลือกอาชีพ: ชื่อสั้นหรือมีสัญลักษณ์กดถัดไปไม่ได้ ชื่อที่ถูกต้องไปต่อได้', d1 && d2 && !d3, JSON.stringify({ d1, d2, d3 }));
+      await cp.click('#cstart #nmgo');
+    }
+    await cp.waitForSelector('#cstart:not([hidden]) .csc');
+    rec('ชื่อที่ตั้งแสดงที่หัวข้อหน้าเลือกอาชีพ', await cp.evaluate(() => document.querySelector('#cstart .cshd small').textContent.includes('ทดสอบ ชื่อ')), '');
     const o = await cp.evaluate(() => ({ n: document.querySelectorAll('#cstart .csc').length, on: document.querySelector('#cstart .csc.on b').textContent, d: document.querySelector('#cstart .csc .d').textContent }));
     rec('หน้าเลือกอาชีพตอนเริ่มเกม: 8 อาชีพ มีคำอธิบาย เลือกไว้ก่อน = นักดาบ', o.n === 8 && o.on === 'นักดาบ' && o.d.length > 5, JSON.stringify(o));
     rec('หน้าสร้างตัวละคร: มีเพศ ชาย/หญิง, สีผม 6, ชุด 6 และภาพตัวอย่าง', await cp.evaluate(() => document.querySelectorAll('#cstart [data-g]').length === 2 && document.querySelectorAll('#cstart [data-h]').length === 6 && document.querySelectorAll('#cstart [data-o]').length === 6 && !!document.getElementById('lkcv')));
@@ -428,6 +437,7 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     await cp.screenshot({ path: 'tools/last-cstart.png' });
     await cp.click('#csgo');
     const r = await cp.evaluate(() => ({ hid: document.getElementById('cstart').hidden, cls: HL.curCls(), saved: localStorage.getItem('hl_cls_off'), bar: document.querySelector('#skills .sk').getAttribute('aria-label'), exp: HL.skName(HL.SLOTS[0]), mage: HL.CLS_ACTIVE['ผู้ใช้มนตรา'] }));
+    rec('เริ่มเกมแล้วจำชื่อที่ตั้งไว้ในเครื่อง', await cp.evaluate(() => localStorage.getItem('hl_name_off') === 'ทดสอบ ชื่อ'), '');
     rec('เลือก "ผู้ใช้มนตรา" → เริ่มเกมเป็นอาชีพนั้น ปุ่มสกิลเปลี่ยนตาม', r.hid && r.cls === 'ผู้ใช้มนตรา' && r.saved === 'ผู้ใช้มนตรา' && r.bar === r.exp && r.mage.includes(r.bar), JSON.stringify(r));
     const lk = await cp.evaluate(async () => { await new Promise(r => setTimeout(r, 300)); const L = HL.PS.look, c0 = document.createElement('canvas'), c1 = document.createElement('canvas'); c0.width = c1.width = 96; c0.height = c1.height = 124;
       const S = HL.sheetsFor(L); c0.getContext('2d').drawImage(HL.sheetsFor({ g: 'm', hair: 0, outfit: 0 }).SPR, 0, 0, 96, 124, 0, 0, 96, 124); c1.getContext('2d').drawImage(S.SPR, 0, 0, 96, 124, 0, 0, 96, 124);
@@ -451,10 +461,12 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     await cp.click('#cstart [data-g="m"]'); await cp.click('#cstart [data-h="5"]'); await cp.click('#csgo');
     rec('บันทึกหน้าตาใหม่ → ใช้ทันที', await cp.evaluate(() => HL.PS.look.g === 'm' && HL.PS.look.hair === 5 && document.getElementById('cstart').hidden));
     await cp.evaluate(() => localStorage.removeItem('hl_look_off'));
-    await cp.evaluate(() => localStorage.removeItem('hl_cls_off')); await cp.close(); }
+    await cp.evaluate(() => { localStorage.removeItem('hl_cls_off'); localStorage.removeItem('hl_name_off'); }); await cp.close(); }
   // ===== V2-R35: ทรงผม/แบบชุด แยกชั้นหัว-ตัว =====
   { const lp = await ctx.newPage(); lp.on('pageerror', e => errors.push('layers pageerror: ' + e.message));
-    await lp.goto(url + '?pick=1'); await lp.waitForSelector('#cstart:not([hidden]) #lkcv');
+    await lp.goto(url + '?pick=1'); await lp.waitForSelector('#cstart:not([hidden]) #nmin, #cstart:not([hidden]) #lkcv');
+    if (await lp.$('#cstart:not([hidden]) #nmin')) { await lp.fill('#cstart #nmin', 'ทดสอบ'); await lp.click('#cstart #nmgo'); }
+    await lp.waitForSelector('#cstart:not([hidden]) #lkcv');
     const base = await lp.evaluate(() => ({ m: HL.CHAR_CAT.m.hair.length && HL.CHAR_CAT.m.outfit.length, f: HL.CHAR_CAT.f.hair.length && HL.CHAR_CAT.f.outfit.length, chipsWhenOne: document.querySelectorAll('#cstart [data-hs],#cstart [data-of]').length }));
     rec('ทะเบียนทรงผม/ชุด: มีชุดพื้นฐานทั้งชาย/หญิง, ตอนมีแบบเดียวไม่แสดงปุ่มเลือก', base.m && base.f && base.chipsWhenOne === 0, JSON.stringify(base));
     const r = await lp.evaluate(async () => { const wait = async l => { for (let i = 0; i < 120; i++) { const s = HL.sheetsFor(l); if (!s.tmp) return s; await new Promise(r => setTimeout(r, 50)) } return HL.sheetsFor(l) };
@@ -471,7 +483,7 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     rec('มีหลายแบบ → แสดงปุ่ม "ทรงผม" และ "แบบชุด" พร้อมชื่อ', chips.hs.length === 2 && chips.of.length === 2 && chips.hs[0] === 'สั้นผ้าคาดหัว' && chips.of[0] === 'ชุดม้งดั้งเดิม', JSON.stringify(chips));
     await lp.click('#cstart [data-hs="1"]'); await lp.click('#cstart [data-of="1"]'); await lp.click('#csgo');
     rec('เลือกทรงผม/ชุดแล้วเริ่มเกม → ใช้ในตัวละคร', await lp.evaluate(() => HL.PS.look.hs === 1 && HL.PS.look.of === 1 && HL.PS.look.g === 'm'));
-    await lp.evaluate(() => localStorage.removeItem('hl_look_off')); await lp.close(); }
+    await lp.evaluate(() => { localStorage.removeItem('hl_look_off'); localStorage.removeItem('hl_name_off'); }); await lp.close(); }
   // ===== V2-R53: ท่าโจมตี 4 ทิศที่วาดจริง (นักดาบชาย) =====
   { const r = await page.evaluate(async () => { const sleep = ms => new Promise(r => setTimeout(r, ms)), get = async l => { for (let i = 0; i < 100; i++) { const a = HL.atk4For(l); if (a) return a; await sleep(50) } return null };
       const A = await get({ g: 'm', hs: 0, of: 0, hair: 0, outfit: 0 }), B = await get({ g: 'm', hs: 0, of: 0, hair: 1, outfit: 0 }), F = await get({ g: 'f', hs: 0, of: 0, hair: 0, outfit: 0 });

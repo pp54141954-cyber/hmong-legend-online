@@ -50,6 +50,9 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   rec('สองเครื่องสมัครและเข้าเกมได้', joined);
   // V2-R29: บัญชีใหม่ต้องเลือกอาชีพก่อนเริ่ม
   { const shown = await until(async () => await A.page.isVisible('#cstart') && await B.page.isVisible('#cstart'));
+    // V2-R69: ตั้งชื่อตัวละครก่อนเลือกอาชีพ (ชื่อถูกส่งพร้อมการเลือกอาชีพครั้งแรก)
+    for (const [pg, nm] of [[A.page, 'นักรบA'], [B.page, 'นักรบB']]) { await pg.fill('#cstart #nmin', nm); await pg.click('#cstart #nmgo'); }
+    await A.page.waitForSelector('#cstart .csc', { timeout: 5000 });
     const n = await A.page.evaluate(() => document.querySelectorAll('#cstart .csc').length);
     rec('บัญชีใหม่: ขึ้นหน้าเลือกอาชีพตอนเริ่มเกม (8 อาชีพ)', shown && n === 8, n + ' อาชีพ');
     await A.page.click('#cstart button[aria-label="อาชีพ นักธนู"]');
@@ -60,6 +63,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
     const SAx = () => [...srv.online.values()].find(p => p.c.name === 'Tester_A');
     const ok = await until(async () => !(await A.page.isVisible('#cstart')) && !(await B.page.isVisible('#cstart')) && SAx().c.clsset === 1);
     rec('กดเริ่ม → เซิร์ฟเวอร์บันทึกอาชีพ หน้าเลือกปิด เริ่มเล่นได้', ok, SAx().c.cls);
+    rec('ตั้งชื่อตัวละคร → เซิร์ฟเวอร์จำชื่อนั้นไว้กับตัวละคร', SAx().c.cname === 'นักรบA', String(SAx().c.cname));
     rec('หน้าตาที่เลือกตอนสร้างถูกบันทึกที่เซิร์ฟเวอร์ (หญิง ผมขาวเงิน ชุดม่วง-ทอง)', JSON.stringify(SAx().c.look) === '{"g":"f","hair":3,"outfit":3,"hs":0,"of":0}', JSON.stringify(SAx().c.look));
     const seeA = await until(async () => { const v = await B.page.evaluate(id => (HLNET.plooks || {})[id], SAx().id); return v && v.g === 'f' && v.hair === 3; });
     rec('เครื่องอื่น (B) เห็นหน้าตาของ A ตามที่เลือก', seeA);

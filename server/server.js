@@ -74,7 +74,7 @@ function createServer(opts = {}) {
     const url = new URL(req.url, 'http://x');
     for (const [k, v] of Object.entries(SEC_HEADERS)) res.setHeader(k, v);
     try {
-      if (req.method === 'GET' && url.pathname === '/healthz') return json(res, 200, { ok: true, ver: 'V2-R67', online: online.size, uptime: Math.round(process.uptime()), admins: conf.admins.length }); // admins = จำนวนชื่อใน ADMIN_USERS (ไม่เปิดเผยชื่อ) ใช้ตรวจว่าตั้งค่าบน Render แล้ว
+      if (req.method === 'GET' && url.pathname === '/healthz') return json(res, 200, { ok: true, ver: 'V2-R69', online: online.size, uptime: Math.round(process.uptime()), admins: conf.admins.length }); // admins = จำนวนชื่อใน ADMIN_USERS (ไม่เปิดเผยชื่อ) ใช้ตรวจว่าตั้งค่าบน Render แล้ว
       if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
         return fs.createReadStream(conf.gameFile).pipe(res);
@@ -144,7 +144,7 @@ function createServer(opts = {}) {
         const c = p.c;
         log('join', c.name, c.zone, Math.round(c.x), Math.round(c.y));
         p.admin = conf.admins.includes(normName(c.name)); if (p.admin) log('admin join', c.name);
-        return send(ws, { t: 'welcome', id: p.id, name: c.name, auth: true, admin: p.admin, cls: sim.clsOf(p), pickCls: !c.clsset, look: c.look, state: { zone: c.zone, x: c.x, y: c.y, dir: c.dir, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, hp: p.hp, maxHp: p.maxHp } });
+        return send(ws, { t: 'welcome', id: p.id, name: c.name, cname: c.cname || '', auth: true, admin: p.admin, cls: sim.clsOf(p), pickCls: !c.clsset, look: c.look, state: { zone: c.zone, x: c.x, y: c.y, dir: c.dir, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, hp: p.hp, maxHp: p.maxHp } });
       }
       if (m.t === 'mv') {
         if (p.dead) return;
@@ -192,7 +192,10 @@ function createServer(opts = {}) {
       }
       if (m.t === 'cls') {
         if (m.first && !p.c.clsset && m.look !== undefined && !sim.cleanLook(m.look)) { p.denied = (p.denied || 0) + 1; return send(ws, { t: 'deny', k: 'cls', r: 'bad-look' }); }
+        const cname = m.first && !p.c.clsset && m.name !== undefined ? sim.cleanCname(m.name) : undefined; // V2-R69: ชื่อตอนเลือกอาชีพครั้งแรก
+        if (cname === null) { p.denied = (p.denied || 0) + 1; return send(ws, { t: 'deny', k: 'cls', r: 'bad-name' }); }
         const r = sim.setClass(p, m.cls, !!m.first);
+        if (r === 'ok' && cname) { p.c.cname = cname; p.dirty = true; }
         if (r === 'ok') for (const q of online.values()) if (q.seenP) q.seenP.delete(p.id); // คนอื่นเห็นชุดอาชีพใหม่
         if (r === 'ok' && m.first && m.look !== undefined) { sim.setLook(p, m.look); for (const q of online.values()) if (q.seenP) q.seenP.delete(p.id); }
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'cls', r }); }

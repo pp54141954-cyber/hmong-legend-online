@@ -381,6 +381,12 @@ const killFirst = (sim, p, type) => {
   rec('บอส: B (ตีปิด, 40%) ได้น้อยกว่า A; C ทำไม่ถึง 1% ไม่ได้', eb > 0 && eb < got(a) && got(c) === 0);
 }
 
+// V2-R69: กติกาชื่อตัวละครฝั่งเซิร์ฟเวอร์ (ตรวจตอนเลือกอาชีพครั้งแรก)
+{ const sim = createSim({ rand: () => .5 });
+  const cases = [['สมชาย', 'สมชาย'], ['Mai_07', 'Mai_07'], ['สมชาย ใจดี', 'สมชาย ใจดี'], ['  นักรบ  ', 'นักรบ'], ['a', null], ['ab!', null], ['เอ  บี', null], ['x'.repeat(13), null], ['ก-ข', null], ['', null], [123, null]];
+  const got = cases.map(([v]) => sim.cleanCname(v));
+  rec('ชื่อตัวละครฝั่งเซิร์ฟเวอร์: ยาว 2–12 (ไทย อังกฤษ ตัวเลข _) เว้นวรรคทีละช่อง ไม่ผ่านถูกปฏิเสธ', cases.every(([, want], i) => got[i] === want), JSON.stringify(got)); }
+
 const fail = results.filter(r => !r.pass).length;
 console.log('\nสรุป: ' + (results.length - fail) + '/' + results.length + ' ผ่าน');
 process.exit(fail ? 1 : 0);
