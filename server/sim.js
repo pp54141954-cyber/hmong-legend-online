@@ -226,7 +226,7 @@ function createSim({ rand = Math.random } = {}) {
       const it = CFG.items[s.id]; if (!it) return 'invalid';
       if (op === 'use') {
         if (it.type !== 'use') return 'not-usable';
-        if (now < p.potionAt) return 'cooldown';
+        if (now < p.potionAt) { p.potionWait = Math.max(0.1, Math.round((p.potionAt - now) * 10) / 10); return 'cooldown'; }
         if (p.hp >= p.maxHp) return 'hp-full';
         p.hp = Math.min(p.maxHp, p.hp + it.heal); p.potionAt = now + B.potionCd;
         if (--s.n <= 0) bag.splice(i, 1);
