@@ -1,0 +1,53 @@
+name: Equipment + R78 integration (isolated)
+on:
+  push:
+    branches: [integration/equipment-r78-preserve]
+  workflow_dispatch:
+jobs:
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install existing server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Install isolated Playwright browsers
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-browser-test playwright@1.56.1
+          node /tmp/hl-browser-test/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-browser-test/node_modules" >> "$GITHUB_ENV"
+      - name: Ensure shared world matches game source
+        run: |
+          node tools/extract-shared.js
+          git diff --exit-code -- shared/world.js
+      - name: Guardian legacy shield migration and enhancement preservation
+        run: node tools/equipment-r78-migration-test.js
+      - name: Existing class weapon regression
+        run: node tools/equipment-class-logic-test.js
+      - name: R78 enhancement regression (including DB and game UI)
+        run: node tools/enh-test.js
+      - name: Android bag regression
+        if: ${{ always() }}
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: iPhone WebKit bag regression
+        if: ${{ always() }}
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Two-player walkthrough in isolated test server
+        if: ${{ always() }}
+        run: node tools/equipment-gameplay-test.js
+      - name: Upload test screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: equipment-r78-integration-previews
+          path: |
+            tools/test-artifacts/*.png
+            docs/evidence/enh_r78_panel_*.png
+          if-no-files-found: ignore
