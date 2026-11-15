@@ -119,6 +119,28 @@ function createServer(opts = {}) {
   const wss = new WebSocketServer({ server, path: '/ws', maxPayload: conf.maxMsgBytes, perMessageDeflate: deflate });
   const send = (ws, o) => { if (ws.readyState === 1) { const s = JSON.stringify(o); ST.bytes += s.length; ST.msgs++; ws.send(s); } };
   const flush = p => { try { db.save(p.c); p.dirty = false; } catch (e) { log('save error', e.message); } };
+  // กระเป๋า/ร้านค้า: ต้องบันทึกสำเร็จก่อนยืนยันการกระทำ หาก SQLite เขียนไม่ได้
+  // คืนค่าที่เปลี่ยน (รวม HP/คูลดาวน์ยา) ไม่ปล่อยให้สถานะในหน่วยความจำต่างจากฐานข้อมูล
+  const commitInventory = (p, action) => {
+    const c = p.c;
+    const before = {
+      bag: JSON.stringify(c.bag), eq: JSON.stringify(c.eq), enh: JSON.stringify(c.enh),
+      gold: c.gold, hp: p.hp, maxHp: p.maxHp, potionAt: p.potionAt,
+      dirty: p.dirty, bagDirty: p.bagDirty, events: p.personal.length
+    };
+    const result = action();
+    if (result !== 'ok') return result;
+    try { db.save(c); p.dirty = false; return 'ok'; }
+    catch (e) {
+      c.bag = JSON.parse(before.bag); c.eq = JSON.parse(before.eq);
+      c.enh = JSON.parse(before.enh); c.gold = before.gold;
+      sim.stats(p); p.hp = before.hp; p.maxHp = before.maxHp; p.potionAt = before.potionAt;
+      p.dirty = before.dirty; p.bagDirty = before.bagDirty;
+      p.personal.length = before.events;
+      log('inventory save error', e.message);
+      return 'save-error';
+    }
+  };
 
   const wsByIp = new Map();
   wss.on('connection', (ws, req) => {
@@ -167,12 +189,12 @@ function createServer(opts = {}) {
         return;
       }
       if (m.t === 'shop') { // ร้านค้า NPC (V2-R73): เซิร์ฟเวอร์ตรวจระยะ เงิน และกระเป๋าเอง
-        const r = sim.buy(p, String(m.npc), String(m.id), m.n);
+        const r = commitInventory(p, () => sim.buy(p, String(m.npc), String(m.id), m.n));
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'shop', r }); }
         return;
       }
       if (m.t === 'inv') {
-        const r = sim.inv(p, String(m.op), m.op === 'unequip' ? String(m.slot) : m.slot, now / 1000);
+        const r = commitInventory(p, () => sim.inv(p, String(m.op), m.op === 'unequip' ? String(m.slot) : m.slot, now / 1000));
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'inv', op: m.op, r }); }
         return;
       }
