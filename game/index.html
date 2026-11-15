@@ -1623,7 +1623,16 @@ window.HL={idleFrame,idleBob,sprUrl:f=>sprUrl(f),classAtk:(c,l)=>classAtk(c,l),a
 #skp .hs{display:flex;flex-direction:column;align-items:center;padding:4px 2px;min-height:48px;color:#f4efe2;border-color:#ffb34766;background:#24324a;font-size:9px;line-height:1.1}#skp .hs i{font-style:normal;font-weight:700;font-size:12px;color:#ffcf8a}#skp .hs.pick{border-color:#8fe38f;background:#2f5a3a}#skp .row{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 6px;border-radius:8px;background:#ffffff0a}
 #skp .row .nm{flex:1;min-width:0}#skp .row small{display:block;font-size:10px;opacity:.75}#skp .row .lv{white-space:nowrap;font-weight:700}#skp .row.lock{opacity:.45}
 #skp .row button{color:#f4efe2;border-color:#ffb347aa;padding:3px 10px;font-size:15px}#skp .row button:disabled{opacity:.35}#skp .pts{font-size:13px}#skp .note{font-size:11px;opacity:.7}
-#netst{position:absolute;left:8px;top:calc(64px + env(safe-area-inset-top,0px));z-index:4;font-size:11px;padding:3px 8px;border-radius:10px;background:rgba(18,22,18,.74);color:#f4efe2;display:none}
+/* R82: online connection state must remain visible above the open inventory (BUG-011).
+   Reserve a slim HUD row; do not change the inventory grid or touch input hit targets. */
+#netst{position:absolute;left:8px;top:calc(64px + env(safe-area-inset-top,0px));z-index:8;
+  max-width:calc(100% - 16px);box-sizing:border-box;pointer-events:none;
+  font-size:11px;line-height:16px;padding:3px 8px;border-radius:10px;
+  background:rgba(18,22,18,.90);color:#f4efe2;display:none}
+#bag:not([hidden]){top:calc(96px + env(safe-area-inset-top,0px));
+  max-height:min(82dvh,calc(100dvh - 218px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)))}
+@media(max-height:430px){#bag:not([hidden]){top:calc(94px + env(safe-area-inset-top,0px));
+  max-height:max(100px,calc(100dvh - 204px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)))}}
 </style>
 <div id="net" hidden><form id="netf" autocomplete="on">
 <h2>Hmong Legend ออนไลน์</h2>
