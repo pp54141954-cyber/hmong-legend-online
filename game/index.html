@@ -1583,25 +1583,18 @@ const ST_NAMES=['โจมตี','ป้องกัน','คล่องตั
 let csPick=null,csLook=null,csMode='start',csAnim=0,csT=0;
 function openClassStart(mode){csMode=mode||'start';csPick=csPick||HL.curCls();csLook=HL.cleanLook(csLook||HL.PS.look);csEl.hidden=false;renderClassStart();if(!csT)csT=setInterval(drawLookPrev,110)}
 function closeClassStart(){csEl.hidden=true;clearInterval(csT);csT=0}
-/* ตัวอย่างตัวละครในหน้าแต่งตัว: เดินหน้า/ขวา/หลัง วนไป */
+/* ตัวอย่างตัวละครในหน้าเลือกตัวละคร (V2-R64): เดินหันหน้าเข้าหาผู้เล่นเท่านั้น ไม่หันซ้าย/ขวา/หลัง และไม่แสดงท่าโจมตี */
 function drawLookPrev(){const cv=document.getElementById('lkcv');if(!cv||csEl.hidden)return;const k=cv.getContext('2d'),cls=csMode==='edit'?HL.curCls():csPick,CBp=HL.classBody(cls,csLook),S=CBp||HL.sheetsFor(csLook).SPR;
-  const T=csAnim%96,fx=T>=64,dir=fx?'E':['S','E','N','W'][Math.floor(csAnim/16)%4],row={S:0,N:1,W:2,E:3}[dir],W=cv.width,H=cv.height,cx=W/2,fy=H-22,sc=1.55,col=(CLS_INFO[cls]||{}).col||'#f2c14e';
+  const fr=csAnim%4,row=0,W=cv.width,H=cv.height,cx=W/2,fy=H-22,sc=1.55,col=(CLS_INFO[cls]||{}).col||'#f2c14e';
   k.clearRect(0,0,W,H);k.imageSmoothingEnabled=true;
   /* พื้นวงเวทลายผ้าม้งหมุนช้า ๆ */
   k.save();k.translate(cx,fy);k.scale(1,.32);k.rotate(csAnim*.02);k.strokeStyle=col;k.globalAlpha=.55;k.lineWidth=3;k.beginPath();k.arc(0,0,74,0,7);k.stroke();k.lineWidth=1.5;k.beginPath();k.arc(0,0,58,0,7);k.stroke();
   for(let i=0;i<8;i++){k.rotate(Math.PI/4);k.strokeRect(62,-6,12,12)}k.restore();
   k.fillStyle='rgba(0,0,0,.35)';k.beginPath();k.ellipse(cx,fy,30,8,0,0,7);k.fill();
   /* ประกายลอยขึ้น */for(let i=0;i<10;i++){const t=(csAnim*.6+i*37)%100/100,x=cx+Math.sin(i*2.1+csAnim*.03)*70*(1-t*.3),y=fy-t*150;k.globalAlpha=(1-t)*.8;k.fillStyle=col;k.fillRect(x,y,2,2)}k.globalAlpha=1;
-  const fr=fx?Math.min(3,Math.floor((T-64)/6)):csAnim%4;
-  /* ช่วงท้ายของรอบ: แสดงท่าโจมตีของอาชีพ (ไม่มีภาพเอฟเฟกต์ติดมา) V2-R52 */
-  const A4p=!CBp&&fx&&cls==='นักดาบ'?HL.atk4For(csLook):null;
-  const CAp=fx&&CBp?HL.classAtk(cls,csLook):null,pp=((T-64)%16)/16;
-  if(CAp){try{HL.drawAtk4(k,CAp.img,cx,fy+2*sc,'E',pp,sc,HL.atkMode(CAp,Math.floor((T-64)/16)%2===0,cls))}catch(e){}}
-  else if(fx&&CBp){try{HL.drawAtkPose(k,CBp,cx,fy+2*sc,'E','E',pp,cls,sc)}catch(e){}}
-  else if(A4p){try{HL.drawAtk4(k,A4p,cx,fy+2*sc,'E',((T-64)%16)/16,sc)}catch(e){}}
-  else try{k.drawImage(S,fr*96,row*124,96,124,cx-48*sc,fy-118*sc,96*sc,124*sc)}catch(e){}
-  if(!CBp&&csLook.g==='f'&&!HL.sheetsFor(csLook).fem&&!HL.sheetsFor(csLook).tmp)HL.femHair(cx,fy,dir,csLook,sc,k);
-  /* เอฟเฟกต์ท่าไม้ตาย (แถว 09 ของตาราง) ทุก ๆ รอบ */
+  /* ท่าเดินหน้า: แถว S (แถวแรก) ของภาพเดิน 4 เฟรม วนไปเรื่อย ๆ */
+  try{k.drawImage(S,fr*96,row*124,96,124,cx-48*sc,fy-118*sc,96*sc,124*sc)}catch(e){}
+  if(!CBp&&csLook.g==='f'&&!HL.sheetsFor(csLook).fem&&!HL.sheetsFor(csLook).tmp)HL.femHair(cx,fy,'S',csLook,sc,k);
   csAnim++}
 function lookHtml(){const L=csLook,hasCB=!!HL.CLASS_BODY[csMode==='edit'?HL.curCls():csPick];return '<div class="lk"><canvas id="lkcv" width="240" height="230" aria-label="ตัวอย่างตัวละคร"></canvas><div class="lko">'
    +'<div class="lkr"><span>เพศ</span><div class="seg"><button data-g="m" class="'+(L.g==='m'?'on':'')+'" aria-pressed="'+(L.g==='m')+'">ชาย</button><button data-g="f" class="'+(L.g==='f'?'on':'')+'" aria-pressed="'+(L.g==='f')+'">หญิง</button></div></div>'
