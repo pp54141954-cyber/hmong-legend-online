@@ -21,6 +21,9 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 #msg{position:absolute;left:50%;bottom:200px;transform:translateX(-50%);background:var(--hud);border-radius:10px;padding:8px 14px;font-size:14px;max-width:86%;text-align:center;display:none}
 #stats{flex:1 1 100%;display:flex;flex-direction:column;gap:3px;font-size:12px}#hpb{height:7px;background:#00000055;border-radius:4px;overflow:hidden}#hpf{height:100%;width:100%;background:#e34848}
 #pad{position:absolute;right:10px;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;align-items:flex-end;gap:8px}
+#c{touch-action:none}
+#tbtn{min-width:48px;width:48px;height:34px;border-radius:12px;background:rgba(18,22,18,.74);color:#f4efe2;border:1px solid #9fd6ff66;touch-action:manipulation;font-size:20px;padding:0}
+#tbtn[aria-pressed="true"]{background:#285a77;border-color:#ffd879;box-shadow:0 0 0 2px #ffd87955}
 #skills{display:grid;grid-template-columns:repeat(3,48px);gap:6px}
 .sk{width:48px;height:48px;padding:0;border-radius:12px;background:var(--hud);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;touch-action:none}
 .sk b{font-size:15px}.sk small{font-size:8px;opacity:.85}.sk.lock{opacity:.45}.sk.cd{background:#55555599;color:#fff}
@@ -153,7 +156,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 <div class="row"><button id="zo" aria-label="ซูมออก">−</button><button id="zi" aria-label="ซูมเข้า">+</button><button id="za" aria-pressed="false">ทั้งแผนที่</button></div>
 <button id="wp">ไปทุ่งมอนสเตอร์</button><button id="v2">หมู่บ้านแผนที่ใหม่ (ทดสอบ)</button><button id="f2">ทุ่งน้ำตกแผนที่ใหม่ (ทดสอบ)</button><button id="tm">ทดสอบ: ตั้ง Job 30</button></div>
 <div id="msg"></div><div id="tgt"><canvas id="tgtc" width="112" height="112"></canvas><div class="ti"><b id="tgtn"></b><div class="tb"><i id="tgth"></i></div><small id="tgtl"></small></div></div>
-<div id="pad"><div id="skills"></div><div id="atkcol"><button id="ask" aria-label="ตั้งค่า AUTO" aria-expanded="false">⚙<br>ตั้งค่า</button><button id="pg" aria-label="ล่าอัตโนมัติ" aria-pressed="false">AUTO</button><button id="atk" aria-label="โจมตี">⚔</button></div></div>
+<div id="pad"><div id="skills"></div><div id="atkcol"><button id="ask" aria-label="ตั้งค่า AUTO" aria-expanded="false">⚙<br>ตั้งค่า</button><button id="pg" aria-label="ล่าอัตโนมัติ" aria-pressed="false">AUTO</button><button id="tbtn" aria-label="เลือกเป้าหมาย" aria-pressed="false" title="เลือกมอนสเตอร์ใกล้ตัว">🎯</button><button id="atk" aria-label="โจมตี">⚔</button></div></div>
 </div>
 <script>
 (function(){
@@ -783,6 +786,30 @@ function gain(e,j){
   if(PS.job<CFG.player.maxJob){PS.jexp+=j;while(PS.job<CFG.player.maxJob&&PS.jexp>=CFG.jobCurve(PS.job)){PS.jexp-=CFG.jobCurve(PS.job);PS.job++;lvUp('job',PS.job)}}}
 function kill(m){sfx('die');m.state='dead';m.dieT0=tNow;m.respT=m.c.respawn;PS.kills++;const e=Math.round(m.c.exp*WT.exp);gain(e,Math.round(m.c.job*WT.exp));addNum(m.x,m.y-40,'+'+e+' EXP','#8fe38f');if(m.c.boss)say('ปราบบอส '+m.type+' สำเร็จ!')}
 let lastTarget=null;
+/* R85: target selection is local visual guidance + direction; server still validates attacks. */
+const validControlTarget=m=>!!(m&&m.c&&m.state!=='dead'&&!m.away&&mons.includes(m)&&Math.hypot(m.x-player.x,m.y-player.y)<340);
+function focusTargetDirection(){
+  if(!validControlTarget(lastTarget))return false;
+  const dx=lastTarget.x-player.x,dy=lastTarget.y-lastTarget.c.size*.6-(player.y-14);
+  if(Math.abs(dx)+Math.abs(dy)<4)return false;
+  player.dir=Math.abs(dx)>=Math.abs(dy)?(dx>=0?'E':'W'):(dy>=0?'S':'N');
+  if(player.dir==='E'||player.dir==='W')player.lastH=player.dir;
+  return true;
+}
+function updateTargetButton(){
+  const b=document.getElementById('tbtn');if(!b)return;
+  const m=validControlTarget(lastTarget)?lastTarget:null;
+  b.setAttribute('aria-pressed',String(!!m));
+  b.setAttribute('aria-label',m?'เป้าหมาย '+m.type+' กดเพื่อเปลี่ยน':'เลือกเป้าหมาย');
+  b.title=m?'เป้าหมาย: '+m.type:'เลือกมอนสเตอร์ใกล้ตัว';
+}
+function cycleManualTarget(){
+  const eligible=mons.filter(validControlTarget).sort((a,b)=>Math.hypot(a.x-player.x,a.y-player.y)-Math.hypot(b.x-player.x,b.y-player.y));
+  if(!eligible.length){lastTarget=null;updateTargetButton();say('ไม่มีมอนสเตอร์ในระยะเลือกเป้าหมาย');return}
+  const index=eligible.indexOf(lastTarget);lastTarget=eligible[(index+1)%eligible.length];
+  updateTargetButton();say('เป้าหมาย: '+lastTarget.type);
+}
+document.getElementById('tbtn').addEventListener('click',cycleManualTarget);
 function damageMon(m,mult){lastTarget=m;if(netOn())return;mult*=(PS.buffT>0?1+PS.buffBonus:1)*((m.markT||0)>0?1+m.markBonus:1);const ty=m.y-m.c.size*.6,r=Combat.damage(PS.atk,mult,Math.random(),Math.random());m.hp-=r.dmg;m.hurt=.25;addNum(m.x,ty-18,r.dmg,r.crit?'#ffd34a':'#ffffff');sfx('hit',{crit:r.crit});
   if(m.state==='idle'||m.state==='return')m.state='chase';if(m.hp<=0)kill(m)}
 function doHit(sk,mult,ox,oy,dir){let hits=0;ox=ox??player.x;oy=oy??player.y-14;dir=dir||player.dir;
@@ -830,7 +857,7 @@ function release(sk){const ox=player.x,oy=player.y-14,dir=player.dir,[ux,uy]=DV[
   else{doHit(sk,sk.mult,ox,oy,dir);if(sk!==CFG.basic)fx.push({k:sk.fxk||sk.shape,sk,t:sk.fxk?.5:.22,x:ox,y:oy,dir});if(sk.fxk==='quake'){burst(ox,oy+14,'#ffb43a',46,280,.7,140);shake(7,.4)}}}
 function startCast(sk,key){PS.cast={sk,t:0,done:false,key};}
 const sfx=(n,o)=>{try{window.SND&&SND.play(n,o)}catch(e){}};
-function attack(){if(PS.dead||PS.cast||(PS.cd.b||0)>0)return false;const BS=CFG.basicFor(curCls());PS.cd.b=BS.cd;startCast(BS,'b');sfx(BS.shape==='shot'?'skill':'swing',{shape:'shot'});if(netOn())HLNET.act('b',player.dir);return true}
+function attack(){if(PS.dead||PS.cast||(PS.cd.b||0)>0)return false;const BS=CFG.basicFor(curCls());focusTargetDirection();PS.cd.b=BS.cd;startCast(BS,'b');sfx(BS.shape==='shot'?'skill':'swing',{shape:'shot'});if(netOn())HLNET.act('b',player.dir);return true}
 /* อาชีพ (V2-R27): 8 อาชีพจาก SKILL_TABLE — ช่อง 1–11 ใช้กลไกเดียวกับนักดาบ (ท่าแบบชั่วคราว) แต่ชื่อ/ระดับสกิลแยกตามอาชีพ */
 const CLASSES=[...new Set(SKILL_TABLE.map(r=>r[0]))],CLS_ACTIVE={};for(const c of CLASSES)CLS_ACTIVE[c]=SKILL_TABLE.filter(r=>r[0]===c&&r[3]==='a'&&r[2]!=='ท่าพื้นฐาน').map(r=>r[2]);
 const CLS_PATHS={};for(const c of CLASSES)CLS_PATHS[c]=[...new Set(SKILL_TABLE.filter(r=>r[0]===c&&r[1]!=='เริ่มต้น').map(r=>r[1]))];
@@ -903,6 +930,7 @@ function drawGrandSkillFx(f){
 }
 
 function useSkill(i){const sk=CFG.skillFor(curCls(),i);if(!sk||PS.dead)return'invalid';if(PS.job<sk.job||(netOn()&&!(HLNET.sk[skName(i)]>0)))return'locked';if((PS.cd[i]||0)>0)return'cooldown';if(PS.cast)return'busy';
+  if(!['move','guard','counter','heal','buff'].includes(sk.shape))focusTargetDirection();
   PS.cd[i]=sk.cd*(netOn()?Math.max(.5,1-(HLNET.bon.cdr||0)):1);startCast(sk,i);PS.cast.chart=chartFx(curCls(),i);skillGrandFx(sk,curCls(),i,'charge');sfx('skill',{shape:sk.shape});if(netOn())HLNET.act(i,player.dir);return'ok'}
 let fxQuiet=0; /* ช่วงเวลาที่เอฟเฟกต์จากตารางเล่นอยู่: ภาพวาดโค้ดที่เกิดในช่วงนี้ไม่ต้องวาดซ้อน (V2-R51) */
 function updCast(dt){const c=PS.cast;if(!c)return;c.t+=dt;if(!c.done&&c.t>=c.sk.poseT*.6){c.done=true;if(c.chart)fxQuiet=tNow+1.6;release(c.sk)}if(c.t>=c.sk.poseT)PS.cast=null}
@@ -913,14 +941,19 @@ function updShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i],d=s.sk
 /* ---------- อินพุต ---------- */
 const keys={};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');let joy=null;
-/* จอย V2-R23: ฐานคงที่มุมซ้ายล่าง (แตะครึ่งซ้ายของจอที่ไหนก็ได้ จอยย้ายไปใต้นิ้ว), เดิน 8 ทิศแบบอนาล็อก */
-const JOY={r:52,dead:8};const joyHome=()=>({x:Math.max(86,cw*.17),y:ch-Math.max(130,ch*.16)});
-cv.addEventListener('pointerdown',e=>{if(joy)return;if(e.clientX>cw*.55)return;const h=joyHome(),near=Math.hypot(e.clientX-h.x,e.clientY-h.y)<JOY.r*1.6;
-  joy={ox:near?h.x:e.clientX,oy:near?h.y:e.clientY,x:e.clientX,y:e.clientY,id:e.pointerId};cv.setPointerCapture(e.pointerId)});
-cv.addEventListener('pointermove',e=>{if(joy&&e.pointerId===joy.id){joy.x=e.clientX;joy.y=e.clientY}});
-['pointerup','pointercancel'].forEach(n=>cv.addEventListener(n,e=>{if(joy&&e.pointerId===joy.id)joy=null}));cv.addEventListener('contextmenu',e=>e.preventDefault());
+/* R85: single-pointer analog joystick; other fingers can cast/attack.
+   Keep the existing floating-base behavior and collision/path masks. */
+const JOY={r:52,dead:11};const joyHome=()=>({x:Math.max(86,cw*.17),y:ch-Math.max(130,ch*.16)});
+const releaseJoy=(id)=>{if(joy&&(id===undefined||joy.id===id))joy=null};
+cv.addEventListener('pointerdown',e=>{if(joy||e.clientX>cw*.55)return;
+  const h=joyHome(),near=Math.hypot(e.clientX-h.x,e.clientY-h.y)<JOY.r*1.6;
+  joy={ox:near?h.x:e.clientX,oy:near?h.y:e.clientY,x:e.clientX,y:e.clientY,id:e.pointerId};
+  e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}});
+cv.addEventListener('pointermove',e=>{if(joy&&e.pointerId===joy.id){joy.x=e.clientX;joy.y=e.clientY;e.preventDefault()}});
+['pointerup','pointercancel','lostpointercapture'].forEach(n=>cv.addEventListener(n,e=>releaseJoy(e.pointerId)));
+cv.addEventListener('contextmenu',e=>e.preventDefault());
 function inputDir(){let dx=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0),dy=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0);
-  if(!dx&&!dy&&joy){const jx=joy.x-joy.ox,jy=joy.y-joy.oy,d=Math.hypot(jx,jy);if(d>JOY.dead){const m=Math.min(1,(d-JOY.dead)/(JOY.r-JOY.dead)*1.4);dx=jx/d*m;dy=jy/d*m}}
+  if(!dx&&!dy&&joy){const jx=joy.x-joy.ox,jy=joy.y-joy.oy,d=Math.hypot(jx,jy);if(d>JOY.dead){const m=Math.min(1,(d-JOY.dead)/(JOY.r-JOY.dead));dx=jx/d*m;dy=jy/d*m}}
   const L=Math.hypot(dx,dy);if(L>1){dx/=L;dy/=L}return[dx,dy]}
 const $=id=>document.getElementById(id),bza=$('za');
 $('dbg').onclick=()=>{debug=!debug;$('dbg').setAttribute('aria-pressed',debug)};
@@ -928,9 +961,17 @@ $('free').onclick=()=>{freeMode=!freeMode;$('free').setAttribute('aria-pressed',
 $('zi').onclick=()=>{fitAll=false;bza.setAttribute('aria-pressed',false);zoomMul=Math.min(4,zoomMul*1.25)};
 $('zo').onclick=()=>{fitAll=false;bza.setAttribute('aria-pressed',false);zoomMul=Math.max(.2,zoomMul/1.25)};
 bza.onclick=()=>{fitAll=!fitAll;bza.setAttribute('aria-pressed',fitAll)};
-let atkHeld=false;
-$('atk').addEventListener('pointerdown',e=>{e.preventDefault();atkHeld=true;attack()});
-['pointerup','pointercancel','pointerleave'].forEach(n=>$('atk').addEventListener(n,()=>{atkHeld=false}));
+let atkHeld=false,atkPointer=null,heldSkill=null;
+function releaseControlPointer(id){
+  if(id===undefined||atkPointer===id){atkHeld=false;atkPointer=null}
+  if(heldSkill&&(id===undefined||heldSkill.id===id))heldSkill=null;
+}
+$('atk').addEventListener('pointerdown',e=>{if(atkPointer!==null)return;e.preventDefault();atkPointer=e.pointerId;atkHeld=true;
+  try{e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}attack()});
+['pointerup','pointercancel','pointerleave','lostpointercapture'].forEach(n=>$('atk').addEventListener(n,e=>releaseControlPointer(e.pointerId)));
+addEventListener('blur',()=>{releaseJoy();releaseControlPointer();for(const k in keys)keys[k]=0});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseJoy();releaseControlPointer();for(const k in keys)keys[k]=0}});
+
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=1;if(e.key.startsWith('Arrow'))e.preventDefault();
   if(e.key==='+'||e.key==='=')zoomMul=Math.min(4,zoomMul*1.25);if(e.key==='-')zoomMul=Math.max(.2,zoomMul/1.25);
   if(e.key===' '||k==='j'){atkHeld=true;e.preventDefault()}const n=+e.key;if(n>=1&&n<=9){const r=useSkill(n);if(r==='locked')say(PS.job<CFG.skills[n-1].job?CFG.skills[n-1].name+' ปลดล็อกที่ Job '+CFG.skills[n-1].job:CFG.skills[n-1].name+' ต้องอัปสกิลก่อน (📜)')}});
@@ -1402,6 +1443,12 @@ function draw(){
   drawFx();
   if(debug){for(let y=sy0;y<sy1;y++)for(let x=sx0;x<sx1;x++)if(tileBlocked(x,y)){ctx.fillStyle='rgba(255,40,40,.35)';ctx.fillRect(x*T,y*T,T,T)}
     ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1;ctx.strokeRect(player.x-HW,player.y-HH,HW*2,HH*2)}
+  /* Small world-space ring for the selected target; do not resurrect the removed target-card HUD. */
+  if(validControlTarget(lastTarget)){
+    const m=lastTarget;ctx.save();ctx.strokeStyle='#ffd879';ctx.lineWidth=2.5;
+    ctx.shadowColor='#ffd879';ctx.shadowBlur=5;ctx.beginPath();
+    ctx.ellipse(m.x,m.y+3,Math.max(17,m.c.size*.48),Math.max(7,m.c.size*.2),0,0,Math.PI*2);ctx.stroke();ctx.restore();
+  }
   ctx.setTransform(dpr,0,0,dpr,0,0);
   if(WT.night){ctx.fillStyle=WT.blood?'rgba(120,10,20,.30)':'rgba(10,20,70,.34)';ctx.fillRect(0,0,cw,ch)}
   {const h=joy?{x:joy.ox,y:joy.oy}:joyHome(),R=JOY.r;let kx=0,ky=0;if(joy){const jx=joy.x-joy.ox,jy=joy.y-joy.oy,d=Math.hypot(jx,jy)||1,c=Math.min(d,R);kx=jx/d*c;ky=jy/d*c}
@@ -1417,7 +1464,12 @@ function setSlot(k,i){const j=SLOTS.indexOf(i);if(j>=0&&j!==k)SLOTS[j]=SLOTS[k];
 const skIcon=i=>'icons/sk_'+i+'.png';
 function buildSkills(){skEl.innerHTML='';for(let s=0;s<6;s++){const i=SLOTS[s],sk=CFG.skills[i-1],b=document.createElement('button');b.className='sk';
   if(!sk){b.disabled=true;b.style.visibility='hidden';skEl.appendChild(b);continue}b.dataset.i=i;b.setAttribute('aria-label',skName(i));b.addEventListener('animationend',()=>b.classList.remove('ready'));b.innerHTML='<img alt="" draggable="false"><i class="cdn"></i><small></small>';b.querySelector('img').src=skIcon(i);b.querySelector('small').textContent=skName(i);
-  b.addEventListener('pointerdown',e=>{e.preventDefault();const r=useSkill(i);if(r==='locked')say(PS.job<sk.job?skName(i)+' ปลดล็อกที่ Job '+sk.job:sk.name+' ต้องอัปสกิลก่อน (📜)')});skEl.appendChild(b)}hudT=0}
+  b.addEventListener('pointerdown',e=>{if(heldSkill)return;e.preventDefault();
+    heldSkill={id:e.pointerId,i,t:performance.now(),last:performance.now()};
+    try{b.setPointerCapture(e.pointerId)}catch(_){}
+    const r=useSkill(i);if(r==='locked'){heldSkill=null;say(PS.job<sk.job?skName(i)+' ปลดล็อกที่ Job '+sk.job:sk.name+' ต้องอัปสกิลก่อน (📜)')}});
+  ['pointerup','pointercancel','pointerleave','lostpointercapture'].forEach(n=>b.addEventListener(n,e=>releaseControlPointer(e.pointerId)));
+  skEl.appendChild(b)}hudT=0}
 buildSkills();
 /* ปุ่ม AUTO (V2-R23) แทนปุ่มสลับชุด */
 $('ask').onclick=()=>openAutoCfg();queueMicrotask(()=>setAutoSk(AUTOSK.on));
@@ -1523,7 +1575,7 @@ let tgtShown=null;
 function pickTarget(){if(lastTarget&&lastTarget.state!=='dead'&&mons.includes(lastTarget)&&Math.hypot(lastTarget.x-player.x,lastTarget.y-player.y)<420)return lastTarget;
   let best=null,bd=1e9;for(const m of mons){if(m.state!=='chase')continue;const d=Math.hypot(m.x-player.x,m.y-player.y);if(d<bd){bd=d;best=m}}return best}
 const SHOW_TGT=false; /* การ์ดเป้าหมายมุมขวาบน: เจ้าของสั่งเอาออก (V2-R27) */
-function hud(dt){hudT-=dt;if(hudT>0)return;hudT=.1;{const tb=document.getElementById('top').getBoundingClientRect().bottom;if(tb!==hud.tb){hud.tb=tb;document.documentElement.style.setProperty('--toph',Math.round(tb)+'px')}}
+function hud(dt){hudT-=dt;if(hudT>0)return;hudT=.1;updateTargetButton();{const tb=document.getElementById('top').getBoundingClientRect().bottom;if(tb!==hud.tb){hud.tb=tb;document.documentElement.style.setProperty('--toph',Math.round(tb)+'px')}}
   {const t=SHOW_TGT?pickTarget():null,el=$('tgt');if(!t){el.style.display='none';tgtShown=null}else{el.style.display='flex';
     if(tgtShown!==t.type){tgtShown=t.type;const k=PORTRAIT[t.type],g2=$('tgtc').getContext('2d');g2.clearRect(0,0,112,112);const ma=monArt(t.type);if(ma&&ma.complete&&ma.naturalWidth)g2.drawImage(ma,0,0,112,112);else if(k!=null&&ATL.complete)g2.drawImage(ATL,(k%9)*96,Math.floor(k/9)*96,96,96,0,0,112,112);else tgtShown=null;$('tgtn').textContent=t.type}
     $('tgth').style.width=Math.max(0,100*t.hp/t.c.hp)+'%';$('tgtl').textContent='Lv '+(t.c.lv||1)+' · HP '+Math.max(0,Math.ceil(t.hp))+'/'+t.c.hp+' · ATK '+t.c.atk}}
@@ -1582,6 +1634,9 @@ function autoStep(dt){if(!AUTO.on||PS.dead)return null;
   if(Math.hypot(player.x-AUTO.lx,player.y-AUTO.ly)<.5){if((AUTO.stuck+=dt)>1.5){m.autoSkip=tNow+3;AUTO.tgt=null;AUTO.stuck=0}}else AUTO.stuck=0;AUTO.lx=player.x;AUTO.ly=player.y;
   return[ex/el,ey/el]}
 let wtT=0;function update(dt){tNow+=dt;switchCd=Math.max(0,switchCd-dt);
+  /* Holding an equipped skill repeats only when the existing cast/cooldown permits. */
+  if(heldSkill){const now=performance.now();if(now-heldSkill.t>=360&&now-heldSkill.last>=140){
+    heldSkill.last=now;useSkill(heldSkill.i)}}
   if((wtT-=dt)<=0){wtT=1;const prev=WT;WT=window.HLNET&&HLNET.auth&&HLNET.wt?HLNET.wt:CFG.worldClock(clockNow());
     if(prev.name!==WT.name)say(WT.blood?'🩸 คืนพระจันทร์สีเลือด! มอนสเตอร์ดุร้ายขึ้น EXP ×'+CFG.time.blood.exp:WT.night?'🌙 เข้าสู่กลางคืน มอนสเตอร์แรงขึ้น':'☀️ เช้าแล้ว');
     if(!netOn())for(const m of mons)gateBoss(m,WT)}
