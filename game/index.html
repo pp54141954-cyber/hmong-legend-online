@@ -116,6 +116,24 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 #atk{box-shadow:0 4px 0 #7a3410,0 6px 14px #0006}
 #msg{background:rgba(18,22,18,.84);color:#f4efe2;bottom:calc(200px + env(safe-area-inset-bottom,0px))}
 #tgt{background:rgba(18,22,18,.74);color:#f4efe2}
+
+/* V2 equipment inventory panel: scoped to bag only */
+#bag{width:min(96vw,560px);max-height:82dvh;overflow:auto;background:#17252aef;color:#f6f2e8;border:2px solid #b68a48;border-radius:16px;padding:12px;box-sizing:border-box}
+#bag .bag-tabs,#bag .bag-filters{display:flex;gap:6px;overflow-x:auto;margin:9px 0}
+#bag .bag-tabs button,#bag .bag-filters button{flex:1;min-width:max-content;border:1px solid #806d52;border-radius:9px;background:#293b40;color:#f4efe3;padding:9px;font-size:13px}
+#bag .bag-tabs button.on,#bag .bag-filters button.on{background:#b18a4b;color:#172126;font-weight:700}
+#bag .eqs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#bag .eqs .it{min-height:88px;text-align:left;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#bag .eqs .it small{width:100%;opacity:.8}
+#bag .bag-search{width:100%;box-sizing:border-box;background:#243238;color:white;border:1px solid #8b7659;border-radius:9px;padding:11px;margin:8px 0}
+#bag .items.bag-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+#bag .bag-grid .it{min-width:0;min-height:88px;padding:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;overflow:hidden}
+#bag .bag-grid .it span{font-size:11px;line-height:1.2;overflow-wrap:anywhere;text-align:center}
+#bag .bag-grid .it small{font-size:10px;text-align:center}
+#bag .bag-grid .it .ic{flex-shrink:0}
+#bag .bag-pager{display:flex;justify-content:center;align-items:center;gap:8px;margin:10px 0}
+#bag .bag-pager button{padding:8px 14px;border-radius:8px;background:#34484b;color:white;border:1px solid #8c7452}
+@media(min-width:440px){#bag .items.bag-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -1729,7 +1747,8 @@ function renderAdmin(){if(adEl.hidden)return;const C=HL.CFG,P=HL.PS;
 const ADM_MSG={ok:'สำเร็จ',invalid:'ค่าไม่ถูกต้อง','bag-full':'กระเป๋าเต็ม','no-boss':'โซนนี้ไม่มีบอส'};
 function toggleSkills(){if(skEl2.hidden)clEl.hidden=true;skEl2.hidden=!skEl2.hidden;skBtn.setAttribute('aria-expanded',String(!skEl2.hidden));if(!skEl2.hidden&&!bagEl.hidden)toggleBag();renderSkills()}
 skBtn.onclick=toggleSkills;skEl2.addEventListener('keydown',e=>e.stopPropagation());
-const SLOTN={weapon:'อาวุธ',armor:'เสื้อ',acc:'เครื่องประดับ'};
+const SLOTN={weapon:'อาวุธหลัก',offhand:'โล่ / มือรอง',armor:'เสื้อ',acc:'เครื่องประดับ'};
+let bagTab='all',bagQuery='',bagPage=0;
 /* ---------- ไอคอนไอเทม (V2-R5): พิกเซลอาร์ต 16×16 วาดด้วยโค้ด ขยาย 2 เท่า สีตามโทนเกม ---------- */
 const ICON={};
 const ICONDRAW={
@@ -1755,72 +1774,29 @@ NET.itemIcon=itemIcon;
 const iconImg=id=>{const u=itemIcon(id);if(!u)return null;const im=document.createElement('img');im.src=u;im.alt='';im.width=im.height=30;im.className='ic';return im};
 const itemInfo=it=>it.type==='use'?'ฟื้น HP '+it.heal:it.type==='eq'?[it.atk?'ATK +'+it.atk:'',it.def?'DEF +'+it.def:'',it.hp?'HP +'+it.hp:''].filter(Boolean).join(' '):'วัตถุดิบ';
 function renderBag(){if(bagEl.hidden)return;const I=HL.CFG.items,me=NET.me;bagEl.innerHTML='';
-  const h=document.createElement('h3');h.innerHTML='<span>กระเป๋า</span>';const x=document.createElement('button');x.textContent='ปิด';x.onclick=toggleBag;h.appendChild(x);bagEl.appendChild(h);
-  if(!NET.auth){const n=document.createElement('div');n.className='note';n.textContent='กระเป๋าใช้ได้เมื่อเล่นออนไลน์ผ่านเซิร์ฟเวอร์';bagEl.appendChild(n);return}
-  const st=document.createElement('div');st.className='stt';st.id='bagstat';st.textContent='ATK '+(me.atk??'-')+' · DEF '+(me.def??'-')+' · HP '+(me.hp??'-')+'/'+(me.maxHp??'-')+' · ช่อง '+NET.bag.length+'/'+HL.CFG.bag.slots+' · เงิน '+(NET.gold??0);bagEl.appendChild(st);
-  const eqs=document.createElement('div');eqs.className='eqs';
-  for(const k of ['weapon','armor','acc']){const id=NET.eq[k],it=id&&I[id],b=document.createElement('button');b.className='it'+(it?' eq':' none');b.dataset.eq=k;
-    b.innerHTML='<small>'+SLOTN[k]+'</small>';const t=document.createElement('span');t.textContent=it?it.name:'— ว่าง —';if(it){const im=iconImg(id);if(im)b.appendChild(im)}b.appendChild(t);
-    if(it){b.setAttribute('aria-label','ถอด '+it.name);b.onclick=()=>send({t:'inv',op:'unequip',slot:k})}else b.disabled=true;eqs.appendChild(b)}
-  bagEl.appendChild(eqs);
-  const items=document.createElement('div');items.className='items';
-  NET.bag.forEach((s,i)=>{const it=I[s.id];if(!it)return;const b=document.createElement('button');b.className='it '+it.type;b.dataset.slot=i;
-    const t=document.createElement('span');t.textContent=it.name+(s.n>1?' ×'+s.n:'');const sm=document.createElement('small');sm.textContent=itemInfo(it);const im=iconImg(s.id);if(im)b.append(im);b.append(t,sm);
-    if(it.type==='use'){b.setAttribute('aria-label','ใช้ '+it.name);b.onclick=()=>send({t:'inv',op:'use',slot:i})}
-    else if(it.type==='eq'){b.setAttribute('aria-label','ใส่ '+it.name);b.onclick=()=>send({t:'inv',op:'equip',slot:i})}
-    else b.setAttribute('aria-disabled','true');items.appendChild(b)});
-  if(!NET.bag.length){const n=document.createElement('div');n.className='note';n.textContent='ยังไม่มีของ — ล่ามอนสเตอร์เพื่อรับของดรอป';bagEl.appendChild(n)}else bagEl.appendChild(items);
-  const n=document.createElement('div');n.className='note';n.textContent='ชื่อ ค่า และอัตราดรอปของไอเทมเป็นค่าชั่วคราว';bagEl.appendChild(n)}
-/* ร้านค้า NPC (V2-R73): เปิดเมื่ออยู่ใกล้ NPC · ซื้อผ่านเซิร์ฟเวอร์เท่านั้น ราคาและเงินคิดที่เซิร์ฟเวอร์ */
-const shp=document.createElement('div');shp.id='shop';shp.hidden=true;shp.setAttribute('role','dialog');shp.setAttribute('aria-label','ร้านค้า');document.getElementById('app').appendChild(shp);
-const shb=document.createElement('button');shb.id='shb';shb.hidden=true;shb.innerHTML='🛒<span>ร้านค้า</span>';shb.setAttribute('aria-label','ร้านค้า');shb.onclick=()=>toggleShop();document.getElementById('app').appendChild(shb);
-let shopOpen=false,shopNpc=null;
-const SHOP_MSG={far:'ต้องอยู่ใกล้ป้าขายของ','no-gold':'เงินไม่พอ','bag-full':'กระเป๋าเต็ม',invalid:'ซื้อรายการนี้ไม่ได้','wrong-class':'อาชีพนี้ใช้อาวุธนี้ไม่ได้',dead:'ตอนนี้ทำไม่ได้'};
-function npcNear(){const Cf=HL.CFG,TS=HL.T||32,Zc=HL.Z,pl=HL.player;let best=null,bd=1e9;for(const n of Cf.npcs){if(!Zc||n.zone!==Zc.id)continue;const d=Math.hypot(pl.x-n.tx*TS,pl.y-n.ty*TS);if(d<bd){bd=d;best=n}}return bd<=Cf.economy.shopRange*TS?best:null}
-function shopTick(){const n=npcNear();shopNpc=n;shb.hidden=!n;if(!n&&shopOpen){shopOpen=false;shp.hidden=true}}
-window.shopTick=shopTick;
-function toggleShop(){if(!shopNpc)return;shopOpen=!shopOpen;shp.hidden=!shopOpen;renderShop()}
-function renderShop(){if(shp.hidden)return;const I=HL.CFG.items,n=shopNpc||HL.CFG.npcs[0];shp.innerHTML='';
-  const h=document.createElement('h3');h.innerHTML='<span>'+n.name+'</span>';const x=document.createElement('button');x.textContent='ปิด';x.onclick=toggleShop;h.appendChild(x);shp.appendChild(h);
-  if(!NET.auth){const t=document.createElement('div');t.className='note';t.textContent='ร้านค้าใช้ได้เมื่อเล่นออนไลน์ผ่านเซิร์ฟเวอร์';shp.appendChild(t);return}
-  const st=document.createElement('div');st.className='stt';st.textContent='เงินของคุณ '+(NET.gold??0);shp.appendChild(st);
-  const items=document.createElement('div');items.className='items';
-  for(const [id,price] of n.shop){const it=I[id];if(!it)continue;const b=document.createElement('button');b.className='it '+it.type;b.dataset.shop=id;
-    const t=document.createElement('span');t.textContent=it.name;const sm=document.createElement('small');sm.textContent='ราคา '+price+' เงิน · '+itemInfo(it);const im=iconImg(id);if(im)b.append(im);b.append(t,sm);
-    b.setAttribute('aria-label','ซื้อ '+it.name+' ราคา '+price+' เงิน');b.onclick=()=>send({t:'shop',npc:n.id,id,n:1});items.appendChild(b)}
-  shp.appendChild(items)}
-/* หน้าต่างสถานะ (V2-R24): แตะวงเลเวลมุมซ้ายบน */
-const stEl=$('stp'),lvBtn=$('lvb');lvBtn.setAttribute('role','button');lvBtn.setAttribute('tabindex','0');lvBtn.setAttribute('aria-label','สถานะตัวละคร');lvBtn.setAttribute('aria-expanded','false');
-/* หน้าต่างตัวละคร (V2-R25 ตามสไตล์ภาพตัวอย่างของเจ้าของ): แท็บ, สเตตัสพื้นฐาน +1/+5, สเตตัสต่อสู้ แยกโจมตี/ป้องกัน */
-const ST_COL={str:'#e5484d',agi:'#46a758',vit:'#f0a030',luk:'#8e4ec6'};
-function renderStat(){if(stEl.hidden)return;const P=HL.PS,C=HL.CFG,S=C.stats,on=NET.auth&&NET.me,me=NET.me||{},pct=v=>Math.round((v||0)*1000)/10+'%',esc=t=>String(t).replace(/[&<>"]/g,c=>'&#'+c.charCodeAt(0)+';');
-  const st=on?(NET.st||{}):(P.st||{}),free=on?(NET.spts??0):S.free(P.lv,P.st),SB=S.bonus(st),B=on?(NET.bon||{}):SB;
-  const xpN=C.expCurve(P.lv),jN=C.jobCurve(P.job),z=HL.ZONES[HL.Z&&HL.Z.id]||{},eqn=sl=>{const id=(NET.eq||{})[sl],it=id&&C.items[id];return it?it.name:'—'};
-  const cell=(k,v,sub)=>'<div class="cell"><span>'+k+'</span><b>'+v+(sub?'<small>'+sub+'</small>':'')+'</b></div>';
-  const atk=on?me.atk:P.atk,hp=on?me.maxHp:P.maxHp,def=on?me.def:(P.def||0);
-  stEl.innerHTML='<div class="whd"><b>ตัวละคร</b><button class="x" aria-label="ปิด">×</button><div class="tabs"><button class="on" aria-pressed="true">สเตตัส</button><button data-tab="bag">กระเป๋า</button><button data-tab="sk">สกิล</button></div></div>'
-   +'<div class="wbody"><div class="card hd"><div class="lv"><small>Lv</small>'+P.lv+'</div><div class="nm"><b>'+esc(on?(NET.name||'ผู้เล่น'):'ผู้เล่น (ออฟไลน์)')+'</b> · '+HL.curCls()+' Job '+P.job
-   +'<div class="bl"><span>EXP</span><div class="bar"><i style="width:'+(P.lv>=C.player.maxLv?100:Math.min(100,100*P.exp/xpN))+'%;background:#f2a93b"></i></div><small>'+(P.lv>=C.player.maxLv?'MAX':Math.floor(P.exp)+'/'+xpN)+'</small></div>'
-   +'<div class="bl"><span>Job</span><div class="bar"><i style="width:'+(P.job>=C.player.maxJob?100:Math.min(100,100*(P.jexp||0)/jN))+'%;background:#4a8ad6"></i></div><small>'+(P.job>=C.player.maxJob?'MAX':Math.floor(P.jexp||0)+'/'+jN)+'</small></div></div></div>'
-   +'<div class="card"><div class="ch"><b>สเตตัสพื้นฐาน</b><span id="sptsv">คงเหลือ '+free+'</span></div>'
-   +S.keys.map(k=>{const I=S.info[k],v=st[k]||0,mx=v>=S.max,b1=!mx&&free>=1,b5=!mx&&free>=1;
-      return '<div class="srow"><i class="bd" style="background:'+ST_COL[k]+'">'+I[0]+'</i><div class="sd"><span>'+I[1]+'</span><small>'+I[2]+'</small></div><div class="sv"><b>'+v+'</b><small>ลงแล้ว '+v+'/'+S.max+'</small></div>'
-       +(mx?'<em class="mx">MAX</em><em class="mx">MAX</em>':'<button class="sup" data-k="'+k+'" data-n="1" aria-label="เพิ่ม '+I[0]+'"'+(b1?'':' disabled')+'>+1</button><button class="sup" data-k="'+k+'" data-n="5" aria-label="เพิ่ม '+I[0]+' 5"'+(b5?'':' disabled')+'>+5</button>')+'</div>'}).join('')
-   +'<div class="srst"><small>ได้ '+S.perLv+' แต้มต่อเลเวล</small><button id="strst"'+(S.used(st)?'':' disabled')+'>รีเซ็ตแต้ม</button></div></div>'
-   +'<div class="card"><div class="ch"><b>สเตตัสต่อสู้</b><span class="real">ค่าจริงที่ใช้คำนวณในเกม</span></div>'
-   +'<h5>โจมตี</h5><div class="grid">'+cell('ATK',atk,SB.atk?'+'+SB.atk:'')+cell('คริติคอล',pct(.1+(B.crit||0)))+cell('ดาเมจสกิล','+'+pct(B.skillDmg))+cell('ลด CD สกิล',pct(B.cdr),'สูงสุด 50%')+'</div>'
-   +'<h5>ป้องกัน</h5><div class="grid">'+cell('HP สูงสุด',hp,SB.hp?'+'+SB.hp:'')+cell('HP ตอนนี้',Math.ceil(on?me.hp:P.hp))+cell('DEF',def,SB.def?'+'+SB.def:'')+cell('ความเร็วเดิน',Math.round(C.player.speed*(1+(B.spd||0))))+'</div>'
-   +'<h5>อื่น ๆ</h5><div class="grid">'+cell('แต้มสกิล',on?NET.pts:'-')+cell('โซน',esc(z.name||'-'))+'</div></div>'
-   +'<div class="card"><div class="ch"><b>อุปกรณ์</b></div><div class="eqr"><div><i>อาวุธ</i>'+eqn('weapon')+'</div><div><i>เสื้อ</i>'+eqn('armor')+'</div><div><i>เครื่องประดับ</i>'+eqn('acc')+'</div></div>'
-   +(on?'':'<p class="note">ออฟไลน์: ค่าจากเครื่อง (ออนไลน์ใช้ค่าจากเซิร์ฟเวอร์)</p>')+'</div></div>';
-  stEl.querySelector('.x').onclick=toggleStat;
-  for(const b of stEl.querySelectorAll('.tabs [data-tab]'))b.onclick=()=>{toggleStat();if(b.dataset.tab==='bag')toggleBag();else toggleSkills()};
-  for(const b of stEl.querySelectorAll('.sup'))b.onclick=()=>{const k=b.dataset.k,n=Math.min(+b.dataset.n,free);if(on)send({t:'stat',op:'up',k,n});else{HL.statUpLocal(k,n);renderStat()}};
-  stEl.querySelector('#strst').onclick=()=>{if(on)send({t:'stat',op:'reset'});else{HL.statResetLocal();renderStat()}};
-  updStatDot()}
-function toggleStat(){if(stEl.hidden){if(!bagEl.hidden)toggleBag();if(!skEl2.hidden)toggleSkills();for(const id of['aop','wmp'])document.getElementById(id).hidden=true}stEl.hidden=!stEl.hidden;lvBtn.setAttribute('aria-expanded',String(!stEl.hidden));renderStat()}
-lvBtn.onclick=toggleStat;lvBtn.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleStat()}};
-function updStatDot(){const P=HL.PS,f=NET.auth?(NET.spts||0):HL.CFG.stats.free(P.lv,P.st);lvBtn.classList.toggle('dot',f>0)}
+ const h=document.createElement('h3');h.innerHTML='<span>กระเป๋าและอุปกรณ์</span>';const x=document.createElement('button');x.textContent='ปิด';x.onclick=toggleBag;h.appendChild(x);bagEl.appendChild(h);
+ if(!NET.auth){const n=document.createElement('div');n.className='note';n.textContent='กระเป๋าใช้ได้เมื่อเล่นออนไลน์ผ่านเซิร์ฟเวอร์';bagEl.appendChild(n);return}
+ const st=document.createElement('div');st.className='stt';st.id='bagstat';st.textContent='ATK '+(me.atk??'-')+' · DEF '+(me.def??'-')+' · HP '+(me.hp??'-')+'/'+(me.maxHp??'-')+' · ช่อง '+NET.bag.length+'/'+HL.CFG.bag.slots+' · เงิน '+(NET.gold??0);bagEl.appendChild(st);
+ const tabs=document.createElement('div');tabs.className='bag-tabs';for(const [key,label] of [['all','ทั้งหมด'],['eq','อุปกรณ์'],['use','ของใช้'],['mat','วัตถุดิบ']]){const b=document.createElement('button');b.textContent=label;b.className=bagTab===key?'on':'';b.onclick=()=>{bagTab=key;bagPage=0;renderBag()};tabs.appendChild(b)}bagEl.appendChild(tabs);
+ const eqs=document.createElement('div');eqs.className='eqs';
+ for(const k of ['weapon','offhand','armor','acc']){const id=NET.eq[k],it=id&&I[id],b=document.createElement('button');b.className='it'+(it?' eq':' none');b.dataset.eq=k;
+ const sm=document.createElement('small');sm.textContent=SLOTN[k];b.appendChild(sm);if(it){const im=iconImg(id);if(im)b.appendChild(im)}
+ const t=document.createElement('span');t.textContent=it?it.name:'— ว่าง —';b.appendChild(t);
+ if(it){b.setAttribute('aria-label','ถอด '+it.name);b.onclick=()=>send({t:'inv',op:'unequip',slot:k})}else b.disabled=true;eqs.appendChild(b)}
+ bagEl.appendChild(eqs);
+ const q=document.createElement('input');q.className='bag-search';q.placeholder='ค้นหาไอเทม...';q.setAttribute('aria-label','ค้นหาไอเทม');q.value=bagQuery;q.oninput=()=>{bagQuery=q.value;bagPage=0;renderBag();const next=bagEl.querySelector('.bag-search');if(next){next.focus();next.setSelectionRange(next.value.length,next.value.length)}};bagEl.appendChild(q);
+ const all=NET.bag.map((s,i)=>({s,i,it:I[s.id]})).filter(o=>o.it&&(!bagQuery||o.it.name.toLowerCase().includes(bagQuery.toLowerCase()))&&(bagTab==='all'||(bagTab==='eq'?o.it.type==='eq':bagTab==='use'?o.it.type==='use':o.it.type!=='eq'&&o.it.type!=='use')));
+ const size=20,pages=Math.max(1,Math.ceil(all.length/size));bagPage=Math.min(bagPage,pages-1);
+ const items=document.createElement('div');items.className='items bag-grid';
+ all.slice(bagPage*size,(bagPage+1)*size).forEach(({s,i,it})=>{const b=document.createElement('button');b.className='it '+it.type;b.dataset.slot=i;b.title=it.name+' · '+itemInfo(it);
+ const im=iconImg(s.id);if(im)b.appendChild(im);const t=document.createElement('span');t.textContent=it.name+(s.n>1?' ×'+s.n:'');const sm=document.createElement('small');sm.textContent=itemInfo(it);b.append(t,sm);
+ if(it.type==='use'){b.setAttribute('aria-label','ใช้ '+it.name);b.onclick=()=>send({t:'inv',op:'use',slot:i})}
+ else if(it.type==='eq'){b.setAttribute('aria-label','ใส่ '+it.name);b.onclick=()=>send({t:'inv',op:'equip',slot:i})}
+ else b.disabled=true;items.appendChild(b)});
+ if(!all.length){const n=document.createElement('div');n.className='note';n.textContent='ไม่พบไอเทมในหมวดนี้';bagEl.appendChild(n)}else bagEl.appendChild(items);
+ const pager=document.createElement('div');pager.className='bag-pager';const prev=document.createElement('button');prev.textContent='‹';prev.disabled=bagPage===0;prev.onclick=()=>{bagPage--;renderBag()};const label=document.createElement('span');label.textContent=(bagPage+1)+' / '+pages;const next=document.createElement('button');next.textContent='›';next.disabled=bagPage>=pages-1;next.onclick=()=>{bagPage++;renderBag()};pager.append(prev,label,next);bagEl.appendChild(pager);
+ const n=document.createElement('div');n.className='note';n.textContent='แตะอาวุธหรือชุดเกราะเพื่อสวมใส่ · แตะช่องอุปกรณ์เพื่อถอด · เซิร์ฟเวอร์ตรวจสอบทุกครั้ง';bagEl.appendChild(n);
+}
 function toggleBag(){if(bagEl.hidden&&!stEl.hidden)toggleStat();if(bagEl.hidden&&!skEl2.hidden)toggleSkills();bagEl.hidden=!bagEl.hidden;bagBtn.setAttribute('aria-expanded',String(!bagEl.hidden));renderBag()}
 bagBtn.onclick=toggleBag;bagEl.addEventListener('keydown',e=>e.stopPropagation());
 const DENY_SK={'locked':'ยังไม่ถึง Job ที่ปลดล็อก','max':'สกิลนี้ระดับสูงสุดแล้ว','no-points':'แต้มสกิลไม่พอ','invalid':'ไม่มีสกิลนี้'};
