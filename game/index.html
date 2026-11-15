@@ -948,7 +948,7 @@ function tapNavigate(x,y){
   TAPNAV.path=tiles.map(([cx,cy])=>({x:(cx+.5)*T,y:(cy+.5)*T}));
   TAPNAV.path.push({x,y});
   TAPNAV.stuck=0;TAPNAV.px=player.x;TAPNAV.py=player.y;
-  say('📍 กำลังเดินไปยังจุดที่มาร์ก');return true;
+  say('➤ กำลังเดินไปยังจุดลูกศร');return true;
 }
 function tapNavDirection(dt){
   if(!TAPNAV.dest)return null;
@@ -958,7 +958,7 @@ function tapNavDirection(dt){
     if(d<=Math.max(6,CFG.player.speed*dt*.75)){TAPNAV.path.shift();continue}
     return[dx/d,dy/d];
   }
-  if(!TAPNAV.path.length){clearTapNav();say('📍 เดินถึงจุดที่มาร์กแล้ว');}
+  if(!TAPNAV.path.length){clearTapNav();say('➤ เดินถึงจุดลูกศรแล้ว');}
   return null;
 }
 function releaseMapPointer(e,kind){
@@ -1503,17 +1503,24 @@ function draw(){
   if(window.HLNET)for(const o of HLNET.others)list.push({b:o.y,o});for(const n of CFG.npcs)if(n.zone===Z.id)list.push({b:n.ty*T,n});list.sort((a,b)=>a.b-b.b);
   for(const it of list){if(it.p)drawPlayer();else if(it.m)drawMon(it.m);else if(it.o)drawOther(it.o);else if(it.n)drawNpc(it.n);else drawObj(it.ob,tNow)}
   drawFx();
-  /* Marker and route are drawn in world coordinates, never altering the map mask. */
+  /* R85 navigation guide: one solid straight visual line and a destination arrow.
+     Actual movement still uses TAPNAV.path and the original collision/pathfinding. */
   if(TAPNAV.dest&&TAPNAV.zone===Z.id){
-    ctx.save();ctx.strokeStyle='rgba(255,215,125,.8)';ctx.lineWidth=2;
-    ctx.setLineDash([7,6]);ctx.beginPath();ctx.moveTo(player.x,player.y);
-    for(const p of TAPNAV.path)ctx.lineTo(p.x,p.y);ctx.stroke();ctx.setLineDash([]);
-    const p=TAPNAV.dest,r=14+Math.sin(tNow*5)*3;
-    ctx.beginPath();ctx.ellipse(p.x,p.y,20,9,0,0,Math.PI*2);
-    ctx.strokeStyle='#ffda85';ctx.lineWidth=2;ctx.stroke();
-    ctx.beginPath();ctx.arc(p.x,p.y-10,r,0,Math.PI*2);
-    ctx.fillStyle='rgba(255,213,112,.18)';ctx.fill();ctx.stroke();
-    ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.fillStyle='#ffda85';ctx.fillText('📍',p.x,p.y-9);ctx.restore();
+    ctx.save();ctx.setLineDash([]);ctx.lineCap='round';
+    const p=TAPNAV.dest;
+    ctx.strokeStyle='rgba(15,34,35,.78)';ctx.lineWidth=6;
+    ctx.beginPath();ctx.moveTo(player.x,player.y);ctx.lineTo(p.x,p.y);ctx.stroke();
+    ctx.strokeStyle='#ffe18c';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(player.x,player.y);ctx.lineTo(p.x,p.y);ctx.stroke();
+    const bob=3*Math.sin(tNow*5),px=p.x,py=p.y;
+    ctx.shadowColor='#f5c768';ctx.shadowBlur=10;
+    ctx.beginPath();ctx.moveTo(px,py);
+    ctx.lineTo(px-11,py-19+bob);ctx.lineTo(px-4,py-16+bob);
+    ctx.lineTo(px-4,py-30+bob);ctx.lineTo(px+4,py-30+bob);
+    ctx.lineTo(px+4,py-16+bob);ctx.lineTo(px+11,py-19+bob);
+    ctx.closePath();ctx.fillStyle='#ffe18c';ctx.fill();
+    ctx.shadowBlur=0;ctx.strokeStyle='#653d19';ctx.lineWidth=1.8;ctx.stroke();
+    ctx.restore();
   }
   if(debug){for(let y=sy0;y<sy1;y++)for(let x=sx0;x<sx1;x++)if(tileBlocked(x,y)){ctx.fillStyle='rgba(255,40,40,.35)';ctx.fillRect(x*T,y*T,T,T)}
     ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1;ctx.strokeRect(player.x-HW,player.y-HH,HW*2,HH*2)}
