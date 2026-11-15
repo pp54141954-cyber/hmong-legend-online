@@ -2037,21 +2037,21 @@ function applyWorld(m){const CFG=HL.CFG,P=HL.PS;if(m.mf)monById.clear();for(cons
   const me=m.me;if(me){NET.me=me;let bagCh=false,skCh=false;if(me.gold!==undefined&&me.gold!==NET.gold){NET.gold=me.gold;bagCh=true;if(!shp.hidden)renderShop();if(!enhP.hidden)renderEnh()}if(me.bag){NET.bag=me.bag;NET.eq=me.eq;NET.enh=me.enh||{};bagCh=true;if(!enhP.hidden)renderEnh()}if(me.sk){NET.sk=me.sk;NET.pts=me.pts;NET.bon=me.bon||{};skCh=true}if(me.st){NET.st=me.st;NET.spts=me.spts;updStatDot()}if(me.cls&&me.cls!==NET.cls){NET.cls=me.cls;onClassChanged()}if(me.party){NET.party=me.party;NET.partyIds=new Set(me.party.m.map(r=>r[0]));renderParty()}const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
     for(const e of me.ev||[]){const pl=HL.player;
       if(e.k==='reward'){const o=monById.get(e.id);HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-40,'+'+e.exp+' EXP','#8fe38f')}
-      else if(e.k==='hurt'){const mo=monById.get(e.by);if(mo){mo.atkT0=HL.tNow;mo.dir=pl.x<mo.x?'W':'E'}if(e.guard)HL.addNum(pl.x,pl.y-66,'ป้องกัน','#9fd6ff');HL.addNum(pl.x,pl.y-52,e.dmg,'#ff6b6b');P.hurt=.4;window.SND&&SND.play('hurt')}
+      else if(e.k==='hurt'){const mo=monById.get(e.by);if(mo){mo.atkT0=HL.tNow;mo.dir=pl.x<mo.x?'W':'E'}if(e.guard)HL.addNum(pl.x,pl.y-66,'ป้องกัน','#9fd6ff');HL.addNum(pl.x,pl.y-52,e.dmg,'#ff6b6b');P.hurt=.4;window.SND&&window.SND.play('hurt')}
       else if(e.k==='lv')HL.lvUp('lv',e.lv);
-      else if(e.k==='heal'){HL.addNum(pl.x,pl.y-60,'+'+e.amt,'#6aff9a');window.SND&&SND.play('lvup')}
+      else if(e.k==='heal'){HL.addNum(pl.x,pl.y-60,'+'+e.amt,'#6aff9a');window.SND&&window.SND.play('lvup')}
       else if(e.k==='look'){HL.setLook(e.look);HL.say('บันทึกหน้าตาแล้ว')}
       else if(e.k==='cls'){if(e.first){closeClassStart();HL.say('เริ่มผจญภัยเป็น '+e.cls)}else HL.say('เปลี่ยนอาชีพเป็น '+e.cls)}
       else if(e.k==='starter'){HL.say('ได้รับชุดเริ่มต้น: '+e.items.map(i=>(HL.CFG.items[i[0]]||{}).name+(i[1]>1?' ×'+i[1]:'')).join(', '))}
       else if(e.k==='job')HL.lvUp('job',e.job);
-      else if(e.k==='dead'){window.SND&&SND.play('dead');P.dead=true;P.deadT=HL.CFG.player.respawnSec;P.cast=null;HL.say('พ่ายแพ้ · กลับหมู่บ้านใน '+HL.CFG.player.respawnSec+' วินาที')}
+      else if(e.k==='dead'){window.SND&&window.SND.play('dead');P.dead=true;P.deadT=HL.CFG.player.respawnSec;P.cast=null;HL.say('พ่ายแพ้ · กลับหมู่บ้านใน '+HL.CFG.player.respawnSec+' วินาที')}
       else if(e.k==='respawn'){P.dead=false;HL.enterZone(e.zone,e.x,e.y);lastSent=''}
-      else if(e.k==='gold'){HL.say('+'+e.n+' เงิน')}else if(e.k==='loot'){const it=HL.CFG.items[e.id],o=monById.get(e.from);NET.stats.loot=(NET.stats.loot||0)+e.n;window.SND&&SND.play('loot');if(it)HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-58,'+'+it.name+(e.n>1?' ×'+e.n:''),'#ffd27a')}
+      else if(e.k==='gold'){HL.say('+'+e.n+' เงิน')}else if(e.k==='loot'){const it=HL.CFG.items[e.id],o=monById.get(e.from);NET.stats.loot=(NET.stats.loot||0)+e.n;window.SND&&window.SND.play('loot');if(it)HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-58,'+'+it.name+(e.n>1?' ×'+e.n:''),'#ffd27a')}
       else if(e.k==='pinvite'){HL.say(e.from+' ชวนคุณเข้าปาร์ตี้ — แตะ 👥 เพื่อตอบรับ')}
       else if(e.k==='pinfo'){HL.say(e.msg)}
       else if(e.k==='bossShare'){HL.say('รางวัลบอส: ดาเมจของคุณ '+e.pct+'%')}
       else if(e.k==='announce'){HL.say(e.msg);NET.stats.ann=(NET.stats.ann||[]).concat(e.msg)}
-      else if(e.k==='enh'){enhBusy=false;HL.say(e.ok?'ตีบวกสำเร็จ → +'+e.to:'ตีบวกล้มเหลว · อาวุธยังอยู่ที่ +'+e.from);window.SND&&SND.play(e.ok?'lvup':'hit');if(!enhP.hidden)renderEnh()}else if(e.k==='bagfull'){HL.say('กระเป๋าเต็ม · ทิ้ง '+(HL.CFG.items[e.id]||{}).name)}}
+      else if(e.k==='enh'){enhBusy=false;HL.say(e.ok?'ตีบวกสำเร็จ → +'+e.to:'ตีบวกล้มเหลว · อาวุธยังอยู่ที่ +'+e.from);window.SND&&window.SND.play(e.ok?'lvup':'hit');if(!enhP.hidden)renderEnh()}else if(e.k==='bagfull'){HL.say('กระเป๋าเต็ม · ทิ้ง '+(HL.CFG.items[e.id]||{}).name)}}
     P.dead=me.dead;
     if(skCh)renderSkills();
     if(!stEl.hidden){const k=JSON.stringify([me.hp,me.maxHp,me.atk,me.def,NET.spts,NET.st,P.lv,P.exp|0,P.job,NET.eq]);if(k!==renderStat.k){renderStat.k=k;renderStat()}}
@@ -2067,7 +2067,7 @@ function loop(n){const dt=Math.min(.1,(n-last)/1000);last=n;
   requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
 
-hello().then(ok=>{if(!ok)return;NET.state='ready';token=store.get();if(token)connect();else if(SND.splash&&SND.splash.shown&&!SND.splash.gone)SND.splash.loginPending=true;else $('net').hidden=false});
+hello().then(ok=>{if(!ok)return;NET.state='ready';token=store.get();if(token)connect();else if(window.SND&&window.SND.splash&&window.SND.splash.shown&&!window.SND.splash.gone)window.SND.splash.loginPending=true;else $('net').hidden=false});
 })();
 </script>
 <!--AUDIO_SPLASH_BEGIN-->
