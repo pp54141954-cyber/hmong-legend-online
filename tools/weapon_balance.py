@@ -23,8 +23,9 @@ def load_cfg():
 
 
 def step(cfg, lv):
+    """ค่าของขั้น lv หลังใช้เพดานเงินต่อการพยายาม (goldCap, คำสั่งเจ้าของ V2-R79)"""
     s = cfg['steps'][lv]
-    return s['rate'], s['gold'], s['stone'], bool(s.get('prov'))
+    return s['rate'], min(s['gold'], cfg['goldCap']), s['stone'], bool(s.get('prov'))
 
 
 def expected(cfg, a, b):
@@ -65,15 +66,15 @@ def main():
         s = cfg['steps'][10 + k]
         assert abs(s['rate'] - r) < 1e-12 and s['gold'] == g and s['stone'] == 1 and not s.get('prov'), 'ไม่ตรงข้อกำหนด +%d' % (10 + k)
 
-    print('## 1. ตารางที่ยืนยันแล้ว: +10 ถึง +15 (อ่านจาก CFG.enhance)')
-    print('| จาก → ไป | โอกาสสำเร็จ | เงินต่อครั้ง | หินป้องกันต่อครั้ง | ครั้งที่คาดหวังในขั้นนี้ | เงินที่คาดหวังในขั้นนี้ |')
-    print('| --- | --- | --- | --- | --- | --- |')
+    print('## 1. ตารางตีบวก +10 ถึง +15 (อ่านจาก CFG.enhance; เพดานเงินต่อครั้ง %s)' % f"{cfg['goldCap']:,}")
+    print('| จาก → ไป | โอกาสสำเร็จ | เงินตาม V1.2 | เงินที่ใช้จริง | หินป้องกันต่อครั้ง | ครั้งที่คาดหวังในขั้นนี้ | เงินที่คาดหวังในขั้นนี้ |')
+    print('| --- | --- | --- | --- | --- | --- | --- |')
     for lv in range(10, 15):
         r, g, st, _ = step(cfg, lv)
         a, gg, ss = expected(cfg, lv, lv + 1)
-        print('| +%d → +%d | %d%% | %s | %d | %.1f | %s |' % (lv, lv + 1, round(r * 100), f'{g:,}', st, a, f'{gg:,.0f}'))
+        print('| +%d → +%d | %d%% | %s | %s | %d | %.1f | %s |' % (lv, lv + 1, round(r * 100), f"{cfg['steps'][lv]['gold']:,}", f'{g:,}', st, a, f'{gg:,.0f}'))
     a10, g10, s10 = expected(cfg, 10, 15)
-    print('| **รวม +10 → +15** | | | | **%.1f** | **%s** |' % (a10, f'{g10:,.0f}'))
+    print('| **รวม +10 → +15** | | | | | **%.1f** | **%s** |' % (a10, f'{g10:,.0f}'))
     print()
     print('- หินป้องกันที่คาดหวังจาก +10 ถึง +15: %.1f ก้อน (ครั้งละ 1 ก้อน ทุกการพยายาม)' % s10)
 

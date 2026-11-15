@@ -25,6 +25,7 @@ const countStone = c => c.bag.reduce((n, s) => n + (s.id === EH.stone ? s.n : 0)
 {
   const V12 = [[.35, 40000], [.15, 60000], [.10, 90000], [.10, 140000], [.05, 200000]];
   rec('ระดับตีบวกสูงสุด +15', EH.cap === 15);
+  rec('เพดานเงินต่อการพยายาม 55,000 (คำสั่งเจ้าของ V2-R79)', EH.goldCap === 55000);
   rec('ตารางที่ยืนยันแล้ว +10→+11 ถึง +14→+15 (โอกาส · เงิน · หินป้องกัน 1)', V12.every(([r, g], k) => { const s = EH.steps[10 + k]; return s.rate === r && s.gold === g && s.stone === 1 && !s.prov; }));
   rec('ค่าต่ำกว่า +10 ติดธง prov (ค่าชั่วคราว รอตรวจ)', EH.steps.slice(0, 10).every(s => s.prov === 1));
   rec('หินป้องกันเป็นวัตถุดิบ (mat)', !!C.items[EH.stone] && C.items[EH.stone].type === 'mat');
@@ -70,6 +71,15 @@ const countStone = c => c.bag.reduce((n, s) => n + (s.id === EH.stone ? s.n : 0)
   rec('ล้มเหลวที่ +10 → คงที่ +10 ไม่ลด ไม่หาย', !r9.ok && r9.to === 10 && p9.c.enh.weapon === 10 && p9.c.eq.weapon === 'sword_hmong' && p9.c.gold === 1000000 - 40000 && countStone(p9.c) === 1, JSON.stringify({ ok: r9.ok, enh: p9.c.enh.weapon, gold: p9.c.gold, stone: countStone(p9.c) }));
   const p10 = mk({ enh: { weapon: 15 }, eq: { weapon: 'sword_hmong', armor: null, acc: null } }); p10.c.bag.push({ id: 'enh_stone', n: 2 });
   rec('ถึง +15 แล้ว → max (ตีบวกต่อไม่ได้)', simLow.enhance(p10, { src: 'eq', rid: rid() }, 600) === 'max');
+  // เพดานเงินต่อการพยายาม 55,000: ขั้น +11 ถึง +14 จ่ายไม่เกิน 55,000 (ค่า V1.2 เดิม 60,000 ถึง 200,000) · ขั้น +10 ยัง 40,000
+  const pC = mk({ gold: 55000, enh: { weapon: 11 }, eq: { weapon: 'sword_hmong', armor: null, acc: null } }); pC.c.bag.push({ id: 'enh_stone', n: 1 });
+  const rC = sim.enhance(pC, { src: 'eq', rid: rid() }, 800);
+  rec('ตีบวกจาก +11 จ่ายเพียง 55,000 (ไม่ใช่ 60,000) และหักครบ', rC.ok && rC.to === 12 && rC.gold === 55000 && pC.c.gold === 0, JSON.stringify({ gold: rC.gold, left: pC.c.gold, to: rC.to }));
+  const pC2 = mk({ gold: 54999, enh: { weapon: 14 }, eq: { weapon: 'sword_hmong', armor: null, acc: null } }); pC2.c.bag.push({ id: 'enh_stone', n: 1 });
+  rec('เงิน 54,999 ไม่พอสำหรับ +14 (เพดาน 55,000) → no-gold และไม่หัก', sim.enhance(pC2, { src: 'eq', rid: rid() }, 800) === 'no-gold' && pC2.c.gold === 54999);
+  const pT = mk({ gold: 40000, enh: { weapon: 10 }, eq: { weapon: 'sword_hmong', armor: null, acc: null } }); pT.c.bag.push({ id: 'enh_stone', n: 1 });
+  const rT = sim.enhance(pT, { src: 'eq', rid: rid() }, 800);
+  rec('ขั้น +10 ยังจ่าย 40,000 (ต่ำกว่าเพดาน)', rT.gold === 40000 && pT.c.gold === 0, JSON.stringify({ gold: rT.gold, left: pT.c.gold }));
 
   // อาวุธในกระเป๋าตีบวกได้โดยไม่ต้องใส่
   const p11 = mk({ eq: { weapon: null, armor: null, acc: null } }); p11.c.bag.push({ id: 'sword_iron', n: 1 }, { id: 'enh_stone', n: 2 });
@@ -196,7 +206,13 @@ const countStone = c => c.bag.reduce((n, s) => n + (s.id === EH.stone ? s.n : 0)
     await page.click('#shb');
     await page.waitForSelector('#enh:not([hidden])', { timeout: 5000 });
     await sleep(400);
+    // เพดานเงินต่อการพยายาม: ที่ +11 ต้องแสดงเงิน 55,000 (ไม่ใช่ 60,000) — ถ่ายภาพที่สถานะนี้ แล้วคืนค่าเดิมสำหรับการตรวจฐานข้อมูลด้านล่าง
+    p.c.enh.weapon = 11; p.c.bag.push({ id: 'enh_stone', n: 1 }); p.bagDirty = true; p.dirty = true;
+    await page.waitForFunction(() => (document.getElementById('enh').innerText || '').includes('+11 → +12'), null, { timeout: 6000 });
+    const t11 = await panel();
+    rec(label + ': หน้าช่างที่ +11 แสดงเงิน 55,000 (เพดาน) ไม่ใช่ 60,000', t11.includes('เงิน 55,000') && !t11.includes('เงิน 60,000'), t11.split('\n').filter(l => l.includes('+11 → +12')).join(' | ').slice(0, 140));
     await page.screenshot({ path: path.join(evDir, shot) });
+    p.c.enh.weapon = 1; p.c.bag = p.c.bag.filter(x => x.id !== 'enh_stone'); p.bagDirty = true; p.dirty = true;
     rec(label + ': ไม่มี JavaScript error', errors.length === 0, errors.slice(0, 3).join(' | ') || 'ไม่มี');
 
     await browser.close();

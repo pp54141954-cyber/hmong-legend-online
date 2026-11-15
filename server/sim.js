@@ -289,13 +289,14 @@ function createSim({ rand = Math.random } = {}) {
     const it = CFG.items[id]; if (!it || it.type !== 'eq' || it.slot !== 'weapon') return 'not-weapon';
     if (lv >= EH.cap) return 'max';
     const st = EH.steps[lv]; if (!st) return 'invalid';
-    if ((c.gold || 0) < st.gold) return 'no-gold';
+    const gold = Math.min(st.gold, EH.goldCap); // เพดานเงินต่อการพยายาม 55,000 ตามคำสั่งเจ้าของ (V2-R79)
+    if ((c.gold || 0) < gold) return 'no-gold';
     if (countItem(p, EH.stone) < st.stone) return 'no-stone';
-    c.gold -= st.gold; takeItem(p, EH.stone, st.stone); // หักก่อนสุ่มเสมอ (ล้มเหลวก็หัก)
+    c.gold -= gold; takeItem(p, EH.stone, st.stone); // หักก่อนสุ่มเสมอ (ล้มเหลวก็หัก)
     const ok = rand() < st.rate;
     if (ok) { if (m.src === 'eq') setEnh(p, 'weapon', lv + 1); else c.bag[idx].enh = lv + 1; stats(p); }
     p.enhAt = now; p.bagDirty = true; p.dirty = true;
-    const r = { ok, from: lv, to: ok ? lv + 1 : lv, item: id, gold: st.gold, stone: st.stone, goldLeft: c.gold };
+    const r = { ok, from: lv, to: ok ? lv + 1 : lv, item: id, gold, stone: st.stone, goldLeft: c.gold };
     p.personal.push({ k: 'enh', ok, from: r.from, to: r.to, item: id });
     return r;
   }
