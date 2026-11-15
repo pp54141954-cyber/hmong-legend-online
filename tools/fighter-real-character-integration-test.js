@@ -75,6 +75,8 @@ const check=(name,condition)=>{assert.ok(condition,name);console.log('PASS '+nam
     check('skill '+spec.slot+' renders its OWN correct type on real fighter',recent.event?.kind===spec.kind&&recent.visible);
     await page.waitForFunction(()=>window.HLGrandStage.fighterApprovedAtlasReady&&
       window.HLGrandStage.fighterDirectionalAtlasReady,null,{timeout:12000});
+    check('up/down effect atlas has blue defense and pink tiger tint',
+      await page.evaluate(()=>window.HLGrandStage.fighterDirectionalRecolorReady));
     await page.waitForFunction(slot=>window.HLGrandStage.fighterLastFrame?.slot===slot,
       spec.slot,{timeout:9000});
     check('skill '+spec.slot+' uses approved 9x5 Fighter atlas (not generic circles)',
