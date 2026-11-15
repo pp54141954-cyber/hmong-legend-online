@@ -1,0 +1,16 @@
+name: SND WebKit source audit (staging)
+on:
+  push:
+    branches: [feature/skill-vfx-grand-v1]
+  workflow_dispatch:
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check all SND references and audio init order
+        run: node tools/inspect-snd-reference.js
