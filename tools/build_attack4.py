@@ -23,6 +23,8 @@ BODY_SETS = [  # (id, อาชีพ, เพศ, ไฟล์ต้นฉบั
     ('assassin_f', 'นักฆ่า', 'f', 'assassin_f_attack_daggers.png'),  # V2-R61
     ('archer_m', 'นักธนู', 'm', 'archer_m2_attack.png'),
     ('archer_f', 'นักธนู', 'f', 'archer_f2_attack.png'),
+    ('healer_m', 'ผู้รักษา', 'm', 'healer_m_attack_v3.png'),  # V2-R62: ท่าโจมตี 4 เฟรมของผู้รักษาชุดใหม่ (คัดพื้นหลังจากขอบภาพ)
+    ('healer_f', 'ผู้รักษา', 'f', 'healer_f_attack_v3.png'),
     ('spirit_m', 'ผู้สืบวิญญาณ', 'm', 'spirit_m_attack_v2.png'),  # V2-R61: ท่าโจมตีใหม่ (ยังไม่เคยมีท่าโจมตีของอาชีพนี้)
     ('spirit_f', 'ผู้สืบวิญญาณ', 'f', 'spirit_f_attack_v2.png'),
     ('mage_m', 'ผู้ใช้มนตรา', 'm', 'mage_m_attack_v2.png'),
@@ -50,7 +52,7 @@ def feet(f):
     fy = max(y for x, y in pts if abs(x - cx) < w * .25)
     return cx, fy
 
-def holes(im, mn=150):
+def holes(im, mn=150, ratio=.7):
     """พื้นขาวที่ถูกล้อมไว้ (ระหว่างคันธนูกับสาย ฯลฯ): ก้อนสีขาวเรียบ ≥ mn px ที่ส่วนใหญ่ขาวจัด → โปร่งใส (ผ้า/ขนสีขาวมีลายเงา ไม่ผ่าน)"""
     from collections import deque
     W, H = im.size; px = im.load(); seen = bytearray(W * H); n = 0
@@ -63,7 +65,7 @@ def holes(im, mn=150):
                 x, y = q.popleft(); comp.append((x, y))
                 for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
                     if 0 <= nx < W and 0 <= ny < H and not seen[ny * W + nx] and wh(px[nx, ny]): seen[ny * W + nx] = 1; q.append((nx, ny))
-            if len(comp) >= mn and sum(1 for x, y in comp if min(px[x, y][:3]) >= 250) > len(comp) * .7:
+            if len(comp) >= mn and sum(1 for x, y in comp if min(px[x, y][:3]) >= 250) > len(comp) * ratio:
                 for x, y in comp: px[x, y] = (0, 0, 0, 0)
                 n += 1
     return n
@@ -91,9 +93,9 @@ def merge_small(segs, maxn=5):
         a, b = sorted((i, j)); segs[a:b + 1] = [(segs[a][0], segs[b][1])]
     return segs
 
-def cut(name, nframes=4):
+def cut(name, nframes=4, holes_ratio=.7):
     """แยกแถว/เฟรมของตาราง: nframes = จำนวนเฟรมต่อทิศ (4 ตามค่าเริ่มต้น; นักสู้ใช้ 5) — เกินจำนวนจะรวมชิ้นที่แคบที่สุด (V2-R61)"""
-    im = unbg(os.path.join(SRC, name)); print('  พื้นขาวที่ถูกล้อม:', holes(im), 'ก้อน'); B = bands(im)
+    im = unbg(os.path.join(SRC, name)); n_holes = holes(im, ratio=holes_ratio); print('  พื้นขาวที่ถูกล้อม:', n_holes, 'ก้อน'); B = bands(im)
     if len(B) != 4: B = bands_strong(im)
     assert len(B) == 4, (name, 'แถว', B)
     rows = []
@@ -169,7 +171,9 @@ for sid, name in ATK4_SETS:
 body = {}
 for sid, cls, g, name in BODY_SETS:
     if not os.path.exists(os.path.join(SRC, name)): print('ข้าม', sid); continue
-    out, n, sc = cut(name, 5 if sid.startswith('fighter') else 4); out.save(os.path.join(ROOT, 'game/sprites', 'pca_%s.webp' % sid), 'WEBP', lossless=True); check(out, sid, n)
+    # ผู้รักษา: ก้อนพื้นขาวที่ถูกล้อมระหว่างไม้เท้ากับลำตัวมีสัดส่วนขาวบริสุทธิ์ราว 52% → ใช้เกณฑ์ 50% (V2-R62)
+    out, n, sc = cut(name, 5 if sid.startswith('fighter') else 4, holes_ratio=.5 if sid.startswith('healer') else .7)
+    out.save(os.path.join(ROOT, 'game/sprites', 'pca_%s.webp' % sid), 'WEBP', lossless=True); check(out, sid, n)
     body.setdefault(cls, {})[g] = {'id': sid, 'n': n}; print('สร้าง', sid, 'เฟรม', n, 'scale', round(sc, 3))
 p = os.path.join(ROOT, 'game/index.html'); s = open(p, encoding='utf-8').read()
 js = 'const ATK4={cw:%d,ax:%d,sets:%s,body:%s};/*ATK4*/' % (CW4, AX4, json.dumps(done), json.dumps(body, ensure_ascii=False, separators=(',', ':')))

@@ -142,8 +142,8 @@ SETS = [  # (id, อาชีพ, เพศที่ใช้, ฟังก์�
     ('archer_f', 'นักธนู', ['f'], lambda: grid4('archer_f2.png')),
     ('guardian_m', 'ผู้พิทักษ์', ['m'], lambda: grid4('guardian_m4.png', (225, 70, 1200, 1200))),
     ('guardian_f', 'ผู้พิทักษ์', ['f'], lambda: grid4('guardian_f4.png', (175, 90, 1230, 1215))),
-    ('healer_m', 'ผู้รักษา', ['m'], lambda: grid4('healer_m4.png')),
-    ('healer_f', 'ผู้รักษา', ['f'], lambda: grid4('healer_f4.png')),
+    ('healer_m', 'ผู้รักษา', ['m'], lambda: grid_tr('healer_m_walk_v3.png')),  # V2-R62: ผู้รักษาชุดใหม่ (ไม้เท้าใบไม้สีเงินประดับอัญมณีเขียว กระเป๋าสมุนไพร)
+    ('healer_f', 'ผู้รักษา', ['f'], lambda: grid_tr('healer_f_walk_v3.png')),  # V2-R62
     ('mage_m', 'ผู้ใช้มนตรา', ['m'], lambda: grid_tr('mage_m_walk_v2.png')),  # V2-R61: ผู้ใช้มนตราชุดใหม่ (หมวกแหลม ไม้เท้าอัญมณีม่วง)
     ('mage_f', 'ผู้ใช้มนตรา', ['f'], lambda: grid_tr('mage_f_walk_v2.png')),  # V2-R61
     ('fighter_f', 'นักสู้', ['f'], lambda: quad('fighter_f2.png')),  # แบบใหม่ (ชุดแดงหางม้า) แทนชุดในภาพนักสู้ชาย/หญิง

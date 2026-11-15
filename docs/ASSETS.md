@@ -127,3 +127,4 @@
 - `assets/sprites_src/classbody/assassin_{m,f}_{walk,attack}_daggers.png` — นักฆ่าชุดมีดสั้น (V2-R61) ต้นฉบับ `assets/sprites_src/incoming/{male,female}_daggers_walk_a.png` และภาพมือถือ (ท่าโจมตี) → `pcl_assassin_*`, `pca_assassin_*`
 - `assets/sprites_src/classbody/{spirit,mage}_{m,f}_{walk,attack}_v2.png` — ผู้สืบวิญญาณและผู้ใช้มนตราชุดใหม่ (V2-R61) → `pcl_spirit_*`, `pcl_mage_*`, `pca_spirit_*`, `pca_mage_*`
 - `assets/sprites_src/incoming/female_daggers_walk_b.png` — ภาพหญิงมือเปล่า (ไม่มีมีด) ยังไม่ได้ใช้
+- `assets/sprites_src/classbody/healer_{m,f}_walk_v3.png`, `healer_{m,f}_attack_v3.png` — ผู้รักษาชุดใหม่ (V2-R62) → `pcl_healer_*`, `pca_healer_*` (แหล่งเดิม `healer_{m,f}4.png` ไม่ได้ใช้แล้ว แต่ยังเก็บไว้)
