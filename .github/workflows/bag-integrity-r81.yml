@@ -1,0 +1,36 @@
+name: Bag integrity R81 (isolated)
+on:
+  push:
+    branches:
+      - feature/bag-integrity-r81-20261115
+  workflow_dispatch:
+jobs:
+  bag-integrity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Check syntax of changed files
+        run: |
+          node --check server/sim.js
+          node --check server/server.js
+          node --check tools/bag-integrity-test.js
+      - name: Verify shared world is unchanged
+        run: |
+          node tools/extract-shared.js
+          git diff --exit-code -- shared/world.js
+      - name: Bag, shop and SQLite regression
+        run: node tools/bag-integrity-test.js
+      - name: Guardian and enhancement migration regression
+        run: node tools/equipment-r78-migration-test.js
+      - name: Existing class weapon regression
+        run: node tools/equipment-class-logic-test.js
+      - name: Existing simulation regression
+        run: node tools/sim-test.js
+      - name: Existing WebSocket combat and persistence regression
+        run: node tools/combat-persistence-isolated-test.js
