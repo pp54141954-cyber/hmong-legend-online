@@ -7,7 +7,7 @@ on:
 jobs:
   bag-integrity:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,3 +34,25 @@ jobs:
         run: node tools/sim-test.js
       - name: Existing WebSocket combat and persistence regression
         run: node tools/combat-persistence-isolated-test.js
+      - name: Install Playwright for emulated mobile UI checks
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-bag-browser playwright@1.56.1
+          node /tmp/hl-bag-browser/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-bag-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Android Chromium bag UI and shield
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: iPhone WebKit bag UI and shield
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Two browser sessions with equipment swap
+        run: node tools/equipment-gameplay-test.js
+      - name: Upload bag UI screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bag-r81-mobile-screenshots
+          path: tools/test-artifacts/*.png
+          if-no-files-found: ignore
