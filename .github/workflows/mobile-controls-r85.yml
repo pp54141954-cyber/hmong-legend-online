@@ -1,0 +1,70 @@
+name: R85 mobile controls regression
+on:
+  push:
+    branches: [feature/mobile-controls-r85-20261116]
+  workflow_dispatch:
+jobs:
+  mobile-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Install Playwright browsers
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-control-browser playwright@1.56.1
+          node /tmp/hl-control-browser/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-control-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Parse inline game JavaScript
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),vm=require('vm');
+          const html=fs.readFileSync('game/index.html','utf8');
+          const blocks=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(s=>s.trim());
+          if(blocks.length<3)throw Error('Expected game, online and audio scripts');
+          for(const js of blocks)new vm.Script(js);
+          console.log('PASS parsed '+blocks.length+' inline scripts');
+          NODE
+      - name: Verify shared-world extraction unchanged
+        run: |
+          node tools/extract-shared.js
+          git diff --exit-code -- shared/world.js
+      - name: R85 Android Chromium touch controls
+        run: node tools/mobile-controls-r85-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: R85 iPhone WebKit touch controls
+        run: node tools/mobile-controls-r85-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: R83 Android preferences compatibility
+        run: node tools/view-preferences-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: R83 iPhone preferences compatibility
+        run: node tools/view-preferences-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: R82 bag UI Android compatibility
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: R82 bag UI iPhone compatibility
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Bag persistence
+        run: node tools/bag-integrity-test.js
+      - name: Two-session equipment compatibility
+        run: node tools/equipment-gameplay-test.js
+      - name: Capture mobile screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: r85-mobile-controls
+          path: tools/test-artifacts/*.png
+          if-no-files-found: ignore
