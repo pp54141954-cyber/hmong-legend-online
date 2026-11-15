@@ -1,0 +1,50 @@
+name: Skill VFX mobile visual regression (isolated)
+on:
+  push:
+    branches: [visual/skill-vfx-grand-20261115]
+  workflow_dispatch:
+jobs:
+  skill-vfx:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Install isolated browser test tooling
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-browser-test playwright@1.56.1
+          node /tmp/hl-browser-test/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-browser-test/node_modules" >> "$GITHUB_ENV"
+      - name: Check visual test JavaScript syntax
+        run: node --check tools/skill-vfx-mobile-test.js
+      - name: Verify game JavaScript syntax
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),vm=require('vm');
+          const html=fs.readFileSync('game/index.html','utf8');
+          const blocks=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(s=>s.trim());
+          if(!blocks.length)throw Error('No inline game scripts');
+          for(const js of blocks)new vm.Script(js);
+          console.log('PASS '+blocks.length+' inline game JS blocks parse');
+          NODE
+      - name: Verify server world extraction unchanged
+        run: |
+          node tools/extract-shared.js
+          git diff --exit-code -- shared/world.js
+      - name: Re-run enhancement regression
+        run: node tools/enh-test.js
+      - name: Re-run isolated WebSocket combat and persistent character regression
+        run: node tools/combat-persistence-isolated-test.js
+      - name: Chromium Android and WebKit iPhone skill visual smoke
+        run: node tools/skill-vfx-mobile-test.js
+      - name: Upload skill visual screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: grand-skill-vfx-mobile
+          path: tools/test-artifacts/skill-vfx-*.png
+          if-no-files-found: ignore
