@@ -1644,7 +1644,7 @@ function renderClass(){if(clEl.hidden)return;const cur=HL.curCls(),safe=HL.inSaf
   clEl.querySelectorAll('.cc').forEach((d,i)=>{const c=HL.CLASSES[i];d.querySelector('b').textContent=c;d.querySelector('small').textContent=HL.CLS_PATHS[c].join(' · ')});
   clEl.querySelector('.x').onclick=openClass;clEl.querySelector('#lkedit').onclick=()=>{clEl.hidden=true;csLook=null;openClassStart('edit')};
   for(const b of clEl.querySelectorAll('.cc button'))b.onclick=()=>{const c=HL.CLASSES[+b.dataset.c];if(NET.auth)send({t:'cls',cls:c});else{const r=HL.setClassLocal(c);if(r==='ok'){HL.say('เปลี่ยนอาชีพเป็น '+c);renderClass()}}}}
-function onClassChanged(){HL.buildSkills();renderClass();renderSkills();if(!stEl.hidden)renderStat()}
+function onClassChanged(){HL.buildSkills();renderClass();renderSkills();if(typeof stEl !== 'undefined' && typeof renderStat === 'function' && !stEl.hidden)renderStat()}
 /* เลือกอาชีพตอนเริ่มเกม (V2-R29): ตัวละครใหม่/ที่ยังไม่เคยเลือก เห็นครั้งเดียว — เลือกแล้วเริ่มเล่น เปลี่ยนภายหลังได้ในหมู่บ้าน */
 const CLS_DESC={'นักดาบ':'ดาบประชิดตัว สมดุลทั้งบุกและรับ','นักธนู':'โจมตีระยะไกล วางกับดัก ศรอาคม','นักฆ่า':'ว่องไว ลอบโจมตี ใช้พิษ','นักสู้':'หมัดหนัก ทนทาน แปลงร่างสัตว์ร้าย','ผู้สืบวิญญาณ':'เรียกวิญญาณบรรพชนและอสูรช่วยรบ','ผู้รักษา':'ฟื้นฟูทีม ให้พร แสงพิพากษา','ผู้ใช้มนตรา':'เวทโจมตีวงกว้าง คำสาป ผนึก','ผู้พิทักษ์':'โล่แกร่ง ปกป้องเพื่อนร่วมทีม'};
 const csEl=document.createElement('div');csEl.id='cstart';csEl.hidden=true;csEl.setAttribute('role','dialog');csEl.setAttribute('aria-label','เลือกอาชีพเริ่มต้น');document.getElementById('app').appendChild(csEl);
@@ -1804,7 +1804,7 @@ function renderBag(){if(bagEl.hidden)return;const I=HL.CFG.items,me=NET.me;bagEl
  const pager=document.createElement('div');pager.className='bag-pager';const prev=document.createElement('button');prev.textContent='‹';prev.disabled=bagPage===0;prev.onclick=()=>{bagPage--;renderBag()};const label=document.createElement('span');label.textContent=(bagPage+1)+' / '+pages;const next=document.createElement('button');next.textContent='›';next.disabled=bagPage>=pages-1;next.onclick=()=>{bagPage++;renderBag()};pager.append(prev,label,next);bagEl.appendChild(pager);
  const n=document.createElement('div');n.className='note';n.textContent='แตะอาวุธหรือชุดเกราะเพื่อสวมใส่ · แตะช่องอุปกรณ์เพื่อถอด · เซิร์ฟเวอร์ตรวจสอบทุกครั้ง';bagEl.appendChild(n);
 }
-function toggleBag(){if(bagEl.hidden&&!stEl.hidden)toggleStat();if(bagEl.hidden&&!skEl2.hidden)toggleSkills();bagEl.hidden=!bagEl.hidden;bagBtn.setAttribute('aria-expanded',String(!bagEl.hidden));renderBag()}
+function toggleBag(){if(bagEl.hidden && typeof stEl !== 'undefined' && typeof toggleStat === 'function' && !stEl.hidden)toggleStat();if(bagEl.hidden&&!skEl2.hidden)toggleSkills();bagEl.hidden=!bagEl.hidden;bagBtn.setAttribute('aria-expanded',String(!bagEl.hidden));renderBag()}
 bagBtn.onclick=toggleBag;bagEl.addEventListener('keydown',e=>e.stopPropagation());
 const DENY_SK={'locked':'ยังไม่ถึง Job ที่ปลดล็อก','max':'สกิลนี้ระดับสูงสุดแล้ว','no-points':'แต้มสกิลไม่พอ','invalid':'ไม่มีสกิลนี้'};
 const DENY={'hp-full':'HP เต็มแล้ว','cooldown':'รอสักครู่ก่อนใช้อีกครั้ง','bag-full':'กระเป๋าเต็ม','dead':'ตายอยู่ ใช้ของไม่ได้','not-usable':'ใช้ของนี้ไม่ได้','not-equip':'ของนี้สวมใส่ไม่ได้','empty':'ช่องนี้ว่าง'};
@@ -1864,7 +1864,7 @@ function applyWorld(m){const CFG=HL.CFG,P=HL.PS;if(m.mf)monById.clear();for(cons
   HL.setMons([...monById.values()]);
   for(const e of m.ev||[]){const o=monById.get(e.id);if(!o)continue;
     if(e.k==='dmg'){NET.stats.dmgEv++;if(e.by===NET.id&&window.SND)SND.play('hit',{crit:e.crit});o.hurt=.25;HL.addNum(o.x,o.y-o.c.size*.6-18,e.dmg,e.crit?'#ffd34a':'#ffffff');if(e.by===NET.id)HL.setTarget(o)}}
-  const me=m.me;if(me){NET.me=me;let bagCh=false,skCh=false;if(me.gold!==undefined&&me.gold!==NET.gold){NET.gold=me.gold;bagCh=true;if(!shp.hidden)renderShop()}if(me.bag){NET.bag=me.bag;NET.eq=me.eq;bagCh=true}if(me.sk){NET.sk=me.sk;NET.pts=me.pts;NET.bon=me.bon||{};skCh=true}if(me.st){NET.st=me.st;NET.spts=me.spts;updStatDot()}if(me.cls&&me.cls!==NET.cls){NET.cls=me.cls;onClassChanged()}if(me.party){NET.party=me.party;NET.partyIds=new Set(me.party.m.map(r=>r[0]));renderParty()}const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
+  const me=m.me;if(me){NET.me=me;let bagCh=false,skCh=false;if(me.gold!==undefined&&me.gold!==NET.gold){NET.gold=me.gold;bagCh=true;if(typeof shp !== 'undefined' && typeof renderShop === 'function' && !shp.hidden)renderShop()}if(me.bag){NET.bag=me.bag;NET.eq=me.eq;bagCh=true}if(me.sk){NET.sk=me.sk;NET.pts=me.pts;NET.bon=me.bon||{};skCh=true}if(me.st){NET.st=me.st;NET.spts=me.spts;updStatDot()}if(me.cls&&me.cls!==NET.cls){NET.cls=me.cls;onClassChanged()}if(me.party){NET.party=me.party;NET.partyIds=new Set(me.party.m.map(r=>r[0]));renderParty()}const lv0=P.lv;P.lv=me.lv;P.exp=me.exp;P.job=me.job;P.jexp=me.jexp;if(P.lv!==lv0)HL.recalc();P.maxHp=me.maxHp;P.hp=me.hp;P.buffT=me.buffT;P.guardT=me.guardT;
     for(const e of me.ev||[]){const pl=HL.player;
       if(e.k==='reward'){const o=monById.get(e.id);HL.addNum(o?o.x:pl.x,(o?o.y:pl.y)-40,'+'+e.exp+' EXP','#8fe38f')}
       else if(e.k==='hurt'){const mo=monById.get(e.by);if(mo){mo.atkT0=HL.tNow;mo.dir=pl.x<mo.x?'W':'E'}if(e.guard)HL.addNum(pl.x,pl.y-66,'ป้องกัน','#9fd6ff');HL.addNum(pl.x,pl.y-52,e.dmg,'#ff6b6b');P.hurt=.4;window.SND&&SND.play('hurt')}
@@ -1884,7 +1884,7 @@ function applyWorld(m){const CFG=HL.CFG,P=HL.PS;if(m.mf)monById.clear();for(cons
       else if(e.k==='bagfull'){HL.say('กระเป๋าเต็ม · ทิ้ง '+(HL.CFG.items[e.id]||{}).name)}}
     P.dead=me.dead;
     if(skCh)renderSkills();
-    if(!stEl.hidden){const k=JSON.stringify([me.hp,me.maxHp,me.atk,me.def,NET.spts,NET.st,P.lv,P.exp|0,P.job,NET.eq]);if(k!==renderStat.k){renderStat.k=k;renderStat()}}
+    if(typeof stEl !== 'undefined' && typeof renderStat === 'function' && !stEl.hidden){const k=JSON.stringify([me.hp,me.maxHp,me.atk,me.def,NET.spts,NET.st,P.lv,P.exp|0,P.job,NET.eq]);if(k!==renderStat.k){renderStat.k=k;renderStat()}}
     if(bagCh)renderBag();else{const sEl=$('bagstat');if(sEl&&!bagEl.hidden)sEl.textContent='ATK '+me.atk+' · DEF '+me.def+' · HP '+me.hp+'/'+me.maxHp+' · ช่อง '+NET.bag.length+'/'+HL.CFG.bag.slots}}}
 // ส่งตำแหน่ง 10 ครั้ง/วินาทีเมื่อมีการเปลี่ยน + ทุก 1 วินาทีเป็นสัญญาณยังอยู่, ส่งความคืบหน้าเมื่อเปลี่ยน
 let last=performance.now(),beat=0;
