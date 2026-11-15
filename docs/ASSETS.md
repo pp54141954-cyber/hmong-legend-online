@@ -134,6 +134,12 @@
 - OpenGameArt "Overworld base set" (https://opengameart.org/node/155014) — ผลค้นหาระบุว่า CC0 มีหญ้า ต้นไม้ และทางดิน
 - OpenGameArt "RPG Town Tileset" (https://opengameart.org/content/rpg-town-tileset) — CC-BY 3.0 ต้องให้เจ้าของอนุมัติก่อนใช้และให้เครดิต
 
+## ภาพออกแบบ V7 จากเจ้าของ (V2-R75)
+
+- `assets/design_refs/v7/01_parts_sheet_1536x1024.png`, `02_base_body_v7_1536x1024.png`, `03_tool_screenshot_32px.jpg` เป็นภาพที่เจ้าของส่งมา ใช้เป็นแบบอ้างอิง
+- `assets/design_refs/v7/extracted/` (48 เฟรม) ตัดจากภาพ 02 ด้วยวิธีใน `docs/CHARACTER_BASE_V7.md` ยังไม่ได้ใช้ในเกม
+- ภาพที่สร้างด้วย AI อาจได้รับการคุ้มครองลิขสิทธิ์ต่างจากงานของมนุษย์ เจ้าของควรตรวจเงื่อนไขของบริการที่ใช้สร้างภาพก่อนขาย
+
 ## ไอคอนที่สร้างจากไอคอนของโครงการ (V2-R73)
 
 - `assets/items/sword_silver.png` และ `assets/items/sword_hmong.png` (34 × 34) สร้างจาก `assets/items/sword_iron.png` ด้วยการปรับสีในโครงการ ไม่ใช้ไฟล์จากภายนอก
