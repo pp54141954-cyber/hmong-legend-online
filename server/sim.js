@@ -68,7 +68,7 @@ function createSim({ rand = Math.random } = {}) {
   function stats(p) {
     const P = CFG.player, eq = p.c.eq || {};
     let atk = 0, def = 0, hp = 0;
-    for (const [sl, id] of Object.entries(eq)) { const it = id && CFG.items[id]; if (it) { const up = sl === 'weapon' ? 1 + CFG.enhance.powerPerLv * eqEnh(p, 'weapon') : 1; atk += (it.atk || 0) * up; def += it.def || 0; hp += it.hp || 0; } } // อาวุธตีบวกได้ ATK เพิ่มตามระดับ (V2-R78)
+    for (const [sl, id] of Object.entries(eq)) { const it = id && CFG.items[id]; if (it) { const up = (sl === 'weapon' || sl === 'offhand') ? 1 + CFG.enhance.powerPerLv * eqEnh(p, sl) : 1; atk += (it.atk || 0) * up; def += it.def || 0; hp += it.hp || 0; } } // อาวุธตีบวกได้ ATK เพิ่มตามระดับ (V2-R78)
     const B = p.bon = skillBonus(p), S = CFG.stats.bonus(p.c.st); // แต้มสเตตัส: ATK/HP/DEF บวกก่อนคูณโบนัส %, AGI/LUK รวมในโบนัส
     B.spd += S.spd; B.cdr += S.cdr; B.crit += S.crit;
     p.maxHp = Math.round((P.baseHP + (p.c.lv - 1) * P.hpPerLv + hp + S.hp) * (1 + B.hpPct)); p.atk = Math.round((P.baseAtk + (p.c.lv - 1) * P.atkPerLv + atk + S.atk) * (1 + B.atkPct)); p.def = def + S.def;
@@ -110,12 +110,22 @@ function createSim({ rand = Math.random } = {}) {
   function setLook(p, l) { const v = cleanLook(l); if (!v) return 'invalid'; p.c.look = v; p.dirty = true; p.personal.push({ k: 'look', look: v }); return 'ok'; }
   // อาวุธตามอาชีพ (V2-R74): เปลี่ยนอาชีพแล้วอาวุธของอาชีพเดิมไปกระเป๋า ใส่อาวุธระดับไม้ของอาชีพใหม่ (กระเป๋าเต็มจะไม่เปลี่ยน)
   function swapClassWeapon(p, cls) {
-    const cur = p.c.eq.weapon, it = cur && CFG.items[cur];
-    if (!it || !it.cls || it.cls === cls) return;
-    if (!putItem(p, cur, eqEnh(p, 'weapon'))) return; // ค่าตีบวกติดไปกับอาวุธเดิมที่เก็บเข้ากระเป๋า (V2-R78)
-    p.c.eq.weapon = null; setEnh(p, 'weapon', 0);
-    const next = (CFG.classWeapon[cls] || 'sword') + '_wood';
-    p.c.eq.weapon = CFG.items[next] ? next : null;
+    const cur = p.c.eq.weapon, off = p.c.eq.offhand;
+    const it = cur && CFG.items[cur];
+    const keepMain = it && (it.cls === cls || (cls === 'ผู้พิทักษ์' && it.slot === 'weapon' && it.cls === 'นักดาบ'));
+    const removeMain = !!cur && !keepMain;
+    const removeOff = !!off && cls !== 'ผู้พิทักษ์';
+    // ตรวจพื้นที่ให้พอก่อนแก้ state เสมอ เพื่อป้องกันไอเทมตีบวกหายเมื่อเปลี่ยนอาชีพ
+    if (p.c.bag.length + Number(removeMain) + Number(removeOff) > B.slots) return false;
+    if (removeMain) { putItem(p, cur, eqEnh(p, 'weapon')); p.c.eq.weapon = null; setEnh(p, 'weapon', 0); }
+    if (removeOff) { putItem(p, off, eqEnh(p, 'offhand')); p.c.eq.offhand = null; setEnh(p, 'offhand', 0); }
+    if (!p.c.eq.weapon) {
+      const next = (CFG.classWeapon[cls] || 'sword') + '_wood';
+      p.c.eq.weapon = CFG.items[next] ? next : null;
+      setEnh(p, 'weapon', 0);
+    }
+    p.bagDirty = true;
+    return true;
   }
   function setClass(p, cls, first) {
     cls = String(cls); if (!ROWS[cls]) return 'invalid';
@@ -124,7 +134,8 @@ function createSim({ rand = Math.random } = {}) {
     if (cls === clsOf(p) && !firstPick) return 'same';
     if (p.dead) return 'dead';
     const D = ZONES[p.c.zone]; if (!firstPick && (!D || !D.safe || !D.safe(Math.floor(p.c.x / W.T), Math.floor(p.c.y / W.T)))) return 'not-safe';
-    p.c.cls = cls; p.c.clsset = 1; swapClassWeapon(p, cls); stats(p); p.skDirty = true; p.dirty = true; p.personal.push({ k: 'cls', cls, first: firstPick });
+    if (!swapClassWeapon(p, cls)) return 'bag-full';
+    p.c.cls = cls; p.c.clsset = 1; stats(p); p.skDirty = true; p.dirty = true; p.personal.push({ k: 'cls', cls, first: firstPick });
     return 'ok';
   }
   // แอดมิน (ADMIN_USERS): ปรับค่าตัวเองเพื่อทดสอบ — server.js ตรวจสิทธิ์ก่อนเรียก
@@ -156,9 +167,17 @@ function createSim({ rand = Math.random } = {}) {
   }
   function addPlayer(p) {
     p.c.bag = Array.isArray(p.c.bag) ? p.c.bag.filter(s => s && CFG.items[s.id] && s.n > 0) : [];
-    p.c.eq = Object.assign({ weapon: null, armor: null, acc: null }, p.c.eq || {});
+    p.c.eq = Object.assign({ weapon: null, offhand: null, armor: null, acc: null }, p.c.eq || {});
     p.c.enh = Object.assign({}, p.c.enh || {}); for (const k of Object.keys(p.c.enh)) p.c.enh[k] = clampEnh(p.c.enh[k]); // ค่าตีบวกของอาวุธที่ใส่อยู่ (V2-R78)
     for (const s of p.c.bag) { s.enh = clampEnh(s.enh); if (!s.enh) delete s.enh; } // ค่าตีบวกของอาวุธในกระเป๋า
+    // ย้ายโล่รุ่นเดิมจากช่อง weapon ไป offhand โดยรักษา +enh ของผู้เล่นให้ครบ
+    if (p.c.cls === 'ผู้พิทักษ์' && !p.c.eq.offhand && p.c.eq.weapon && CFG.items[p.c.eq.weapon]?.slot === 'offhand') {
+      p.c.eq.offhand = p.c.eq.weapon;
+      setEnh(p, 'offhand', eqEnh(p, 'weapon'));
+      p.c.eq.weapon = 'sword_wood';
+      setEnh(p, 'weapon', 0);
+      p.dirty = true;
+    }
     p.c.sk = Object.assign({}, p.c.sk || {});
     p.c.look = cleanLook(p.c.look) || { g: 'm', hair: 0, outfit: 0 };
     p.c.st = CFG.stats.clean(p.c.st); if (CFG.stats.free(p.c.lv, p.c.st) < 0) p.c.st = CFG.stats.clean({}); // ข้อมูลเกินแต้มที่มี = รีเซ็ต
@@ -201,7 +220,7 @@ function createSim({ rand = Math.random } = {}) {
     const bag = p.c.bag;
     if (op === 'use' || op === 'equip') {
       const i = Math.floor(+arg), s = bag[i]; if (!Number.isInteger(i) || !s) return 'empty';
-      const it = CFG.items[s.id];
+      const it = CFG.items[s.id]; if (!it) return 'invalid';
       if (op === 'use') {
         if (it.type !== 'use') return 'not-usable';
         if (now < p.potionAt) return 'cooldown';
@@ -210,7 +229,8 @@ function createSim({ rand = Math.random } = {}) {
         if (--s.n <= 0) bag.splice(i, 1);
       } else {
         if (it.type !== 'eq') return 'not-equip';
-        if (it.cls && it.cls !== clsOf(p)) return 'wrong-class';
+        if (it.cls && it.cls !== clsOf(p) && !(clsOf(p) === 'ผู้พิทักษ์' && it.slot === 'weapon' && it.cls === 'นักดาบ')) return 'wrong-class';
+        if (it.slot === 'offhand' && clsOf(p) !== 'ผู้พิทักษ์') return 'wrong-class';
         const old = p.c.eq[it.slot], oldEnh = eqEnh(p, it.slot);
         p.c.eq[it.slot] = s.id; setEnh(p, it.slot, s.enh);
         if (old) bag[i] = entry(old, oldEnh); else bag.splice(i, 1);
@@ -238,7 +258,7 @@ function createSim({ rand = Math.random } = {}) {
     if (N.zone !== p.c.zone) return 'far';
     if (Math.hypot(p.c.x - N.tx * W.T, p.c.y - N.ty * W.T) > CFG.economy.shopRange * W.T) return 'far';
     const row = N.shop.find(r => r[0] === id); if (!row) return 'invalid';
-    if (CFG.items[id].cls && CFG.items[id].cls !== clsOf(p)) return 'wrong-class';
+    if (CFG.items[id].cls && CFG.items[id].cls !== clsOf(p) && !(clsOf(p) === 'ผู้พิทักษ์' && CFG.items[id].slot === 'weapon' && CFG.items[id].cls === 'นักดาบ')) return 'wrong-class';
     const cnt = Math.floor(+n); if (!(cnt >= 1 && cnt <= 99)) return 'invalid';
     const total = row[1] * cnt;
     if ((p.c.gold || 0) < total) return 'no-gold';
@@ -283,10 +303,11 @@ function createSim({ rand = Math.random } = {}) {
     if (p.enhRids.includes(rid)) return 'dup';
     p.enhRids.push(rid); if (p.enhRids.length > 30) p.enhRids.shift();
     let id, lv, idx = -1;
-    if (m.src === 'eq') { id = c.eq.weapon; if (!id) return 'empty'; lv = eqEnh(p, 'weapon'); }
+    const eqSlot = m.slot === 'offhand' ? 'offhand' : 'weapon';
+    if (m.src === 'eq') { id = c.eq[eqSlot]; if (!id) return 'empty'; lv = eqEnh(p, eqSlot); }
     else if (m.src === 'bag') { idx = Math.floor(+m.i); const s = Number.isInteger(idx) ? c.bag[idx] : null; if (!s) return 'empty'; id = s.id; lv = s.enh | 0; }
     else return 'invalid';
-    const it = CFG.items[id]; if (!it || it.type !== 'eq' || it.slot !== 'weapon') return 'not-weapon';
+    const it = CFG.items[id]; if (!it || it.type !== 'eq' || !['weapon', 'offhand'].includes(it.slot)) return 'not-weapon';
     if (lv >= EH.cap) return 'max';
     const st = EH.steps[lv]; if (!st) return 'invalid';
     const gold = lv >= EH.goldCapFrom ? Math.min(st.gold, EH.goldCap) : st.gold; // เพดาน 55,000 ตั้งแต่ระดับ +12 ขึ้นไป (คำสั่งเจ้าของ V2-R79/R80)
@@ -294,7 +315,7 @@ function createSim({ rand = Math.random } = {}) {
     if (countItem(p, EH.stone) < st.stone) return 'no-stone';
     c.gold -= gold; takeItem(p, EH.stone, st.stone); // หักก่อนสุ่มเสมอ (ล้มเหลวก็หัก)
     const ok = rand() < st.rate;
-    if (ok) { if (m.src === 'eq') setEnh(p, 'weapon', lv + 1); else c.bag[idx].enh = lv + 1; stats(p); }
+    if (ok) { if (m.src === 'eq') setEnh(p, eqSlot, lv + 1); else c.bag[idx].enh = lv + 1; stats(p); }
     p.enhAt = now; p.bagDirty = true; p.dirty = true;
     const r = { ok, from: lv, to: ok ? lv + 1 : lv, item: id, gold, stone: st.stone, goldLeft: c.gold };
     p.personal.push({ k: 'enh', ok, from: r.from, to: r.to, item: id });
