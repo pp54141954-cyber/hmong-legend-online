@@ -82,7 +82,7 @@ const ok=(title,val)=>{assert.ok(val,title);n++;console.log('PASS '+title);};
     await page.screenshot({path:path.join(out,'grand-vfx-'+browserName+'-guardian.png')});
     await page.evaluate(()=>{
       const H=window.HL;
-      H.fxList.push({k:'cboom',x:H.player.x+38,y:H.player.y-14,t:2.4,r:80,col:'#ac8bff'});
+      H.fxList.push({k:'ctrap',x:H.player.x+38,y:H.player.y-14,t:2.4,T:2.4,r:80,col:'#ac8bff'});
     });
     await page.waitForFunction(()=>window.HLGrandStage.count>=1,null,{timeout:10000});
     ok('bridge recognizes game-native effect events',await page.evaluate(()=>window.HLGrandStage.count>0));
