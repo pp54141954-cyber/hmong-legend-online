@@ -760,7 +760,7 @@ function spawnMons(){mons=[];(CFG.bosses[Z.id]||[]).forEach(b=>{const c=CFG.mons
   for(const m of mons)gateBoss(m,WT);
   (Z.D.spawns||[]).forEach(sp=>{const c=CFG.monsters[sp.type];for(let i=0;i<sp.count*(Z.D.painted?CFG.spawnMul:1);i++){const o=CFG.spawnOff(i),[hx,hy]=findFree(sp.tx+o[0],sp.ty+o[1]);
   mons.push({type:sp.type,c,x:hx,y:hy,hx,hy,hp:c.hp,state:'idle',t:Math.random()*2,atkT:0,dir:'S',wx:hx,wy:hy,respT:0,hurt:0})}})}
-function enterZone(id,x,y){if(Z&&Z.id!==id)sfx('warp');Z=getZone(id);preloadNear(id);for(const t of new Set([...(Z.D.spawns||[]).map(s=>s.type),...(CFG.bosses[id]||[]).map(b=>b.type)]))monSpr(t);player.x=x;player.y=y;if(netOn())mons=[];else spawnMons();fx.length=0;nums.length=0;shots.length=0;pending.length=0;PS.cast=null;switchCd=1;say('เข้าสู่ '+Z.D.name)}
+function enterZone(id,x,y){clearTapNav();navTap=null;if(Z&&Z.id!==id)sfx('warp');Z=getZone(id);preloadNear(id);for(const t of new Set([...(Z.D.spawns||[]).map(s=>s.type),...(CFG.bosses[id]||[]).map(b=>b.type)]))monSpr(t);player.x=x;player.y=y;if(netOn())mons=[];else spawnMons();fx.length=0;nums.length=0;shots.length=0;pending.length=0;PS.cast=null;switchCd=1;say('เข้าสู่ '+Z.D.name)}
 const monBlocked=(m,x,y)=>{const r=m.c.size*.6;return pBlocked(x-r,y-3)||pBlocked(x+r,y-3)||pBlocked(x-r,y+3)||pBlocked(x+r,y+3)};
 function monMove(m,tx,ty,sp,dt){const dx=tx-m.x,dy=ty-m.y,d=Math.hypot(dx,dy);if(d<2)return true;const s=Math.min(d,sp*dt),nx=m.x+dx/d*s,ny=m.y+dy/d*s;
   if(!monBlocked(m,nx,m.y))m.x=nx;if(!monBlocked(m,m.x,ny))m.y=ny;m.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'E':'W'):(dy>0?'S':'N');return false}
@@ -912,22 +912,101 @@ function updShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i],d=s.sk
 
 /* ---------- อินพุต ---------- */
 const keys={};
-const cv=document.getElementById('c'),ctx=cv.getContext('2d');let joy=null;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');let joy=null,navTap=null;
+cv.style.touchAction='none';
+const TAPNAV={dest:null,path:[],zone:null,stuck:0,px:0,py:0};
 /* จอย V2-R23: ฐานคงที่มุมซ้ายล่าง (แตะครึ่งซ้ายของจอที่ไหนก็ได้ จอยย้ายไปใต้นิ้ว), เดิน 8 ทิศแบบอนาล็อก */
 /* R85: single-owner floating joystick, safe cancellation and resize-aware coordinates. */
 const JOY={r:52,dead:8};const joyHome=()=>({x:Math.max(72,Math.min(cw-72,cw*.17)),y:Math.max(78,ch-Math.max(130,ch*.16))});
 const joyXY=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
-function releaseJoy(id){if(joy&&(id===undefined||joy.id===id)){const held=joy.id;joy=null;try{if(cv.hasPointerCapture(held))cv.releasePointerCapture(held)}catch(e){}}}
-cv.addEventListener('pointerdown',e=>{if(joy||e.pointerType==='mouse'&&e.button!==0)return;
-  const p=joyXY(e);if(p.x>cw*.55||p.x<0||p.y<0||p.y>ch)return;
+
+/* R85 tap-to-walk: preserve game collision/mask, normal movement speed and server authority.
+   Floating joystick owns left-side drags; a short tap elsewhere marks a destination. */
+function clearTapNav(reason){
+  if(!TAPNAV.dest)return;
+  TAPNAV.dest=null;TAPNAV.path=[];TAPNAV.zone=null;TAPNAV.stuck=0;
+  if(reason==='manual')say('ยกเลิกการเดินตามจุด: ใช้จอยควบคุมเอง');
+}
+function mapPointerToWorld(pt){
+  const zoom=fitAll?Math.min(cw/W,ch/H):Math.max(.15,Math.min(4,Math.min(cw,ch)/520*zoomMul)),vw=cw/zoom,vh=ch/zoom;
+  const cx=W>vw?Math.min(W-vw,Math.max(0,player.x-vw/2)):(W-vw)/2,
+    pT=fitAll?0:56/zoom,pB=fitAll?0:150/zoom,
+    cy=H+pT+pB>vh?Math.min(H-vh+pB,Math.max(-pT,player.y-vh/2)):(H-vh)/2;
+  return{x:cx+pt.x/zoom,y:cy+pt.y/zoom};
+}
+function tapNavigate(x,y){
+  if(PS.dead||!Z)return false;
+  x=Math.max(8,Math.min(W-8,x));y=Math.max(8,Math.min(H-8,y));
+  const tx=Math.floor(x/T),ty=Math.floor(y/T);
+  if(tileBlocked(tx,ty)||Z.g[ty][tx]===EX||boxBlocked(x,y)){
+    clearTapNav();say('ตรงนี้เดินไม่ได้ · เลือกทางเดินที่ว่าง');return false;
+  }
+  const tiles=bfsPath(...autoStart(),tx,ty,2400);
+  if(!tiles){clearTapNav();say('ยังไม่มีทางเดินไปยังจุดที่มาร์ก');return false}
+  if(AUTO.on)setAuto(false);
+  TAPNAV.dest={x,y};TAPNAV.zone=Z.id;
+  TAPNAV.path=tiles.map(([cx,cy])=>({x:(cx+.5)*T,y:(cy+.5)*T}));
+  TAPNAV.path.push({x,y});
+  TAPNAV.stuck=0;TAPNAV.px=player.x;TAPNAV.py=player.y;
+  say('📍 กำลังเดินไปยังจุดที่มาร์ก');return true;
+}
+function tapNavDirection(dt){
+  if(!TAPNAV.dest)return null;
+  if(TAPNAV.zone!==Z.id||PS.dead){clearTapNav();return null}
+  for(let i=0;i<5&&TAPNAV.path.length;i++){
+    const v=TAPNAV.path[0],dx=v.x-player.x,dy=v.y-player.y,d=Math.hypot(dx,dy);
+    if(d<=Math.max(6,CFG.player.speed*dt*.75)){TAPNAV.path.shift();continue}
+    return[dx/d,dy/d];
+  }
+  if(!TAPNAV.path.length){clearTapNav();say('📍 เดินถึงจุดที่มาร์กแล้ว');}
+  return null;
+}
+function releaseMapPointer(e,kind){
+  if(!navTap||navTap.id!==e.pointerId)return;
+  const item=navTap;navTap=null;
+  if(kind==='up'&&!item.moved&&performance.now()-item.started<650){
+    const w=mapPointerToWorld(item.start);tapNavigate(w.x,w.y);
+  }
+  try{if(cv.hasPointerCapture(e.pointerId))cv.releasePointerCapture(e.pointerId)}catch(err){}
+}
+function releaseJoy(id,kind='cancel'){
+  if(!joy||(id!==undefined&&joy.id!==id))return;
+  const item=joy,held=item.id;joy=null;
+  if(kind==='up'&&!item.moved&&!item.near&&performance.now()-item.started<650){
+    const w=mapPointerToWorld(item.start);tapNavigate(w.x,w.y);
+  }
+  try{if(cv.hasPointerCapture(held))cv.releasePointerCapture(held)}catch(err){}
+}
+cv.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  const p=joyXY(e);if(p.x<0||p.y<0||p.x>cw||p.y>ch)return;
+  if(p.x>cw*.55){
+    if(navTap)return;
+    navTap={id:e.pointerId,start:p,started:performance.now(),moved:false};
+    try{cv.setPointerCapture(e.pointerId)}catch(err){navTap=null;return}
+    e.preventDefault();return;
+  }
+  if(joy)return;
   const h=joyHome(),near=Math.hypot(p.x-h.x,p.y-h.y)<JOY.r*1.6;
-  joy={ox:near?h.x:p.x,oy:near?h.y:p.y,x:p.x,y:p.y,id:e.pointerId};
-  try{cv.setPointerCapture(e.pointerId)}catch(err){releaseJoy(e.pointerId)}
-  e.preventDefault()});
-cv.addEventListener('pointermove',e=>{if(joy&&e.pointerId===joy.id){const p=joyXY(e);joy.x=p.x;joy.y=p.y}});
-['pointerup','pointercancel','lostpointercapture'].forEach(n=>cv.addEventListener(n,e=>releaseJoy(e.pointerId)));
-addEventListener('blur',()=>{releaseJoy();clearAttackInput();for(const k in keys)delete keys[k]});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseJoy();clearAttackInput();for(const k in keys)delete keys[k]}});
+  joy={ox:near?h.x:p.x,oy:near?h.y:p.y,x:p.x,y:p.y,id:e.pointerId,start:p,started:performance.now(),near,moved:false};
+  try{cv.setPointerCapture(e.pointerId)}catch(err){releaseJoy(e.pointerId);return}
+  e.preventDefault();
+});
+cv.addEventListener('pointermove',e=>{
+  const p=joyXY(e);
+  if(navTap&&navTap.id===e.pointerId){if(Math.hypot(p.x-navTap.start.x,p.y-navTap.start.y)>12)navTap.moved=true;return}
+  if(!joy||joy.id!==e.pointerId)return;
+  joy.x=p.x;joy.y=p.y;
+  if(Math.hypot(p.x-joy.start.x,p.y-joy.start.y)>12){
+    joy.moved=true;if(TAPNAV.dest)clearTapNav('manual');
+  }
+});
+['pointerup','pointercancel','lostpointercapture'].forEach(n=>cv.addEventListener(n,e=>{
+  const kind=n==='pointerup'?'up':'cancel';
+  releaseMapPointer(e,kind);releaseJoy(e.pointerId,kind);
+}));
+addEventListener('blur',()=>{releaseJoy();navTap=null;clearTapNav();clearAttackInput();for(const k in keys)delete keys[k]});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseJoy();navTap=null;clearTapNav();clearAttackInput();for(const k in keys)delete keys[k]}});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 function inputDir(){let dx=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0),dy=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0);
   if(!dx&&!dy&&joy){const jx=joy.x-joy.ox,jy=joy.y-joy.oy,d=Math.hypot(jx,jy);if(d>JOY.dead){const m=Math.min(1,(d-JOY.dead)/(JOY.r-JOY.dead)*1.4);dx=jx/d*m;dy=jy/d*m}}
@@ -1424,7 +1503,19 @@ function draw(){
   if(window.HLNET)for(const o of HLNET.others)list.push({b:o.y,o});for(const n of CFG.npcs)if(n.zone===Z.id)list.push({b:n.ty*T,n});list.sort((a,b)=>a.b-b.b);
   for(const it of list){if(it.p)drawPlayer();else if(it.m)drawMon(it.m);else if(it.o)drawOther(it.o);else if(it.n)drawNpc(it.n);else drawObj(it.ob,tNow)}
   drawFx();
-  if(debug){for(let y=sy0;y<sy1;y++)for(let x=sx0;x<sx1;x++)if(tileBlocked(x,y)){ctx.fillStyle='rgba(255,40,40,.35)';ctx.fillRect(x*T,y*T,T,T)}
+  /* Marker and route are drawn in world coordinates, never altering the map mask. */
+  if(TAPNAV.dest&&TAPNAV.zone===Z.id){
+    ctx.save();ctx.strokeStyle='rgba(255,215,125,.8)';ctx.lineWidth=2;
+    ctx.setLineDash([7,6]);ctx.beginPath();ctx.moveTo(player.x,player.y);
+    for(const p of TAPNAV.path)ctx.lineTo(p.x,p.y);ctx.stroke();ctx.setLineDash([]);
+    const p=TAPNAV.dest,r=14+Math.sin(tNow*5)*3;
+    ctx.beginPath();ctx.ellipse(p.x,p.y,20,9,0,0,Math.PI*2);
+    ctx.strokeStyle='#ffda85';ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.arc(p.x,p.y-10,r,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,213,112,.18)';ctx.fill();ctx.stroke();
+    ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.fillStyle='#ffda85';ctx.fillText('📍',p.x,p.y-9);ctx.restore();
+  }
+  if(debug){for(let y=sy0;y<sy1;yfor(let x=sx0;x<sx1;x++)if(tileBlocked(x,y)){ctx.fillStyle='rgba(255,40,40,.35)';ctx.fillRect(x*T,y*T,T,T)}
     ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1;ctx.strokeRect(player.x-HW,player.y-HH,HW*2,HH*2)}
   ctx.setTransform(dpr,0,0,dpr,0,0);
   if(WT.night){ctx.fillStyle=WT.blood?'rgba(120,10,20,.30)':'rgba(10,20,70,.34)';ctx.fillRect(0,0,cw,ch)}
@@ -1611,7 +1702,22 @@ let wtT=0;function update(dt){tNow+=dt;switchCd=Math.max(0,switchCd-dt);
     if(!netOn())for(const m of mons)gateBoss(m,WT)}
   for(const k in PS.cd)PS.cd[k]=Math.max(0,PS.cd[k]-dt);PS.hurt=Math.max(0,PS.hurt-dt);PS.buffT=Math.max(0,PS.buffT-dt);PS.guardT=Math.max(0,PS.guardT-dt);
   if(PS.dead){moving=false;PS.deadT-=dt;if(PS.deadT<=0&&!netOn())respawn()}
-  else{updCast(dt);autoSkill(dt);let[dx,dy]=PS.cast?[0,0]:inputDir(),au=false;if(!dx&&!dy&&!PS.cast){const a=autoStep(dt);if(a){dx=a[0];dy=a[1];au=true}}const mv=!!(dx||dy);if(mv!==moving)anim=0;moving=mv;if(mv)step(dx,dy,dt,au);if(atkHeld)attack();
+  else{updCast(dt);autoSkill(dt);let[dx,dy]=PS.cast?[0,0]:inputDir(),au=false;
+    if((dx||dy)&&TAPNAV.dest)clearTapNav('manual');
+    if(!dx&&!dy&&!PS.cast){
+      const go=tapNavDirection(dt);
+      if(go){dx=go[0];dy=go[1];au=true}
+      else{const a=autoStep(dt);if(a){dx=a[0];dy=a[1];au=true}}
+    }
+    const mv=!!(dx||dy);if(mv!==moving)anim=0;moving=mv;
+    if(mv)step(dx,dy,dt,au);
+    if(TAPNAV.dest&&au){
+      const progressed=Math.hypot(player.x-TAPNAV.px,player.y-TAPNAV.py);
+      TAPNAV.stuck=progressed<.35?TAPNAV.stuck+dt:0;
+      TAPNAV.px=player.x;TAPNAV.py=player.y;
+      if(TAPNAV.stuck>1.4){clearTapNav();say('จุดนี้มีสิ่งกีดขวาง · หยุดเดิน')}
+    }
+    if(atkHeld)attack();
     if(!netOn()&&inSafe(player.x,player.y)&&PS.hp<PS.maxHp)PS.hp=Math.min(PS.maxHp,PS.hp+CFG.player.regenSafe*dt)}
   anim+=dt;
   for(let i=pending.length-1;i>=0;i--){pending[i].t-=dt;if(pending[i].t<=0){const p=pending[i];pending.splice(i,1);p.f()}}
@@ -1627,7 +1733,7 @@ function loop(n){const dt=Math.min((n-last)/1000,.05);last=n;update(dt);draw();i
 requestAnimationFrame(loop);
 window.HL={idleFrame,idleBob,sprUrl:f=>sprUrl(f),classAtk:(c,l)=>classAtk(c,l),atkMode:(a,b,c)=>atkMode(a,b,c),atk4For:l=>atk4For(l),drawAtk4:(...a)=>drawAtk4(...a),drawAtkPose:(...a)=>drawAtkPose(...a),skfxImg:c=>skfxImg(c),classBody:(c,l)=>classBody(c,l||PS.look),CLASS_BODY,SKILL_FXUD,skfxudReady:c=>!!skfxudImg(c),SKILL_FX4,skfx4Ready:c=>!!skfx4Img(c),DV,SKILL_FX,skfxReady:c=>!!skfxImg(c),get fxList(){return fx},CLASS_WEAPON,get castDraw(){return[drawClassCast.n||0,drawClassCast.w]},poseFor:(c,l)=>poseFor(c,l||PS.look),get CLASS_POSE(){return CLASS_POSE},skillFor:i=>CFG.skillFor(curCls(),i),basicNow:()=>CFG.basicFor(curCls()),get shotsN(){return shots.length},CHAR_CAT,lookSets,femReady,get femDraws(){return femHair.n||0},HAIRS,OUTFITS,cleanLook,setLook,sheetsFor,femHair,get SPRcur(){return SPR},preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
   for(let i=0;i<=11;i++)out.push({src:'icons/sk_'+i+'.png',label:'ไอคอนสกิล'});for(const c of Object.values(CLASS_BODY))for(const e of Object.values(c))if(!out.some(o=>o.src===sprUrl('pcl_'+e.id+'.webp')))out.push({src:sprUrl('pcl_'+e.id+'.webp'),label:'ตัวละครอาชีพ'});for(const n of Object.values(SKILL_FXUD.cls||{}))out.push({src:sprUrl('skfxud_'+n+'.webp'),label:'เอฟเฟกต์สกิล'});for(const n of Object.values(SKILL_FX4.cls||{}))out.push({src:sprUrl('skfx4_'+n+'.webp'),label:'เอฟเฟกต์สกิล'});for(const n of Object.values(SKILL_FX.cls||{}))out.push({src:sprUrl('skfx_'+n+'.webp'),label:'เอฟเฟกต์สกิล'});for(const g of['m','f']){const ls=lookSets({g,hs:0,of:0});if(ls)for(const f of['walk','idle','attack'])for(const[id,pt]of[[ls.h,'h'],[ls.b,'b']])out.push({src:sprUrl('pc_'+id+'_'+pt+'_'+f+'.webp'),label:'ภาพตัวละคร'})}out.push({src:'icons/sk_p.png',label:'ไอคอนสกิล'});
-  for(const t of new Set((ZONES.field2.spawns||[]).map(s=>s.type))){const d=MON_SPR[t];if(!d)continue;if(d.walk)out.push({src:d.walk,label:'ภาพ'+t});if(d.act)out.push({src:d.act,label:'ภาพ'+t})}return out},CLASSES,CLS_ACTIVE,CLS_PATHS,curCls,skName,setClassLocal(c){if(!CLS_ACTIVE[c])return'invalid';if(!inSafe(player.x,player.y))return'not-safe';PS.cls=c;buildSkills();hudT=0;return'ok'},get inSafeNow(){return inSafe(player.x,player.y)},buildSkills,adminLocal,clearWarpCd(){warpCd=0},monShown,warp,openWorld,openAutoCfg,statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},get attackHeld(){return atkHeld},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
+  for(const t of new Set((ZONES.field2.spawns||[]).map(s=>s.type))){const d=MON_SPR[t];if(!d)continue;if(d.walk)out.push({src:d.walk,label:'ภาพ'+t});if(d.act)out.push({src:d.act,label:'ภาพ'+t})}return out},CLASSES,CLS_ACTIVE,CLS_PATHS,curCls,skName,setClassLocal(c){if(!CLS_ACTIVE[c])return'invalid';if(!inSafe(player.x,player.y))return'not-safe';PS.cls=c;buildSkills();hudT=0;return'ok'},get inSafeNow(){return inSafe(player.x,player.y)},buildSkills,adminLocal,clearWarpCd(){warpCd=0},monShown,warp,openWorld,openAutoCfg,statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},get tapDestination(){return TAPNAV.dest},tapNavigate,clearTapNav,get attackHeld(){return atkHeld},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
 })();
 
 </script>
