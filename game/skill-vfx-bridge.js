@@ -54,6 +54,14 @@ function detectKind(e,cls){
 function trackMartial(){
   const H=window.HL;
   if(!H||!martial||typeof H.curCls!=='function'||H.curCls()!=='นักสู้')return;
+  // Preload approved FIGHTER effect images as soon as the class is active.
+  // Do not wait for a cast: mobile-network latency could otherwise display
+  // a generic placeholder on the first real skill.
+  if(fighterReal&&!fighterTigerQueued&&H.sprUrl){
+    fighterTigerQueued=true;
+    fighterReal.prepare(H.sprUrl('tiger_walk.webp'));
+    fighterReal.prepareAtlas(H.sprUrl('skfx_fighter.webp'),H.sprUrl('skfxud_fighter.webp'));
+  }
   const cast=H.PS&&H.PS.cast,player=H.player;
   if(!cast||!player||typeof cast!=='object'||!Number.isInteger(cast.key)||cast.key<3||cast.key>11)return;
   const spec=window.HLMartialVFX.profileFor(H,cast.key);
@@ -61,12 +69,6 @@ function trackMartial(){
   if(!martialStarted.has(cast))martialStarted.set(cast,{x:player.x,y:player.y,dir:player.dir});
   if(fighterReal){
     const begin=martialStarted.get(cast);
-    if(!fighterTigerQueued&&H.sprUrl){
-      fighterTigerQueued=true;
-      // Source images are already shipped with Hmong Legend; no new art.
-      fighterReal.prepare(H.sprUrl('tiger_walk.webp'));
-      fighterReal.prepareAtlas(H.sprUrl('skfx_fighter.webp'),H.sprUrl('skfxud_fighter.webp'));
-    }
     // Reuse REAL player sprite drawn by game (classBody / drawClassCast).
     // This module adds only effects; unlike the reference chart it never
     // draws a substitute grey mannequin on top of the approved character.
@@ -113,10 +115,11 @@ function track(){
   const arr=H.fxList;
   if(cls==='นักสู้') {
     if(fighterReal)for(const effect of arr){
-      // The original skill chart contains a grey mannequin. During the
-      // approved-character preview, hide ONLY that chart's visual entry.
-      // The game player and its real cast animation remain untouched.
-      if(effect&&effect.cls==='นักสู้'&&/^cchart/.test(effect.k||''))effect.q=true;
+      // Hide a duplicated native chart only AFTER the corresponding approved
+      // atlas is loaded. Before then, leave the native art in place.
+      const useUD=effect&&effect.k==='cchartud';
+      const ready=useUD?fighterReal.approvedDownUpReady:fighterReal.approvedSideReady;
+      if(ready&&effect&&effect.cls==='นักสู้'&&/^cchart/.test(effect.k||''))effect.q=true;
     }
     return;
   }
