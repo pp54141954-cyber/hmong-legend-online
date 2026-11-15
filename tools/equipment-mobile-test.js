@@ -3,7 +3,10 @@
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
-const { chromium, devices } = require('playwright');
+const { chromium, webkit, devices } = require('playwright');
+const safariMode = process.env.MOBILE_BROWSER === 'webkit';
+const engine = safariMode ? webkit : chromium;
+const deviceName = safariMode ? 'iPhone 13' : 'Pixel 7';
 const { createServer } = require('../server/server.js');
 const { ZONES, CFG } = require('../shared/world.js');
 
@@ -24,8 +27,8 @@ const { ZONES, CFG } = require('../shared/world.js');
     server.db.save(character);
 
     const port = await server.listen(0);
-    browser = await chromium.launch();
-    page = await browser.newPage({ ...devices['Pixel 7'] });
+    browser = await engine.launch();
+    page = await browser.newPage({ ...devices[deviceName] });
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
     await page.goto('http://127.0.0.1:' + port + '/');
@@ -56,13 +59,18 @@ const { ZONES, CFG } = require('../shared/world.js');
     assert(sizes.itemHeights.length >= 3, 'fixture items missing');
     assert(sizes.itemHeights.every(h => h >= 88), 'backpack cells changed size: ' + sizes.itemHeights);
     assert(!sizes.overflow, 'inventory horizontal overflow');
+    const picture = path.join(tmp, safariMode ? 'bag-iphone-webkit.png' : 'bag-android-chromium.png');
+    await page.locator('#bag').screenshot({ path: picture });
+    const screenshotFolder = path.join(__dirname, 'test-artifacts');
+    fs.mkdirSync(screenshotFolder, { recursive: true });
+    fs.copyFileSync(picture, path.join(screenshotFolder, path.basename(picture)));
 
     // Verify the original server-authoritative unequip flow reaches the UI.
     await page.click('#bag .eqs [data-eq="offhand"]');
     await page.waitForFunction(() => window.HLNET.eq && window.HLNET.eq.offhand === null, null, { timeout: 8000 });
     assert(await page.locator('#bag .bag-grid').innerText().then(t => t.includes(CFG.items.shield_wood.name)), 'shield not returned to bag');
     assert.deepEqual(errors, [], 'browser JS exceptions');
-    console.log('PASS: compact equipment / unmodified backpack sizing / shield unequip / no overflow');
+    console.log('PASS ' + deviceName + ' (' + (safariMode ? 'WebKit' : 'Chromium') + '): compact equipment / backpack sizing / shield unequip / no overflow');
   } catch (e) {
     if (page) {
       const state = await page.evaluate(() => ({
