@@ -146,7 +146,7 @@ SETS = [  # (id, อาชีพ, เพศที่ใช้, ฟังก์�
     ('healer_f', 'ผู้รักษา', ['f'], lambda: grid_tr('healer_f_walk_v3.png')),  # V2-R62
     ('mage_m', 'ผู้ใช้มนตรา', ['m'], lambda: grid_tr('mage_m_walk_v2.png')),  # V2-R61: ผู้ใช้มนตราชุดใหม่ (หมวกแหลม ไม้เท้าอัญมณีม่วง)
     ('mage_f', 'ผู้ใช้มนตรา', ['f'], lambda: grid_tr('mage_f_walk_v2.png')),  # V2-R61
-    ('fighter_f', 'นักสู้', ['f'], lambda: quad('fighter_f2.png')),  # แบบใหม่ (ชุดแดงหางม้า) แทนชุดในภาพนักสู้ชาย/หญิง
+    ('fighter_f', 'นักสู้', ['f'], lambda: grid_tr('fighter_f_walk_v3.png')),  # V2-R65: นักสู้หญิงชุดม้ง (ตารางโปร่งใส 4×4) แทนชุดเกราะแดง-ทอง fighter_f2.png
     ('spirit_m', 'ผู้สืบวิญญาณ', ['m'], lambda: grid_tr('spirit_m_walk_v2.png')),  # V2-R61: ผู้สืบวิญญาณชุดใหม่ (ไม้เท้าแหวนเงินปอยแดง)
     ('spirit_f', 'ผู้สืบวิญญาณ', ['f'], lambda: grid_tr('spirit_f_walk_v2.png')),  # V2-R61
 ]

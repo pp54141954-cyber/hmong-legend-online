@@ -17,7 +17,7 @@ ATK4_SETS = [  # (ชุด, ไฟล์ต้นฉบับ) — ตัวล
     ('f0', 'swordsman_f_attack.png'),
 ]
 BODY_SETS = [  # (id, อาชีพ, เพศ, ไฟล์ต้นฉบับ) — ตัวละครประจำอาชีพ → game/sprites/pca_<id>.webp (V2-R54) จำนวนเฟรมต่อแถวตามภาพ (4 หรือ 5)
-    ('fighter_f', 'นักสู้', 'f', 'fighter_f_attack.png'),
+    ('fighter_f', 'นักสู้', 'f', 'fighter_f_attack_v3.png'),  # V2-R65: นักสู้หญิงชุดม้ง 5 เฟรม
     ('fighter_m', 'นักสู้', 'm', 'fighter_m_attack.png'),  # V2-R60: นักสู้ชาย 5 เฟรม (ชุดเดียวกับชุดเดินใหม่)
     ('assassin_m', 'นักฆ่า', 'm', 'assassin_m_attack_daggers.png'),  # V2-R61: ท่าโจมตี 4 เฟรมของนักฆ่าชุดใหม่ (ภาพจากมือถือ คัดพื้นดำออก)
     ('assassin_f', 'นักฆ่า', 'f', 'assassin_f_attack_daggers.png'),  # V2-R61
