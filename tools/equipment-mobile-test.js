@@ -60,6 +60,24 @@ const { ZONES, CFG } = require('../shared/world.js');
     assert(sizes.itemHeights.length >= 3, 'fixture items missing');
     assert(sizes.itemHeights.every(h => h >= 88), 'backpack cells changed size: ' + sizes.itemHeights);
     assert(!sizes.overflow, 'inventory horizontal overflow');
+    // R82 BUG-011: connection status stays readable above the inventory on mobile.
+    const hud = await page.evaluate(() => {
+      const badge = document.getElementById('netst');
+      const bag = document.getElementById('bag');
+      const a = badge.getBoundingClientRect(), b = bag.getBoundingClientRect();
+      const style = getComputedStyle(badge);
+      return {
+        badgeText: badge.textContent.trim(), visible: style.display !== 'none',
+        badgeBottom: a.bottom, bagTop: b.top,
+        badgeZ: Number(style.zIndex), bagZ: Number(getComputedStyle(bag).zIndex),
+        badgeInViewport: a.top >= 0 && a.bottom <= innerHeight,
+        bagInViewport: b.top >= 0 && b.top < innerHeight
+      };
+    });
+    assert(hud.visible && hud.badgeText, 'online status badge missing while bag open');
+    assert(hud.badgeInViewport && hud.bagInViewport, 'bag or online status outside viewport: ' + JSON.stringify(hud));
+    assert(hud.badgeBottom <= hud.bagTop, 'bag obscures online status: ' + JSON.stringify(hud));
+    assert(hud.badgeZ > hud.bagZ, 'online status must remain above bag stacking context');
     const picture = path.join(tmp, safariMode ? 'bag-iphone-webkit.png' : 'bag-android-chromium.png');
     await page.locator('#bag').screenshot({ path: picture });
     const screenshotFolder = path.join(__dirname, 'test-artifacts');
