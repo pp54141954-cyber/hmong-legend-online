@@ -49,6 +49,8 @@ jobs:
           const fx=s.indexOf('const fx=[],nums=[],shots=[]');
           console.log('FX_ARRAY',fx,s.slice(fx-160,fx+250).replace(/\n/g,' '));
           NODE
+      - name: Inspect real martial artist skill triggers
+        run: node tools/inspect-martial-hooks.js
       - name: Syntax-check grand effect renderer
         run: |
           node --check game/skill-vfx-grand.js
