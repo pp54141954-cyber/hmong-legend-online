@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { createSim } = require('../server/sim.js');
 const { open } = require('../server/db.js');
-const { CFG, W, ZONES } = require('../shared/world.js');
+const { CFG, T } = require('../shared/world.js');
 
 const smith = CFG.npcs.find(n => n.role === 'smith');
 assert(smith, 'a smith NPC must exist');
@@ -16,7 +16,7 @@ assert(cost && cost.stone > 0 && cost.rate > 0, 'enhancement must have a valid f
 const sim = createSim({ rand: () => 0 });
 const makePlayer = (name, bag, equipment = { weapon: 'sword_wood', offhand: null, armor: null, acc: null }) => {
   const p = { id: name, personal: [], c: {
-    name, zone: smith.zone, x: smith.tx * W.T, y: smith.ty * W.T, dir: 'S',
+    name, zone: smith.zone, x: smith.tx * T, y: smith.ty * T, dir: 'S',
     lv: 20, exp: 0, job: 10, jexp: 0, cls: 'นักดาบ', clsset: 1, starter: 1,
     bag, eq: equipment, enh: {}, sk: {}, st: CFG.stats.clean({}), look: {}, gold: 500000
   }};
@@ -92,7 +92,7 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hl-inventory-r81-'));
 try {
   const file = path.join(tmp, 'game.db');
   let db = open(file);
-  const reg = db.register('BagIntegrity', 'secret123', { zone: smith.zone, x: smith.tx * W.T, y: smith.ty * W.T });
+  const reg = db.register('BagIntegrity', 'secret123', { zone: smith.zone, x: smith.tx * T, y: smith.ty * T });
   assert(reg.id);
   let c = db.character(reg.id);
   c.starter = 1;
