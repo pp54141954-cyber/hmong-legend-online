@@ -43,7 +43,30 @@ function create(options={}){
  let tiger=null,tigerReady=false,tigerPink=null;
  // Approved FIGHTER source atlas: 9 rows x 5 poses, transparent EFFECTS ONLY.
  // Keep existing player sprites pca/pcl_fighter unmodified.
- let approvedSide=null,approvedDownUp=null,sideReady=false,downUpReady=false;
+ let approvedSide=null,approvedDownUp=null,tintedDownUp=null,sideReady=false,downUpReady=false;
+ function recolorDirectionalAtlas(im){
+  if(typeof document==='undefined')return null;
+  const canvas=document.createElement('canvas');
+  canvas.width=im.naturalWidth;canvas.height=im.naturalHeight;
+  const c=canvas.getContext('2d',{alpha:true});
+  if(!c)return null;
+  c.drawImage(im,0,0);
+  // Only recolor existing transparent effect pixels; geometry is unchanged.
+  // The 9-row board is doubled for facing DOWN and UP.
+  c.globalCompositeOperation='source-atop';
+  for(const offset of [0,9]){
+   for(let row=3;row<=5;row++){
+    c.fillStyle='rgba(86,172,255,.86)';
+    c.fillRect(0,(row+offset)*300,canvas.width,300);
+   }
+   for(let row=6;row<=8;row++){
+    c.fillStyle='rgba(246,67,164,.92)';
+    c.fillRect(0,(row+offset)*300,canvas.width,300);
+   }
+  }
+  c.globalCompositeOperation='source-over';
+  return canvas;
+ }
  let lastFrame=null,drawsFromAtlas=0;
  function prepareAtlas(sideUrl,downUpUrl){
   if(typeof Image==='undefined')return;
@@ -55,7 +78,10 @@ function create(options={}){
   }
   if(downUpUrl&&!approvedDownUp){
    approvedDownUp=new Image();approvedDownUp.decoding='async';
-   approvedDownUp.onload=()=>{downUpReady=approvedDownUp.naturalWidth===1500&&approvedDownUp.naturalHeight===5400};
+   approvedDownUp.onload=()=>{
+    downUpReady=approvedDownUp.naturalWidth===1500&&approvedDownUp.naturalHeight===5400;
+    if(downUpReady)tintedDownUp=recolorDirectionalAtlas(approvedDownUp);
+   };
    approvedDownUp.onerror=()=>{downUpReady=false};
    approvedDownUp.src=downUpUrl;
   }
@@ -67,7 +93,7 @@ function create(options={}){
  }
  function drawApproved(ctx,e,frame,age){
   const vertical=e.dir==='N'||e.dir==='S';
-  const im=vertical?(downUpReady?approvedDownUp:null):(sideReady?approvedSide:null);
+  const im=vertical?(downUpReady?(tintedDownUp||approvedDownUp):null):(sideReady?approvedSide:null);
   if(!im)return false;
   const row=e.spec.slot-3+(vertical&&e.dir==='N'?9:0);
   const cw=vertical?300:320,ch=vertical?300:200;
@@ -80,11 +106,18 @@ function create(options={}){
   ctx.globalCompositeOperation='lighter';
   ctx.globalAlpha*=frame===4?Math.max(.12,1-age*.55):frame===0?.68:1;
   ctx.imageSmoothingEnabled=true;
-  if(vertical&&e.spec.hue==='blue')ctx.filter='hue-rotate(160deg) saturate(1.6)';
-  else if(vertical&&e.spec.hue==='pink')ctx.filter='hue-rotate(290deg) saturate(1.6)';
   ctx.scale(e.dir==='W'?-scale:scale,scale);
   ctx.drawImage(im,frame*cw,row*ch,cw,ch,-anchorX,-anchorY,cw,ch);
   ctx.restore();
+  // The reference FIGHTER board has a side-view pink tiger. For N/S gameplay
+  // use the game's approved 4-direction tiger walk silhouette instead of
+  // showing an unrelated gold ring without the beast.
+  if(vertical&&e.spec.hue==='pink'&&tigerReady){
+    ctx.save();ctx.translate(e.x,e.y+3);ctx.globalAlpha=.92;
+    ctx.globalCompositeOperation='lighter';
+    tigerSprite(ctx,e,Math.min(1,age/.8),COLOR.pink);
+    ctx.restore();
+  }
   drawsFromAtlas++;
   lastFrame={slot:e.spec.slot,frame,dir:e.dir,source:vertical?'approved-updown':'approved-side'};
   return true;
@@ -300,7 +333,7 @@ function create(options={}){
  }
  return {start,prepare,prepareAtlas,follow,draw,clear(){items.length=0;},get count(){return items.length},
    get max(){return max;},get specs(){return SKILLS.slice();},get tigerReady(){return tigerReady},
-   get approvedSideReady(){return sideReady},get approvedDownUpReady(){return downUpReady},
+   get approvedSideReady(){return sideReady},get approvedDownUpReady(){return downUpReady},get directionalColorReady(){return !!tintedDownUp},
    get drawsFromAtlas(){return drawsFromAtlas},get lastFrame(){return lastFrame&&{...lastFrame}}};
 }
 return {create,SKILLS,COLOR};
