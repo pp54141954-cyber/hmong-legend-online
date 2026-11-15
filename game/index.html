@@ -138,7 +138,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 #bag .bag-pager button{padding:8px 14px;border-radius:8px;background:#34484b;color:white;border:1px solid #8c7452}
 /* R82: connection and actionable errors remain readable inside the bag dialog.
    Do not move the main HUD, its controls or the game canvas. */
-#bag .bag-connection{font-size:12px;line-height:1.4;color:#eff8eb;background:#254233;border:1px solid #56826b;padding:6px 9px;border-radius:8px;overflow-wrap:anywhere}
+#bag .bag-connection{position:sticky;top:0;z-index:3;flex-shrink:0;align-self:stretch;font-size:12px;line-height:1.4;color:#eff8eb;background:#254233;border:1px solid #56826b;padding:6px 9px;border-radius:8px;overflow-wrap:anywhere}
 #bag .bag-feedback{font-size:12px;line-height:1.4;font-weight:650;color:#ffdfc9;background:#663026;border:1px solid #c6825e;padding:7px 9px;border-radius:8px}
 #bag .bag-feedback[hidden]{display:none}
 </style>
