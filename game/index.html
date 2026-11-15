@@ -926,8 +926,8 @@ cv.addEventListener('pointerdown',e=>{if(joy||e.pointerType==='mouse'&&e.button!
   e.preventDefault()});
 cv.addEventListener('pointermove',e=>{if(joy&&e.pointerId===joy.id){const p=joyXY(e);joy.x=p.x;joy.y=p.y}});
 ['pointerup','pointercancel','lostpointercapture'].forEach(n=>cv.addEventListener(n,e=>releaseJoy(e.pointerId)));
-addEventListener('blur',()=>{releaseJoy();atkHeld=false;keys={}});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseJoy();atkHeld=false;keys={}}});
+addEventListener('blur',()=>{releaseJoy();atkHeld=false;for(const k in keys)delete keys[k]});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseJoy();atkHeld=false;for(const k in keys)delete keys[k]}});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 function inputDir(){let dx=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0),dy=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0);
   if(!dx&&!dy&&joy){const jx=joy.x-joy.ox,jy=joy.y-joy.oy,d=Math.hypot(jx,jy);if(d>JOY.dead){const m=Math.min(1,(d-JOY.dead)/(JOY.r-JOY.dead)*1.4);dx=jx/d*m;dy=jy/d*m}}
