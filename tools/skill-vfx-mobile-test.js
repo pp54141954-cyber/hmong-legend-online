@@ -64,7 +64,7 @@ async function run(){
       });
       check(item.device+' has cinematic effects frozen for visual inspection',frozen.effects>=2);
       console.log('VFX SCREENSHOT FRAME '+item.device+' '+JSON.stringify(frozen));
-      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>resolve()));
+      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>resolve())));
       const dir=path.join(__dirname,'test-artifacts');fs.mkdirSync(dir,{recursive:true});
       await page.screenshot({path:path.join(dir,item.output),animations:'disabled'});
      }
