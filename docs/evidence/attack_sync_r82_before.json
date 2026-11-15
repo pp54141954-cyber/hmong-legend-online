@@ -1,0 +1,3787 @@
+{
+ "file": "index.html",
+ "tag": "before",
+ "detail": [
+  {
+   "cls": "นักดาบ",
+   "key": "b",
+   "dir": "S",
+   "ret": true,
+   "P": 0.22,
+   "relDevMs": 1.4,
+   "path": "drawVertCast",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 3,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 4,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 5,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 10,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 6,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.2,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0,
+     0.09,
+     0.18,
+     0.27,
+     0.36
+    ],
+    "exp": [
+     0,
+     0.09,
+     0.18,
+     0.27,
+     0.36
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 7,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 0,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.12
+    ],
+    "exp": [
+     0.12
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 8,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 9,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.2,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 10,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.6,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 11,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.15,
+     0.3
+    ],
+    "exp": [
+     0.15,
+     0.3
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": "b",
+   "dir": "S",
+   "ret": true,
+   "P": 0.22,
+   "relDevMs": 1.4,
+   "path": "drawClassCast",
+   "mode": "b5",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "นักสู้",
+   "key": 3,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 4,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0,
+     0.1,
+     0.2,
+     0.3
+    ],
+    "exp": [
+     0,
+     0.1,
+     0.2,
+     0.3
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 5,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 10.1,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 6,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 7,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 0,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 8,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.4,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.2
+    ],
+    "exp": [
+     0.2
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 9,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 10,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.7,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 11,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.2,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": "b",
+   "dir": "S",
+   "ret": true,
+   "P": 0.22,
+   "relDevMs": 1.4,
+   "path": "drawClassCast",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 3,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 4,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 5,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 9.9,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.15,
+     0.3
+    ],
+    "exp": [
+     0.15,
+     0.3
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 6,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 7,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 0,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 8,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.3
+    ],
+    "exp": [
+     0.3
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 9,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 10,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.7,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 11,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": "b",
+   "dir": "S",
+   "ret": true,
+   "P": 0.22,
+   "relDevMs": 1.3,
+   "path": "drawClassCast",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "นักธนู",
+   "key": 3,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.2,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 4,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 5,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 10,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 6,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [
+     0.35
+    ],
+    "exp": [
+     0.35
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 7,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 0.1,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [
+     0.45
+    ],
+    "exp": [
+     0.45
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 8,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.4,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [
+     0.08,
+     0.17,
+     0.26,
+     0.35,
+     0.44
+    ],
+    "exp": [
+     0.08,
+     0.17,
+     0.26,
+     0.35,
+     0.44
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 9,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 10,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.7,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 11,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [
+     0.08,
+     0.17,
+     0.26,
+     0.35,
+     0.44,
+     0.53,
+     0.62,
+     0.71
+    ],
+    "exp": [
+     0.08,
+     0.17,
+     0.26,
+     0.35,
+     0.44,
+     0.53,
+     0.62,
+     0.71
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": "b",
+   "dir": "S",
+   "ret": true,
+   "P": 0.25,
+   "relDevMs": 0,
+   "path": "drawClassCast",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 3,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 4,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 5,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 10,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 6,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 7,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 16.6,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 8,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 9,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.2,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 10,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.6,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 11,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.35
+    ],
+    "exp": [
+     0.35
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": "b",
+   "dir": "S",
+   "ret": true,
+   "P": 0.22,
+   "relDevMs": 1.3,
+   "path": "drawClassCast",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 3,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 4,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 5,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 10,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 6,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 7,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 0,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 8,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 9,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 10,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.7,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 11,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": "b",
+   "dir": "S",
+   "ret": true,
+   "P": 0.25,
+   "relDevMs": 0.1,
+   "path": "drawClassCast",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 3,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 4,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 5,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 10,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.08,
+     0.17,
+     0.26
+    ],
+    "exp": [
+     0.08,
+     0.17,
+     0.26
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 6,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.4
+    ],
+    "exp": [
+     0.4
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 7,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 16.6,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0,
+     0.09,
+     0.18,
+     0.27
+    ],
+    "exp": [
+     0,
+     0.09,
+     0.18,
+     0.27
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 8,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 9,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 10,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.7,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 11,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.3
+    ],
+    "exp": [
+     0.3
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": "b",
+   "dir": "S",
+   "ret": true,
+   "P": 0.25,
+   "relDevMs": 16.6,
+   "path": "drawClassCast",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 3,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 4,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.3
+    ],
+    "exp": [
+     0.3
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 5,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 10,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.08,
+     0.17,
+     0.26,
+     0.35,
+     0.44,
+     0.53
+    ],
+    "exp": [
+     0.08,
+     0.17,
+     0.26,
+     0.35,
+     0.44,
+     0.53
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 6,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 7,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 0,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.4
+    ],
+    "exp": [
+     0.4
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 8,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 9,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 10,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.7,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.5
+    ],
+    "exp": [
+     0.5
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 11,
+   "dir": "S",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.35
+    ],
+    "exp": [
+     0.35
+    ]
+   },
+   "chart": {
+    "fk": "cchartud",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": "b",
+   "dir": "E",
+   "ret": true,
+   "P": 0.22,
+   "relDevMs": 1.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 3,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 4,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 5,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 10.1,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 6,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0,
+     0.09,
+     0.18,
+     0.27,
+     0.36
+    ],
+    "exp": [
+     0,
+     0.09,
+     0.18,
+     0.27,
+     0.36
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 7,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 16.7,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.12
+    ],
+    "exp": [
+     0.12
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 8,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 9,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 10,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.7,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักดาบ",
+   "key": 11,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.15,
+     0.3
+    ],
+    "exp": [
+     0.15,
+     0.3
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": "b",
+   "dir": "E",
+   "ret": true,
+   "P": 0.22,
+   "relDevMs": 1.2,
+   "path": "drawAtk4",
+   "mode": "b5",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "นักสู้",
+   "key": 3,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 4,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0,
+     0.1,
+     0.2,
+     0.3
+    ],
+    "exp": [
+     0,
+     0.1,
+     0.2,
+     0.3
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 5,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 9.9,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 6,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.2,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 7,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 0,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 8,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.2
+    ],
+    "exp": [
+     0.2
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 9,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 10,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.7,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักสู้",
+   "key": 11,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "s5",
+   "strike": {
+    "fiPost": 4,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": "b",
+   "dir": "E",
+   "ret": true,
+   "P": 0.22,
+   "relDevMs": 1.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 3,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 4,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 5,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 10,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.15,
+     0.3
+    ],
+    "exp": [
+     0.15,
+     0.3
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 6,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 7,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 0,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 8,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.3
+    ],
+    "exp": [
+     0.3
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 9,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 10,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.7,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักฆ่า",
+   "key": 11,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": "b",
+   "dir": "E",
+   "ret": true,
+   "P": 0.22,
+   "relDevMs": 1.4,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "นักธนู",
+   "key": 3,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 4,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.2,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 5,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 10.1,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 6,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [
+     0.35
+    ],
+    "exp": [
+     0.35
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 7,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 0,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [
+     0.45
+    ],
+    "exp": [
+     0.45
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 8,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [
+     0.08,
+     0.17,
+     0.26,
+     0.35,
+     0.44
+    ],
+    "exp": [
+     0.08,
+     0.17,
+     0.26,
+     0.35,
+     0.44
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 9,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 10,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.6,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "นักธนู",
+   "key": 11,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "bow",
+   "strike": {
+    "fiPre": 2,
+    "fiPost": 2,
+    "ok": false
+   },
+   "delays": {
+    "got": [
+     0.08,
+     0.17,
+     0.26,
+     0.35,
+     0.44,
+     0.53,
+     0.62,
+     0.71
+    ],
+    "exp": [
+     0.08,
+     0.17,
+     0.26,
+     0.35,
+     0.44,
+     0.53,
+     0.62,
+     0.71
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": "b",
+   "dir": "E",
+   "ret": true,
+   "P": 0.25,
+   "relDevMs": 0.1,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 3,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 4,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 5,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 9.9,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 6,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 7,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 16.6,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 8,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 9,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 10,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.7,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้รักษา",
+   "key": 11,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.35
+    ],
+    "exp": [
+     0.35
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": "b",
+   "dir": "E",
+   "ret": true,
+   "P": 0.22,
+   "relDevMs": 1.2,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 3,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 4,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 5,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 9.9,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 6,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.2,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 7,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 0,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 8,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 9,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 10,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.6,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้พิทักษ์",
+   "key": 11,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": "b",
+   "dir": "E",
+   "ret": true,
+   "P": 0.25,
+   "relDevMs": 0,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 3,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 4,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 5,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 10,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.08,
+     0.17,
+     0.26
+    ],
+    "exp": [
+     0.08,
+     0.17,
+     0.26
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 6,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.4
+    ],
+    "exp": [
+     0.4
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 7,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 16.6,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0,
+     0.09,
+     0.18,
+     0.27
+    ],
+    "exp": [
+     0,
+     0.09,
+     0.18,
+     0.27
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 8,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.2,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 9,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 10,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.6,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้สืบวิญญาณ",
+   "key": 11,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.2,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.3
+    ],
+    "exp": [
+     0.3
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": "b",
+   "dir": "E",
+   "ret": true,
+   "P": 0.25,
+   "relDevMs": 0,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": null
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 3,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 4,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.4,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.3
+    ],
+    "exp": [
+     0.3
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 5,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.4,
+   "relDevMs": 10.1,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.08,
+     0.17,
+     0.26,
+     0.35,
+     0.44,
+     0.53
+    ],
+    "exp": [
+     0.08,
+     0.17,
+     0.26,
+     0.35,
+     0.44,
+     0.53
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 6,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 7,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.5,
+   "relDevMs": 0,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.4
+    ],
+    "exp": [
+     0.4
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 8,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.45,
+   "relDevMs": 13.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 9,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.3,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [],
+    "exp": []
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 10,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.35,
+   "relDevMs": 6.7,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.5
+    ],
+    "exp": [
+     0.5
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  },
+  {
+   "cls": "ผู้ใช้มนตรา",
+   "key": 11,
+   "dir": "E",
+   "ret": "ok",
+   "P": 0.55,
+   "relDevMs": 3.3,
+   "path": "drawAtk4",
+   "mode": "sword",
+   "strike": {
+    "fiPost": 2,
+    "ok": true
+   },
+   "delays": {
+    "got": [
+     0.35
+    ],
+    "exp": [
+     0.35
+    ]
+   },
+   "chart": {
+    "fk": "cchart",
+    "T": 1.05
+   }
+  }
+ ],
+ "errors": []
+}
