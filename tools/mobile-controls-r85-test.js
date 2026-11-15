@@ -34,6 +34,18 @@ const ios=process.env.MOBILE_BROWSER==='webkit';
     let state=await read();
     assert.equal(state.active,true,'pointerdown did not acquire joystick: '+JSON.stringify(state));
     const id=state.id;
+    // A second finger must not move or release the pointer owned by the joystick.
+    const beforeOtherPointer=await read();
+    await page.evaluate(({id,x,y})=>{
+      const c=document.getElementById('c');
+      c.dispatchEvent(new PointerEvent('pointermove',{pointerId:id+500,pointerType:'touch',clientX:x-90,clientY:y,bubbles:true}));
+      c.dispatchEvent(new PointerEvent('pointerup',{pointerId:id+500,pointerType:'touch',bubbles:true}));
+    },{id,x,y});
+    state=await read();
+    assert.equal(state.id,id,'unrelated finger stole joystick ownership');
+    assert.equal(state.active,true,'unrelated pointerup stopped joystick');
+    assert.deepEqual(state.dir,beforeOtherPointer.dir,'unrelated finger moved joystick');
+
     await page.mouse.move(x+80,y,{steps:5});
     state=await read();
     assert(state.dir[0]>.4,'drag did not produce right movement: '+JSON.stringify(state));
@@ -59,11 +71,36 @@ const ios=process.env.MOBILE_BROWSER==='webkit';
     assert.equal((await read()).dir[1],0,'blur did not release keyboard movement');
     await page.keyboard.up('w');
 
-    // Held attack also releases on focus loss.
+    // Attack has its own pointer owner. Neither a different finger nor a keyboard
+    // keyup should cancel the active touch hold.
     const attack=await page.locator('#atk').boundingBox();
     assert(attack,'attack button missing');
+    await page.evaluate(()=>document.getElementById('atk').addEventListener('pointerdown',e=>{window.__r85AtkPointer=e.pointerId},{once:true}));
     await page.mouse.move(attack.x+attack.width/2,attack.y+attack.height/2);await page.mouse.down();
     assert.equal((await read()).attack,true,'held attack did not engage');
+    const attackId=await page.evaluate(()=>window.__r85AtkPointer);
+    assert(Number.isInteger(attackId),'attack pointer owner not recorded');
+    await page.evaluate(id=>document.getElementById('atk').dispatchEvent(
+      new PointerEvent('pointerup',{pointerId:id+500,pointerType:'touch',bubbles:true})
+    ),attackId);
+    assert.equal((await read()).attack,true,'unrelated pointerup released attack');
+    await page.keyboard.down('j');
+    await page.mouse.up();
+    assert.equal((await read()).attack,true,'releasing touch cancelled keyboard hold');
+    await page.keyboard.up('j');
+    assert.equal((await read()).attack,false,'keyboard attack remained held after keyup');
+
+    // Pointer cancellation and focus loss must also stop attacks.
+    await page.mouse.down();
+    assert.equal((await read()).attack,true,'attack did not restart');
+    await page.evaluate(id=>document.getElementById('atk').dispatchEvent(
+      new PointerEvent('pointercancel',{pointerId:id,bubbles:true})
+    ),attackId);
+    assert.equal((await read()).attack,false,'pointercancel left attack held');
+    await page.mouse.up();
+
+    await page.mouse.down();
+    assert.equal((await read()).attack,true,'held attack did not engage after cancel');
     await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
     assert.equal((await read()).attack,false,'blur left held attack active');
     await page.mouse.up();
@@ -75,8 +112,21 @@ const ios=process.env.MOBILE_BROWSER==='webkit';
     assert.equal((await read()).active,false,'lostpointercapture left joystick held');
     await page.mouse.up();
 
+    // Simulate the app being hidden while moving; release all held inputs.
+    await page.mouse.move(x,y);await page.mouse.down();
+    assert.equal((await read()).active,true,'joystick failed before app-hide test');
+    await page.evaluate(()=>{
+      Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});
+      document.dispatchEvent(new Event('visibilitychange'));
+      delete document.hidden;
+    });
+    state=await read();
+    assert.equal(state.active,false,'hidden app left joystick held');
+    assert.deepEqual(state.dir,[0,0],'hidden app left movement active');
+    await page.mouse.up();
+
     assert.deepEqual(errors,[],'browser JavaScript errors: '+errors.join('; '));
-    console.log('PASS R85 '+(ios?'iPhone WebKit':'Android Chromium')+': real drag, pointercancel, lost capture, blur, keyboard and held attack');
+    console.log('PASS R85 '+(ios?'iPhone WebKit':'Android Chromium')+': multi-pointer ownership, drag, cancel, app hide, focus loss and keyboard hold');
   }catch(e){
     if(page)console.error('R85 diagnostics:',JSON.stringify({errors, state:await page.evaluate(()=>({auth:window.HLNET?.auth,joined:window.HLNET?.joined,joy:!!window.HL?.joy,net:document.getElementById('net')?.hidden})).catch(()=>null)}));
     throw e;
