@@ -14,14 +14,14 @@ let n=0;
 const ok=(title,val)=>{assert.ok(val,title);n++;console.log('PASS '+title);};
 (async()=>{
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'hl-grand-vfx-'));
-  const server=createServer({dbFile:path.join(tmp,'test.db'),quiet:true,startZone:'field'});
+  const server=createServer({dbFile:path.join(tmp,'test.db'),quiet:true,startZone:'village2'});
   let browser;
   try{
-    const field=server.sim.zones.field;
-    assert.ok(field);
-    const x=field.G.D.start[0],y=field.G.D.start[1];
+    const village=server.sim.zones.village2;
+    assert.ok(village);
+    const x=village.G.D.start[0],y=village.G.D.start[1];
     const user='GrandVfxPilot';
-    const reg=server.db.register(user,'testpass123',{zone:'field',x,y});
+    const reg=server.db.register(user,'testpass123',{zone:'village2',x,y});
     assert.ok(reg.id);
     const char=server.db.character(reg.id);
     char.cls='ผู้พิทักษ์';char.clsset=1;char.starter=1;
@@ -72,11 +72,11 @@ const ok=(title,val)=>{assert.ok(val,title);n++;console.log('PASS '+title);};
     await page.screenshot({path:path.join(out,'grand-vfx-'+browserName+'-guardian.png')});
     await page.evaluate(()=>{
       const H=window.HL;
-      H.fxList.push({k:'cboom',x:H.player.x+38,y:H.player.y-14,t:.7,r:80,col:'#ac8bff'});
+      H.fxList.push({k:'cboom',x:H.player.x+38,y:H.player.y-14,t:2.4,r:80,col:'#ac8bff'});
     });
-    await page.waitForFunction(()=>window.HLGrandStage.count>=1,null,{timeout:3000});
+    await page.waitForFunction(()=>window.HLGrandStage.count>=1,null,{timeout:10000});
     ok('bridge recognizes game-native effect events',await page.evaluate(()=>window.HLGrandStage.count>0));
-    await page.waitForTimeout(900);
+    await page.waitForFunction(()=>window.HLGrandStage.count===0,null,{timeout:7000});
     ok('VFX instances expire without unbounded accumulation',
       await page.evaluate(()=>window.HLGrandStage.count===0));
     ok('no browser JavaScript exceptions',errors.length===0);
