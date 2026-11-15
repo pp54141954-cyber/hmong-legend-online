@@ -63,7 +63,9 @@ function trackMartial(){
     const begin=martialStarted.get(cast);
     if(!fighterTigerQueued&&H.sprUrl){
       fighterTigerQueued=true;
+      // Source images are already shipped with Hmong Legend; no new art.
       fighterReal.prepare(H.sprUrl('tiger_walk.webp'));
+      fighterReal.prepareAtlas(H.sprUrl('skfx_fighter.webp'),H.sprUrl('skfxud_fighter.webp'));
     }
     // Reuse REAL player sprite drawn by game (classBody / drawClassCast).
     // This module adds only effects; unlike the reference chart it never
@@ -71,6 +73,9 @@ function trackMartial(){
     fighterReal.start({slot:spec.slot,cast,x:player.x,y:player.y-14,dir:begin.dir,
       poseT:cast.sk.poseT,targetX:player.x+(H.DV[begin.dir]||[0,1])[0]*(cast.sk.dist||46),
       targetY:player.y-14+(H.DV[begin.dir]||[0,1])[1]*(cast.sk.dist||46)});
+    // Effect atlas follows the exact same position as the approved fighter
+    // sprite, including dash moves after the real cast release.
+    fighterReal.follow(cast,player.x,player.y-14);
     if(cast.done&&!martialDone.has(cast)){
       martialDone.add(cast);
       martialEvents.push({slot:spec.slot,name:spec.name,path:spec.path,kind:spec.kind,x:player.x,y:player.y-14});
@@ -170,6 +175,10 @@ window.HLGrandStage={
   get martialCount(){return fighterReal?fighterReal.count:martial?martial.count:0},
   get realFighterEnabled(){return !!fighterReal},
   get fighterTigerReady(){return !!fighterReal&&fighterReal.tigerReady},
+  get fighterApprovedAtlasReady(){return !!fighterReal&&fighterReal.approvedSideReady},
+  get fighterDirectionalAtlasReady(){return !!fighterReal&&fighterReal.approvedDownUpReady},
+  get fighterAtlasFrames(){return fighterReal?fighterReal.drawsFromAtlas:0},
+  get fighterLastFrame(){return fighterReal?fighterReal.lastFrame:null},
   get martialEvents(){return martialEvents.slice()},
   get martialSkills(){return window.HLMartialVFX?window.HLMartialVFX.SKILLS:[]},
   get quality(){return renderer.lowQuality?'mobile':'full'},
