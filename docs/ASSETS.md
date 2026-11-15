@@ -1,0 +1,171 @@
+# ทรัพยากรภาพจากภายนอก
+
+บันทึกทุกภาพที่ไม่ได้สร้างในโครงการ: ที่มา ผู้สร้าง สัญญาอนุญาต และการแก้ไข
+
+## กติกาการใช้ทรัพยากรภายนอก (V2-R71)
+
+- ก่อนใช้ทุกรายการ ตรวจใบอนุญาตจากหน้าต้นทางหรือไฟล์ LICENSE ที่มากับชุด แล้วบันทึกในตารางด้านล่าง: ชื่อ · URL ต้นทาง · ผู้สร้าง · ใบอนุญาต · เงื่อนไขและข้อความให้เครดิต · วันที่ตรวจ
+- "ฟรี" หรือ "ดาวน์โหลดได้" ไม่ถือเป็นสิทธิ์ใช้งาน
+- **ใช้ได้:** CC0 และสาธารณสมบัติ · CC-BY (ให้เครดิตตามเงื่อนไข) · โค้ดแบบ MIT / BSD / Apache-2.0 (เก็บข้อความลิขสิทธิ์) · งานที่เจ้าของโครงการสร้างเอง รวมภาพที่ทำด้วย ChatGPT ตามที่เจ้าของส่งมา
+- **ไม่ใช้:** ใบอนุญาตไม่เชิงพาณิชย์ (NC) · ใบอนุญาตที่บังคับให้เผยแพร่ตาม (SA / GPL) กับงานศิลป์หรือโค้ดของเกม · ใบอนุญาตห้ามดัดแปลง (ND) เมื่อต้องแก้ไขไฟล์ · ภาพ เสียง หรือตารางข้อมูลจากเกมเชิงพาณิชย์ทุกเกม (ภาพหน้าจอ สไปรต์ ไอคอน ชื่อ โลโก้) รวมถึงการลอกรูปแบบนั้น
+- ข้อมูลตัวเลขของเกม (ดาเมจ ราคา ตาราง) ออกแบบเองหรือได้จากแหล่งที่สิทธิ์ตรงกัน ไม่คัดลอกโค้ดจากโปรเจกต์ที่ใบอนุญาตไม่ตรง
+- ตรวจสิทธิ์ไม่ได้ ให้สร้างใหม่หรือไม่ใช้
+
+| ใช้ในเกม | ไฟล์ต้นฉบับ | ชุด / ผู้สร้าง | สัญญา | การแก้ไข |
+| --- | --- | --- | --- | --- |
+| ยาสมุนไพรเล็ก | P_Green01 | 496 pixel art icons / gnola14 | CC0 | ไม่แก้ |
+| ยาสมุนไพรกลาง | P_Red01 | 〃 | CC0 | ไม่แก้ |
+| หนังสัตว์ | I_WolfFur | 〃 | CC0 | ไม่แก้ |
+| เขาสัตว์ | I_Fang | 〃 | CC0 | เปลี่ยนเป็นโทนน้ำตาลเข้ม + ลายวง |
+| เขี้ยวหมูป่า | I_Fang | 〃 | CC0 | ไม่แก้ |
+| ขนไก่ฟ้า | I_Feather02 | 〃 | CC0 | ไม่แก้ |
+| เขี้ยวสัตว์ป่า | I_Fang | 〃 | CC0 | ย่อ วางคู่ กลับด้าน 1 อัน |
+| เศษหินแร่ | I_Rock03 | 〃 | CC0 | ไม่แก้ |
+| เศษวิญญาณ | I_Amethist | 〃 | CC0 | ไม่แก้ |
+| ดาบไม้ฝึกหัด | W_Sword001 | 〃 | CC0 | ใบดาบเปลี่ยนเป็นสีไม้ |
+| ดาบเหล็กตีมือ | W_Sword004 | 〃 | CC0 | ไม่แก้ |
+| เสื้อผ้าฝ้ายปัก | A_Clothing01 | 〃 | CC0 | ผ้าเป็นสีดำ + แถบปักแดงลายขาว/ทอง ตามชุดตัวละครหลัก |
+| เสื้อหนังสัตว์ | A_Armour01 | 〃 | CC0 | ไม่แก้ |
+| กำไลเงิน | Ac_Ring02 | 〃 | CC0 | ไม่แก้ |
+
+- ต้นฉบับ: `assets/third_party/496-rpg-icons/` (ดู `SOURCE.md`)
+- สร้างไฟล์ที่เกมใช้: `python3 tools/build_item_icons.py` → `assets/items/` แล้ว `python3 tools/embed_item_icons.py` ฝังลง `game/index.html`
+- CC0 ไม่บังคับให้ใส่เครดิต แต่โครงการบันทึกไว้เพื่อตรวจย้อนได้
+
+## ตัวเลือกภาพมอนสเตอร์ (V2-R7) — รอเจ้าของเลือก ยังไม่ใส่ในเกม
+
+ชุด "Dungeon Crawl 32x32 tiles" (ศิลปิน Dungeon Crawl Stone Soup, ผู้อัปโหลด MedicineStorm, OpenGameArt) — **CC0** ตรวจซ้ำ 2026-11-10 จากหน้าต้นทางและ `LICENSE.txt` ใน zip
+
+- ต้นฉบับ: `assets/third_party/dungeon-crawl-32x32/` (38 ไฟล์ ไม่แก้ไข ดู `SOURCE.md`)
+- สร้างตัวเลือก: `python3 tools/build_monster_candidates.py` → `assets/monster_candidates/` (46 ภาพ + `candidates.json`)
+- ภาพเปรียบเทียบในเกม: `node tools/monster-compare.js` → `docs/evidence/monsters_r7/` และ `docs/evidence/monsters_r7_overview.png`
+- ปรับสไตล์พื้นฐานทุกภาพ: ลบเงาดำของชุด (เกมวาดเงาเอง), หันขวา, เส้นขอบดำ → สีเข้มของสีข้างเคียง, ครอปขอบ; ในภาพเปรียบเทียบย่อ/ขยายให้พื้นที่เท่ามอนสเตอร์ปัจจุบันที่วัดจากเกมจริง
+- ชุดนี้**ไม่มี** กระต่าย ไก่ฟ้า เสือ ลิง กวาง — ใช้สัตว์ใกล้เคียง (ควอกก้า นกกา แมวส้ม โทรลล์หิน วัวอาพิส) แล้วปรับสี/เติมรายละเอียด
+
+| ชนิด | ตัวเลือก | ไฟล์ | ต้นฉบับ | ปรับเพิ่ม |
+| --- | --- | --- | --- | --- |
+| หมูป่า | A | `boar_a` | animals/hog_new.png | เปลี่ยนสีชมพูเป็นน้ำตาลเข้ม เติมเขี้ยวงาช้าง |
+| หมูป่า | B | `boar_b` | animals/hell_hog_new.png | - |
+| หมูป่า | C | `boar_c` | animals/hog_new.png | - |
+| กระต่ายมีเขา | A | `rabbit_a` | animals/quokka_new.png | เปลี่ยนเป็นขนขาว เติมเขาเดี่ยวสีน้ำตาล |
+| กระต่ายมีเขา | B | `rabbit_b` | animals/quokka_new.png | - |
+| หมาป่า | A | `wolf_a` | animals/wolf.png | - |
+| หมาป่า | B | `wolf_b` | animals/warg.png | - |
+| หมาป่า | C | `wolf_c` | animals/jackal_new.png | - |
+| หมาป่า | D | `wolf_d` | animals/hound.png | - |
+| ไก่ฟ้า | A | `pheasant_a` | raven.png | ตัวสีทองแดง-แดง หัวเขียว (ชุดนี้ไม่มีไก่ฟ้า ใช้นกกาแทน) |
+| ไก่ฟ้า | B | `pheasant_b` | raven.png | - |
+| ไก่ฟ้า | C | `pheasant_c` | phoenix.png | - |
+| ก็อบลิน | A | `goblin_a` | goblin_new.png | ผิว/ชุดสีแดง → เขียวแบบก็อบลินในเกม |
+| ก็อบลิน | B | `goblin_b` | goblin_new.png | - |
+| ก็อบลิน | C | `goblin_c` | hobgoblin_new.png | - |
+| ก็อบลิน | D | `goblin_d` | kobold_new.png | - |
+| เสือ | A | `tiger_a` | player/felids/cat_9.png | สีส้มเข้มขึ้น เติมลายดำ (ชุดนี้ไม่มีเสือ ใช้แมวส้มแทน) |
+| เสือ | B | `tiger_b` | player/felids/cat_9.png | - |
+| เสือ | C | `tiger_c` | manticore.png | - |
+| หมีเขา | A | `bear_a` | animals/grizzly_bear.png | สีเทา → น้ำตาล เติมเขาคู่สีกระดูก |
+| หมีเขา | B | `bear_b` | animals/bear.png | - |
+| หมีเขา | C | `bear_c` | animals/black_bear_new.png | - |
+| โกเลมหิน | A | `golem_a` | nonliving/stone_golem.png | - |
+| โกเลมหิน | B | `golem_b` | nonliving/earth_elemental.png | - |
+| โกเลมหิน | C | `golem_c` | nonliving/clay_golem.png | - |
+| โกเลมหิน | D | `golem_d` | nonliving/gargoyle.png | - |
+| กระทิงผี | A | `ghostbull_a` | animals/death_yak_new.png | ขนเทา → ม่วงเข้ม คงตาแดง เติมแสงเรืองแดงแบบในเกม |
+| กระทิงผี | B | `ghostbull_b` | animals/death_yak_new.png | - |
+| กระทิงผี | C | `ghostbull_c` | animals/catoblepas.png | - |
+| ลิงป่า | A | `monkey_a` | rock_troll.png | สีแดงอิฐ → น้ำตาลลิง (ชุดนี้ไม่มีลิง) |
+| ลิงป่า | B | `monkey_b` | rock_troll.png | - |
+| ลิงป่า | C | `monkey_c` | faun.png | - |
+| กวางภูเขา | A | `deer_a` | holy/apis.png | ลบจานสุริยะ เปลี่ยนเป็นสีน้ำตาลกวาง เติมเขากวาง (ชุดนี้ไม่มีกวาง) |
+| กวางภูเขา | B | `deer_b` | holy/apis.png | ลบจานสุริยะบนหัว |
+| กวางภูเขา | C | `deer_c` | animals/yak_new.png | - |
+| นักรบเผ่าป่า | A | `tribal_a` | human_slave.png | ผ้านุ่งส้ม → น้ำตาล เติมขนนกแดง/ขาว และหอก |
+| นักรบเผ่าป่า | B | `tribal_b` | slave_freed.png | - |
+| นักรบเผ่าป่า | C | `tribal_c` | orc_warrior_new.png | - |
+| ปีศาจ | A | `demon_a` | demons/red_devil_new.png | - |
+| ปีศาจ | B | `demon_b` | demons/fiend.png | - |
+| ปีศาจ | C | `demon_c` | demons/hairy_devil.png | - |
+| ปีศาจ | D | `demon_d` | demons/imp.png | - |
+| วิญญาณไม้ | A | `treespirit_a` | fungi_plants/treant.png | - |
+| วิญญาณไม้ | B | `treespirit_b` | unique/leshy.png | - |
+| วิญญาณไม้ | C | `treespirit_c` | player/transform/tree_form.png | - |
+| วิญญาณไม้ | D | `treespirit_d` | dryad.png | - |
+
+ภาพอื่นทั้งหมดในเกม (ตัวละคร แผนที่ มอนสเตอร์ วัตถุ) สร้างภายในโครงการ
+
+## ภาพออกแบบจากเจ้าของโครงการ (`assets/design_refs/`)
+
+ที่มา: เจ้าของโครงการสร้างเองด้วย ChatGPT และส่งให้ทีมเมื่อ 2026-11-10 — ใช้เป็นแบบอ้างอิงและตัดเป็นภาพในเกมได้
+
+| ไฟล์ | เนื้อหา | สถานะ |
+| --- | --- | --- |
+| 01_chibi_proportions_5classes.jpg | สัดส่วน 3D Chibi A/B/C (แนะนำ B สูง 4 หัว), 5 คลาส, ท่าพื้นฐาน | แบบอ้างอิง — รอเจ้าของยืนยันว่าแทนตัวละครเดิมหรือไม่ |
+| 02_shaman_female_actions.jpg | หมอผีหญิง 24 ท่า (โจมตี สกิล ล้ม ฟื้น) พื้นดำ | แบบอ้างอิง |
+| 03_shaman_female_walk_side_8f.jpg | เดินด้านข้าง 8 เฟรม | แบบอ้างอิง — ยังขาดหน้า/หลัง |
+| 04_hairstyles_40.png | ทรงผมชาย 20 หญิง 20 (ไอคอน 64×64) | พร้อมตัดเป็นไอคอน |
+| 05_cloth_items_47.png | เสื้อ กางเกง รองเท้า ผ้าคาดเอว ผ้าคาดหัว ผ้าคลุม | พร้อมตัดเป็นไอคอน |
+| 06_assassin_skills_9.png | สกิลนักฆ่า 9 ท่า ชื่อและคำอธิบาย | ข้อมูลสกิล — ยังไม่มีตัวเลข |
+| 07_archer_skills_9.mp4 | ตัวอย่างสกิลนักธนู 9 ท่า ด้านข้าง 50 วินาที | ข้อมูลสกิล |
+| 08_monsters14_bosses6_animset.png | มอนสเตอร์ทั่วไป 14 ตัว + บอส 6 ตัว + ชุดท่า (เดิน/โจมตี/รับดาเมจ/ตาย) | แบบอ้างอิง — ภาพใหญ่ตัดเป็นรูปหน้าเป้าหมายได้, เฟรมเล็กเล็กเกินใช้ตรง |
+
+หมายเหตุ: ภาพที่สร้างด้วย AI อาจไม่ได้รับความคุ้มครองลิขสิทธิ์แบบงานที่คนสร้างในบางประเทศ (คนอื่นอาจนำไปใช้ได้) — เจ้าของควรตรวจเงื่อนไขของบริการที่ใช้สร้างภาพก่อนวางขายเกม
+
+## ภาพมอนสเตอร์ในฉาก (`assets/sprites_src/` → `assets/sprites/`)
+
+ที่มา: เจ้าของโครงการสร้างด้วย ChatGPT ตาม `docs/prompts/monster_sprites_chatgpt.md` ส่งเมื่อ 2026-11-10
+สร้างภาพในเกม: `python3 tools/build_monster_sprites.py && python3 tools/embed_monster_sprites.py`
+
+## ตัวละครหญิง (V2-R31)
+
+| ไฟล์ | ที่มา | หมายเหตุ |
+| --- | --- | --- |
+| `game/sprites/player_f_walk.webp` / `_idle` / `_attack` | เจ้าของทำด้วย ChatGPT ตามชุดคำสั่ง `docs/prompts/female_character_sprites.md` | ต้นฉบับ `assets/sprites_src/female/`, แปลงด้วย `tools/build_female_sprites.py`, พิกเซลผม alpha=254 |
+
+## ชุด CC0 ที่ใช้ในรอบ 4–5 (V2-R74)
+
+| ไฟล์/โฟลเดอร์ | ที่มา | สัญญา (หลักฐาน) | การใช้ |
+| --- | --- | --- | --- |
+| `assets/items/{bow,daggers,fists,staff,leafstaff,book,sword}_*.png` (28 ชิ้น) | ชุด 496 RPG icons (gnola14, OpenGameArt) · ระบุไฟล์ต้นทางรายชิ้นใน `assets/items/icon_sources.json` | CC0 ตามหน้าต้นทาง (ตรวจ 2026-11-10) · ดาวน์โหลด zip ซ้ำ 2026-11-15 ไม่มีไฟล์ LICENSE ในชุด | ไอคอนอาวุธประจำอาชีพ |
+| `assets/third_party/kenney-tiny-town/` | Kenney Tiny Town 1.1 · https://kenney.nl/assets/tiny-town (ซ้ำจาก https://opengameart.org/content/tiny-town) | CC0 1.0 · ตรวจจากไฟล์ `License.txt` ในชุดเอง 2026-11-15 | วัตถุดิบสำหรับสร้างแผนที่ใหม่ (รอบ 5) ยังไม่ได้ใช้ในเกม |
+| `assets/items/shield_*.png` (4 ชิ้น) | วาดขึ้นใหม่ในโครงการ | ของโครงการ | โล่ชั่วคราว รอภาพจริง |
+
+ตัวเลือกที่พบจากการค้นหา (ยังไม่ได้ดาวน์โหลดหรือเปิดไฟล์ไลเซนส์):
+- OpenGameArt "RPG Town Pixel Art Assets" (https://opengameart.org/content/rpg-town-pixel-art-assets) — ผลค้นหาระบุว่า CC0
+- OpenGameArt "Overworld base set" (https://opengameart.org/node/155014) — ผลค้นหาระบุว่า CC0 มีหญ้า ต้นไม้ และทางดิน
+- OpenGameArt "RPG Town Tileset" (https://opengameart.org/content/rpg-town-tileset) — CC-BY 3.0 ต้องให้เจ้าของอนุมัติก่อนใช้และให้เครดิต
+
+## ภาพออกแบบ V7 จากเจ้าของ (V2-R75)
+
+- `assets/design_refs/v7/01_parts_sheet_1536x1024.png`, `02_base_body_v7_1536x1024.png`, `03_tool_screenshot_32px.jpg` เป็นภาพที่เจ้าของส่งมา ใช้เป็นแบบอ้างอิง
+- `assets/design_refs/v7/extracted/` (48 เฟรม) ตัดจากภาพ 02 ด้วยวิธีใน `docs/CHARACTER_BASE_V7.md` ยังไม่ได้ใช้ในเกม
+- ภาพที่สร้างด้วย AI อาจได้รับการคุ้มครองลิขสิทธิ์ต่างจากงานของมนุษย์ เจ้าของควรตรวจเงื่อนไขของบริการที่ใช้สร้างภาพก่อนขาย
+
+## แผนที่จาก Kenney Tiny Town (V2-R76)
+
+- ที่มา: Kenney Tiny Town 1.1 · สัญญา CC0 1.0 (ตาม `License.txt` ในชุด) · ไฟล์กระเบื้องอยู่ที่ `assets/third_party/kenney-tiny-town/Tiles/`
+- ใช้ใน `game/maps/village2.webp` (หมู่บ้านกางเขา) ผลิตด้วย `tools/build_village2_tinytown.py` จากลำดับกระเบื้องแบบกำหนดได้ (seed 751)
+- ภาพต้นฉบับของแผนที่: `assets/maps_src/village2_tinytown.png` · ผังชน: `assets/maps_src/village2_tinytown.mask.json`
+- สำรองภาพเดิม: `assets/maps_src/village2_before_tinytown.webp` · ผังชนเดิม: `assets/maps_src/village2_r74_mask.json`
+
+## ไอคอนที่สร้างจากไอคอนของโครงการ (V2-R73)
+
+- `assets/items/sword_silver.png` และ `assets/items/sword_hmong.png` (34 × 34) สร้างจาก `assets/items/sword_iron.png` ด้วยการปรับสีในโครงการ ไม่ใช้ไฟล์จากภายนอก
+- เป็นไอคอนชั่วคราวของระดับอาวุธ 3 และ 4 รอภาพจริงตามชุดคำสั่ง B ใน `docs/prompts/roadmap_art_chatgpt.md`
+- ตัวอย่างเทียบสี่ระดับ: `docs/evidence/items_r73_sword_tiers.png`
+
+## ภาพอ้างอิงสำหรับคำสั่งท่าโจมตี (V2-R53)
+- `docs/prompts/ref/class_<อาชีพ>_<m|f>_walk.png` (14 ภาพ) — ส่งออกจาก `game/sprites/pcl_*.webp` ขยาย 2 เท่า พื้นขาว ใช้แนบกับ `docs/prompts/class_attack_sprites.md`
+- `game/sprites/pc_m0_h_atk4.webp` / `pc_m0_b_atk4.webp` — ท่าโจมตี 4 ทิศนักดาบชาย เจ้าของทำด้วย ChatGPT ตาม `class_attack_sprites.md` ต้นฉบับ `assets/sprites_src/classbody/swordsman_m_attack.png` แปลงด้วย `tools/build_attack4.py` (V2-R53)
+- `game/sprites/pca_fighter_f.webp`, `pca_assassin_m.webp`, `pca_assassin_f.webp` — ท่าโจมตีที่วาดจริง เจ้าของทำด้วย ChatGPT ต้นฉบับ `assets/sprites_src/classbody/*_attack.png` แปลงด้วย `tools/build_attack4.py` (V2-R54)
+- `game/sprites/pca_archer_m.webp`, `pca_archer_f.webp` — ท่าโจมตีนักธนูที่วาดจริง (V2-R55) ต้นฉบับ `assets/sprites_src/classbody/archer_{m,f}_attack.png`
+- `game/sprites/pc_f0_h_atk4.webp` / `pc_f0_b_atk4.webp` — ท่าโจมตี 4 ทิศนักดาบหญิง (V2-R56) ต้นฉบับ `assets/sprites_src/classbody/swordsman_f_attack.png`
+- นักธนูแบบใหม่ (V2-R57, ผมดำ ชุดดำลายแดง): ภาพเดิน `assets/sprites_src/classbody/archer_{m,f}2.png`, ท่ายิง `archer_{m,f}2_attack.png` → `pcl_archer_*.webp`, `pca_archer_*.webp` · แบบเดิม (ผมน้ำตาล) เก็บไว้ ไม่ได้ใช้แล้ว
+- `game/maps/mine_{camp,tunnel,plaza,river,station,cliff}.webp` — ภาพโซนถ้ำ 6 โซน (V2-R58) ขยายจาก `assets/maps_src/mine.png` ตามวงใน `assets/maps_src/mine_regions.png` (ค่า 1–6 ทำจากวงที่เจ้าของวงไว้) สร้างโดย `tools/build_mine_split.py`; ผังช่อง `assets/maps/mine_*.mask.txt`
+- `game/maps/mine.webp` ถูกลบแล้ว (ไม่ได้ใช้; ยังอยู่ในประวัติ git)
+- `docs/prompts/ref/mine_sheet_clean.jpg` และ `zone_mine_<โซน>_crop.jpg`, `zone_mine_<โซน>_now.jpg` — ภาพอ้างอิงของชุดคำสั่งทำโซนถ้ำ (V2-R60) สร้างโดย `tools/make_zone_prompt_refs.py`
+- `assets/sprites_src/classbody/fighter_m_walk.png`, `fighter_m_attack.png` — นักสู้ชาย (V2-R60) → `pcl_fighter_m.webp`, `pca_fighter_m.webp`
+- `assets/sprites_src/incoming/` — ภาพมีดสั้น 3 ชุดที่ยังไม่ได้ใช้ (`female_daggers_walk_{a,b}.png`, `male_daggers_walk.png`) รอยืนยันอาชีพ
+- `assets/sprites_src/classbody/assassin_{m,f}_{walk,attack}_daggers.png` — นักฆ่าชุดมีดสั้น (V2-R61) ต้นฉบับ `assets/sprites_src/incoming/{male,female}_daggers_walk_a.png` และภาพมือถือ (ท่าโจมตี) → `pcl_assassin_*`, `pca_assassin_*`
+- `assets/sprites_src/classbody/{spirit,mage}_{m,f}_{walk,attack}_v2.png` — ผู้สืบวิญญาณและผู้ใช้มนตราชุดใหม่ (V2-R61) → `pcl_spirit_*`, `pcl_mage_*`, `pca_spirit_*`, `pca_mage_*`
+- `assets/sprites_src/incoming/female_daggers_walk_b.png` — ภาพหญิงมือเปล่า (ไม่มีมีด) ยังไม่ได้ใช้
+- `assets/sprites_src/classbody/healer_{m,f}_walk_v3.png`, `healer_{m,f}_attack_v3.png` — ผู้รักษาชุดใหม่ (V2-R62) → `pcl_healer_*`, `pca_healer_*` (แหล่งเดิม `healer_{m,f}4.png` ไม่ได้ใช้แล้ว แต่ยังเก็บไว้)

@@ -1,0 +1,10 @@
+{
+  "name": "hmong-legend-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hmong Legend online server: accounts, save, WebSocket presence",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=22.5" },
+  "dependencies": { "ws": "8.22.2" }
+}

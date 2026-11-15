@@ -1,0 +1,7 @@
+**/node_modules
+server/data
+assets
+docs
+game/versions
+tools/last-*
+.git
