@@ -1,0 +1,57 @@
+name: R85 mobile controls regression
+on:
+  push:
+    branches: [feature/joystick-safety-r85b-20261116]
+  workflow_dispatch:
+jobs:
+  controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix server --no-audit --no-fund
+      - name: Install simulated Android and iPhone browsers
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-r85-browser playwright@1.56.1
+          node /tmp/hl-r85-browser/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-r85-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Parse inline game scripts
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),vm=require('vm');
+          const html=fs.readFileSync('game/index.html','utf8');
+          const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(Boolean);
+          for(const s of scripts)new vm.Script(s);
+          console.log('PASS '+scripts.length+' game scripts');
+          NODE
+      - name: Android Chromium joystick regression
+        run: node tools/mobile-controls-r85-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: iPhone WebKit joystick regression
+        run: node tools/mobile-controls-r85-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: R83 settings compatibility Android
+        run: node tools/view-preferences-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: R83 settings compatibility iPhone
+        run: node tools/view-preferences-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: R82 inventory compatibility Android
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: R82 inventory compatibility iPhone
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Bag persistence
+        run: node tools/bag-integrity-test.js
+      - name: Two session gameplay
+        run: node tools/equipment-gameplay-test.js
