@@ -296,6 +296,10 @@ const CFG={
  look:{hair:6,outfit:6,hs:16,of:16},
  /* ชุดไอเทมเริ่มต้น (V2-R24): ให้ครั้งเดียวต่อตัวละคร ใส่อุปกรณ์ให้ทันที */
  starter:{eq:{weapon:'sword_wood',armor:'coat_cloth'},bag:[['potion_s',10],['potion_m',3]]},
+ /* เศรษฐกิจ (V2-R73): เงินเริ่มต้น · เงินต่อค่าประสบการณ์ของมอนสเตอร์ · เงินบอส · ระยะซื้อของ (ช่อง) — ค่าทดลอง */
+ economy:{startGold:100,goldPerExp:.12,bossGold:150,shopRange:3.5},
+ /* NPC ร้านค้า (V2-R73): ตำแหน่งเป็นช่อง · ร้านขาย [ไอเทม, ราคา] — ค่าทดลอง ยังไม่มีข้อกำหนดยืนยัน */
+ npcs:[{id:'shop1',name:'ป้าขายของ',zone:'village',tx:12.5,ty:18.6,shop:[['potion_s',10],['potion_m',30],['sword_wood',50],['sword_iron',150]]}],
  items:{
   potion_s:{name:'ยาสมุนไพรเล็ก',type:'use',heal:40},
   potion_m:{name:'ยาสมุนไพรกลาง',type:'use',heal:100},
@@ -308,6 +312,8 @@ const CFG={
   spirit:{name:'เศษวิญญาณ',type:'mat'},
   sword_wood:{name:'ดาบไม้ฝึกหัด',type:'eq',slot:'weapon',atk:4},
   sword_iron:{name:'ดาบเหล็กตีมือ',type:'eq',slot:'weapon',atk:10},
+  sword_silver:{name:'ดาบเงินประดับ',type:'eq',slot:'weapon',atk:16},
+  sword_hmong:{name:'ดาบด้ามแดงม้ง',type:'eq',slot:'weapon',atk:24},
   coat_cloth:{name:'เสื้อผ้าฝ้ายปัก',type:'eq',slot:'armor',def:2,hp:20},
   coat_leather:{name:'เสื้อหนังสัตว์',type:'eq',slot:'armor',def:5,hp:45},
   charm_silver:{name:'กำไลเงิน',type:'eq',slot:'acc',hp:30,atk:2}},
@@ -320,8 +326,8 @@ const CFG={
   'ก็อบลิน':[['ore',.4,1],['potion_s',.3,1],['coat_cloth',.06,1],['charm_silver',.03,1]],
   'เสือ':[['fang',.7,2],['hide',.6,2],['potion_m',.25,1],['coat_leather',.06,1]],
   'หมีเขา':[['hide',.7,2],['horn',.5,1],['potion_m',.3,1],['coat_leather',.07,1]],
-  'โกเลมหิน':[['ore',.8,3],['potion_m',.3,1],['sword_iron',.07,1]],
-  'กระทิงผี':[['horn',.6,2],['spirit',.4,1],['potion_m',.3,1],['sword_iron',.06,1]],
+  'โกเลมหิน':[['ore',.8,3],['potion_m',.3,1],['sword_iron',.07,1],['sword_silver',.03,1]],
+  'กระทิงผี':[['horn',.6,2],['spirit',.4,1],['potion_m',.3,1],['sword_iron',.06,1],['sword_hmong',.02,1]],
   'วิญญาณไม้':[['spirit',.6,2],['potion_m',.3,1],['charm_silver',.06,1]],
   'ลิงป่า':[['hide',.5,1],['potion_s',.2,1]],
   'กวางภูเขา':[['horn',.6,1],['hide',.5,1]],

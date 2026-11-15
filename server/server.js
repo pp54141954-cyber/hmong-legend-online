@@ -74,7 +74,7 @@ function createServer(opts = {}) {
     const url = new URL(req.url, 'http://x');
     for (const [k, v] of Object.entries(SEC_HEADERS)) res.setHeader(k, v);
     try {
-      if (req.method === 'GET' && url.pathname === '/healthz') return json(res, 200, { ok: true, ver: 'V2-R72', online: online.size, uptime: Math.round(process.uptime()), admins: conf.admins.length }); // admins = จำนวนชื่อใน ADMIN_USERS (ไม่เปิดเผยชื่อ) ใช้ตรวจว่าตั้งค่าบน Render แล้ว
+      if (req.method === 'GET' && url.pathname === '/healthz') return json(res, 200, { ok: true, ver: 'V2-R73', online: online.size, uptime: Math.round(process.uptime()), admins: conf.admins.length }); // admins = จำนวนชื่อใน ADMIN_USERS (ไม่เปิดเผยชื่อ) ใช้ตรวจว่าตั้งค่าบน Render แล้ว
       if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
         return fs.createReadStream(conf.gameFile).pipe(res);
@@ -164,6 +164,11 @@ function createServer(opts = {}) {
         const key = m.k === 'b' ? 'b' : Math.floor(+m.k);
         const r = sim.act(p, key, now / 1000, Number.isFinite(+m.ax) && Number.isFinite(+m.ay) ? [+m.ax, +m.ay] : null);
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: m.k, r }); }
+        return;
+      }
+      if (m.t === 'shop') { // ร้านค้า NPC (V2-R73): เซิร์ฟเวอร์ตรวจระยะ เงิน และกระเป๋าเอง
+        const r = sim.buy(p, String(m.npc), String(m.id), m.n);
+        if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'shop', r }); }
         return;
       }
       if (m.t === 'inv') {
@@ -266,7 +271,7 @@ function createServer(opts = {}) {
       const mr = []; for (const id of p.seenM.keys()) if (!cur.has(id)) { mr.push(id); p.seenM.delete(id); }
       if (md.length) out.md = md; if (mr.length) out.mr = mr;
       const ev = (ez[c.zone] || []).filter(e => cur.has(e.id) || e.by === p.id); if (ev.length) out.ev = ev;
-      out.me = { zone: c.zone, x: R(c.x), y: R(c.y), hp: Math.ceil(p.hp), maxHp: p.maxHp, atk: p.atk, def: p.def, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, dead: p.dead,
+      out.me = { zone: c.zone, x: R(c.x), y: R(c.y), hp: Math.ceil(p.hp), maxHp: p.maxHp, atk: p.atk, def: p.def, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, gold: c.gold || 0, dead: p.dead,
         buffT: +p.buffT.toFixed(1), guardT: +p.guardT.toFixed(1), ...(p.personal.length ? { ev: p.personal } : {}),
         ...(p.bagDirty ? { bag: c.bag, eq: c.eq } : {}),
         ...(p.skDirty ? { sk: c.sk, pts: sim.freePoints(p), bon: p.bon, st: c.st, spts: sim.statFree(p), cls: sim.clsOf(p) } : {}),

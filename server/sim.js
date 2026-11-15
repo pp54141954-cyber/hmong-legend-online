@@ -158,6 +158,7 @@ function createSim({ rand = Math.random } = {}) {
       const got = [];
       for (const [sl, id] of Object.entries(CFG.starter.eq)) { if (!p.c.eq[sl]) p.c.eq[sl] = id; else addItem(p, id, 1); got.push([id, 1]); }
       for (const [id, n] of CFG.starter.bag) { addItem(p, id, n); got.push([id, n]); }
+      p.c.gold = (p.c.gold || 0) + CFG.economy.startGold; // เงินเริ่มต้น (V2-R73)
       p.c.starter = 1; p.dirty = true; p.bagDirty = true; p.personal.push({ k: 'starter', items: got });
     }
     stats(p); p.hp = p.maxHp; players.add(p);
@@ -210,6 +211,32 @@ function createSim({ rand = Math.random } = {}) {
     p.bagDirty = true; p.dirty = true;
     return 'ok';
   }
+  // ร้านค้า NPC (V2-R73): ซื้อได้เมื่ออยู่ใกล้ NPC ในโซนเดียวกัน เงินพอ และกระเป๋ามีที่ทั้งหมด — ราคาคิดที่เซิร์ฟเวอร์เท่านั้น
+  function fits(p, id, n) {
+    const it = CFG.items[id]; let left = n;
+    if (it.type !== 'eq') for (const s of p.c.bag) { if (s.id !== id || left <= 0) continue; left -= Math.min(left, B.stack - s.n); }
+    if (left <= 0) return true;
+    const per = it.type === 'eq' ? 1 : B.stack;
+    return Math.ceil(left / per) <= B.slots - p.c.bag.length;
+  }
+  function buy(p, npcId, id, n) {
+    if (p.dead) return 'dead';
+    const N = (CFG.npcs || []).find(x => x.id === npcId); if (!N) return 'invalid';
+    if (N.zone !== p.c.zone) return 'far';
+    if (Math.hypot(p.c.x - N.tx * W.T, p.c.y - N.ty * W.T) > CFG.economy.shopRange * W.T) return 'far';
+    const row = N.shop.find(r => r[0] === id); if (!row) return 'invalid';
+    const cnt = Math.floor(+n); if (!(cnt >= 1 && cnt <= 99)) return 'invalid';
+    const total = row[1] * cnt;
+    if ((p.c.gold || 0) < total) return 'no-gold';
+    if (!fits(p, id, cnt)) return 'bag-full';
+    addItem(p, id, cnt); p.c.gold -= total; p.bagDirty = true; p.dirty = true;
+    return 'ok';
+  }
+  // เงินจากการล่า (V2-R73): มอนสเตอร์ทั่วไปตามค่าประสบการณ์ · บอสให้เงินคงที่ — ให้เฉพาะผู้ที่ปราบได้
+  function giveGold(p, m) {
+    const g = m.c.boss ? CFG.economy.bossGold : Math.floor(m.c.exp * CFG.economy.goldPerExp);
+    if (g > 0) { p.c.gold = (p.c.gold || 0) + g; p.dirty = true; p.personal.push({ k: 'gold', n: g }); }
+  }
   function removePlayer(p) { leaveParty(p); players.delete(p); for (const z of Object.values(zones)) for (const m of z.mons) if (m.target === p) m.target = null; }
   const zoneOf = p => zones[p.c.zone];
 
@@ -246,6 +273,7 @@ function createSim({ rand = Math.random } = {}) {
       shareRewards(p, z, m);
       if (m.c.boss) for (const q of players) q.personal.push({ k: 'announce', msg: q === p ? 'ปราบบอส ' + m.type + ' สำเร็จ!' : (p.c.name || 'ผู้เล่น') + ' ปราบบอส ' + m.type + ' แล้ว' });
       rollDrops(p, m);
+      giveGold(p, m);
       z.events.push({ k: 'kill', id: m.id, by: p.id });
     }
   }
@@ -450,6 +478,6 @@ function createSim({ rand = Math.random } = {}) {
     }
   }
 
-  return { party, partyView, parties, get WT() { return WT; }, setTimeOffset(s) { timeOff = s; }, zones, players, addPlayer, removePlayer, statOp, statFree, setLook, cleanLook, cleanCname, setClass, admin, CLASSES, clsOf, act, step, pathClear, stats, gain, addItem, inv, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
+  return { party, partyView, parties, get WT() { return WT; }, setTimeOffset(s) { timeOff = s; }, zones, players, addPlayer, removePlayer, statOp, statFree, setLook, cleanLook, cleanCname, setClass, admin, CLASSES, clsOf, act, step, pathClear, stats, gain, addItem, inv, buy, giveGold, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
 }
 module.exports = { createSim };

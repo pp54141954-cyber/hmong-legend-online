@@ -121,6 +121,12 @@
 | --- | --- | --- |
 | `game/sprites/player_f_walk.webp` / `_idle` / `_attack` | เจ้าของทำด้วย ChatGPT ตามชุดคำสั่ง `docs/prompts/female_character_sprites.md` | ต้นฉบับ `assets/sprites_src/female/`, แปลงด้วย `tools/build_female_sprites.py`, พิกเซลผม alpha=254 |
 
+## ไอคอนที่สร้างจากไอคอนของโครงการ (V2-R73)
+
+- `assets/items/sword_silver.png` และ `assets/items/sword_hmong.png` (34 × 34) สร้างจาก `assets/items/sword_iron.png` ด้วยการปรับสีในโครงการ ไม่ใช้ไฟล์จากภายนอก
+- เป็นไอคอนชั่วคราวของระดับอาวุธ 3 และ 4 รอภาพจริงตามชุดคำสั่ง B ใน `docs/prompts/roadmap_art_chatgpt.md`
+- ตัวอย่างเทียบสี่ระดับ: `docs/evidence/items_r73_sword_tiers.png`
+
 ## ภาพอ้างอิงสำหรับคำสั่งท่าโจมตี (V2-R53)
 - `docs/prompts/ref/class_<อาชีพ>_<m|f>_walk.png` (14 ภาพ) — ส่งออกจาก `game/sprites/pcl_*.webp` ขยาย 2 เท่า พื้นขาว ใช้แนบกับ `docs/prompts/class_attack_sprites.md`
 - `game/sprites/pc_m0_h_atk4.webp` / `pc_m0_b_atk4.webp` — ท่าโจมตี 4 ทิศนักดาบชาย เจ้าของทำด้วย ChatGPT ตาม `class_attack_sprites.md` ต้นฉบับ `assets/sprites_src/classbody/swordsman_m_attack.png` แปลงด้วย `tools/build_attack4.py` (V2-R53)

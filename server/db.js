@@ -42,6 +42,8 @@ function open(file) {
   // V2-R69: ชื่อตัวละครที่ตั้งตอนเลือกอาชีพครั้งแรก (ว่างได้สำหรับบัญชีเก่า)
   if (!cols.includes('cname')) db.exec("ALTER TABLE characters ADD COLUMN cname TEXT NOT NULL DEFAULT ''");
   if (!cols.includes('starter')) db.exec('ALTER TABLE characters ADD COLUMN starter INTEGER NOT NULL DEFAULT 0');
+  // V2-R73: เงินในเกม (จำนวนเต็ม ไม่ติดลบ)
+  if (!cols.includes('gold')) db.exec('ALTER TABLE characters ADD COLUMN gold INTEGER NOT NULL DEFAULT 0');
 
   const hash = pass => {
     const salt = crypto.randomBytes(16);
@@ -57,7 +59,7 @@ function open(file) {
     getAcc: db.prepare('SELECT * FROM accounts WHERE username = ?'),
     insChar: db.prepare('INSERT INTO characters (account_id, name, zone, x, y, dir, lv, exp, job, jexp, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
     getChar: db.prepare('SELECT * FROM characters WHERE account_id = ?'),
-    saveChar: db.prepare('UPDATE characters SET zone=?, x=?, y=?, dir=?, lv=?, exp=?, job=?, jexp=?, bag=?, eq=?, skills=?, stat=?, look=?, cls=?, clsset=?, cname=?, starter=?, updated_at=? WHERE account_id=?'),
+    saveChar: db.prepare('UPDATE characters SET zone=?, x=?, y=?, dir=?, lv=?, exp=?, job=?, jexp=?, bag=?, eq=?, skills=?, stat=?, look=?, cls=?, clsset=?, cname=?, starter=?, gold=?, updated_at=? WHERE account_id=?'),
     insSess: db.prepare('INSERT INTO sessions VALUES (?, ?, ?)'),
     getSess: db.prepare('SELECT * FROM sessions WHERE token = ? AND expire_at > ?'),
     delOld: db.prepare('DELETE FROM sessions WHERE expire_at <= ?'),
@@ -84,7 +86,7 @@ function open(file) {
     },
     session(token) { return typeof token === 'string' ? q.getSess.get(token, Date.now()) : undefined; },
     character(accountId) { const c = q.getChar.get(accountId); if (c) { c.bag = JSON.parse(c.bag || '[]'); c.eq = JSON.parse(c.eq || '{}'); c.sk = JSON.parse(c.skills || '{}'); delete c.skills; c.st = JSON.parse(c.stat || '{}'); delete c.stat; try { c.look = JSON.parse(c.look || '{}'); } catch (e) { c.look = {}; } } return c; },
-    save(c) { q.saveChar.run(c.zone, c.x, c.y, c.dir, c.lv, c.exp, c.job, c.jexp, JSON.stringify(c.bag || []), JSON.stringify(c.eq || {}), JSON.stringify(c.sk || {}), JSON.stringify(c.st || {}), JSON.stringify(c.look || {}), c.cls || 'นักดาบ', c.clsset ? 1 : 0, String(c.cname || ''), c.starter ? 1 : 0, Date.now(), c.account_id); },
+    save(c) { q.saveChar.run(c.zone, c.x, c.y, c.dir, c.lv, c.exp, c.job, c.jexp, JSON.stringify(c.bag || []), JSON.stringify(c.eq || {}), JSON.stringify(c.sk || {}), JSON.stringify(c.st || {}), JSON.stringify(c.look || {}), c.cls || 'นักดาบ', c.clsset ? 1 : 0, String(c.cname || ''), c.starter ? 1 : 0, Math.max(0, Math.floor(c.gold || 0)), Date.now(), c.account_id); },
     close() { db.close(); },
   };
 }
