@@ -68,7 +68,7 @@ function createSim({ rand = Math.random } = {}) {
   function stats(p) {
     const P = CFG.player, eq = p.c.eq || {};
     let atk = 0, def = 0, hp = 0;
-    for (const [sl, id] of Object.entries(eq)) { const it = id && CFG.items[id]; if (it) { const up = sl === 'weapon' ? 1 + CFG.enhance.powerPerLv * eqEnh(p, 'weapon') : 1; atk += (it.atk || 0) * up; def += it.def || 0; hp += it.hp || 0; } } // อาวุธตีบวกได้ ATK เพิ่มตามระดับ (V2-R78)
+    for (const [sl, id] of Object.entries(eq)) { const it = id && CFG.items[id]; if (it) { const up = (sl === 'weapon' || sl === 'offhand') ? 1 + CFG.enhance.powerPerLv * eqEnh(p, sl) : 1; atk += (it.atk || 0) * up; def += it.def || 0; hp += it.hp || 0; } } // อาวุธตีบวกได้ ATK เพิ่มตามระดับ (V2-R78)
     const B = p.bon = skillBonus(p), S = CFG.stats.bonus(p.c.st); // แต้มสเตตัส: ATK/HP/DEF บวกก่อนคูณโบนัส %, AGI/LUK รวมในโบนัส
     B.spd += S.spd; B.cdr += S.cdr; B.crit += S.crit;
     p.maxHp = Math.round((P.baseHP + (p.c.lv - 1) * P.hpPerLv + hp + S.hp) * (1 + B.hpPct)); p.atk = Math.round((P.baseAtk + (p.c.lv - 1) * P.atkPerLv + atk + S.atk) * (1 + B.atkPct)); p.def = def + S.def;
@@ -109,13 +109,16 @@ function createSim({ rand = Math.random } = {}) {
   const cleanLook = l => { l = l && typeof l === 'object' ? l : {}; const ok = (v, n) => Number.isInteger(v) && v >= 0 && v < n; const opt = (v, n) => v === undefined || ok(+v, n); return ok(+l.hair, CFG.look.hair) && ok(+l.outfit, CFG.look.outfit) && opt(l.hs, CFG.look.hs) && opt(l.of, CFG.look.of) && (l.g === 'm' || l.g === 'f') ? { g: l.g, hair: +l.hair, outfit: +l.outfit, hs: +(l.hs || 0), of: +(l.of || 0) } : null; };
   function setLook(p, l) { const v = cleanLook(l); if (!v) return 'invalid'; p.c.look = v; p.dirty = true; p.personal.push({ k: 'look', look: v }); return 'ok'; }
   // อาวุธตามอาชีพ (V2-R74): เปลี่ยนอาชีพแล้วอาวุธของอาชีพเดิมไปกระเป๋า ใส่อาวุธระดับไม้ของอาชีพใหม่ (กระเป๋าเต็มจะไม่เปลี่ยน)
+  // Preserve per-item enhancement and preflight bag capacity before a class switch.
   function swapClassWeapon(p, cls) {
-    const cur = p.c.eq.weapon, it = cur && CFG.items[cur];
-    if (!it || !it.cls || it.cls === cls) return;
-    if (!putItem(p, cur, eqEnh(p, 'weapon'))) return; // ค่าตีบวกติดไปกับอาวุธเดิมที่เก็บเข้ากระเป๋า (V2-R78)
-    p.c.eq.weapon = null; setEnh(p, 'weapon', 0);
-    const next = (CFG.classWeapon[cls] || 'sword') + '_wood';
-    p.c.eq.weapon = CFG.items[next] ? next : null;
+    const eq = p.c.eq, id = eq.weapon, it = id && CFG.items[id];
+    const keep = !!it && (it.cls === cls || (cls === 'ผู้พิทักษ์' && it.slot === 'weapon' && it.cls === 'นักดาบ'));
+    const removeWeapon = !!id && !keep, removeOffhand = !!eq.offhand && cls !== 'ผู้พิทักษ์';
+    if (p.c.bag.length + Number(removeWeapon) + Number(removeOffhand) > CFG.bag.slots) return false;
+    if (removeWeapon) { if (!putItem(p, id, eqEnh(p, 'weapon'))) return false; eq.weapon = null; setEnh(p, 'weapon', 0); }
+    if (removeOffhand) { if (!putItem(p, eq.offhand, eqEnh(p, 'offhand'))) return false; eq.offhand = null; setEnh(p, 'offhand', 0); }
+    if (!eq.weapon) { const next = (CFG.classWeapon[cls] || 'sword') + '_wood'; eq.weapon = CFG.items[next] ? next : null; setEnh(p, 'weapon', 0); }
+    p.bagDirty = true; p.dirty = true; return true;
   }
   function setClass(p, cls, first) {
     cls = String(cls); if (!ROWS[cls]) return 'invalid';
@@ -124,7 +127,8 @@ function createSim({ rand = Math.random } = {}) {
     if (cls === clsOf(p) && !firstPick) return 'same';
     if (p.dead) return 'dead';
     const D = ZONES[p.c.zone]; if (!firstPick && (!D || !D.safe || !D.safe(Math.floor(p.c.x / W.T), Math.floor(p.c.y / W.T)))) return 'not-safe';
-    p.c.cls = cls; p.c.clsset = 1; swapClassWeapon(p, cls); stats(p); p.skDirty = true; p.dirty = true; p.personal.push({ k: 'cls', cls, first: firstPick });
+    if (!swapClassWeapon(p, cls)) return 'bag-full';
+    p.c.cls = cls; p.c.clsset = 1; stats(p); p.skDirty = true; p.dirty = true; p.personal.push({ k: 'cls', cls, first: firstPick });
     return 'ok';
   }
   // แอดมิน (ADMIN_USERS): ปรับค่าตัวเองเพื่อทดสอบ — server.js ตรวจสิทธิ์ก่อนเรียก
@@ -156,9 +160,25 @@ function createSim({ rand = Math.random } = {}) {
   }
   function addPlayer(p) {
     p.c.bag = Array.isArray(p.c.bag) ? p.c.bag.filter(s => s && CFG.items[s.id] && s.n > 0) : [];
-    p.c.eq = Object.assign({ weapon: null, armor: null, acc: null }, p.c.eq || {});
+    p.c.eq = Object.assign({ weapon: null, offhand: null, armor: null, acc: null }, p.c.eq || {});
     p.c.enh = Object.assign({}, p.c.enh || {}); for (const k of Object.keys(p.c.enh)) p.c.enh[k] = clampEnh(p.c.enh[k]); // ค่าตีบวกของอาวุธที่ใส่อยู่ (V2-R78)
     for (const s of p.c.bag) { s.enh = clampEnh(s.enh); if (!s.enh) delete s.enh; } // ค่าตีบวกของอาวุธในกระเป๋า
+    // Migrate a pre-R78 equipped shield to offhand; do not discard the item's old +level.
+    const prevId = p.c.eq.weapon, prevIt = prevId && CFG.items[prevId];
+    if (prevIt && prevIt.slot === 'offhand') {
+      const prevEnh = eqEnh(p, 'weapon');
+      if (p.c.cls === 'ผู้พิทักษ์' && !p.c.eq.offhand) {
+        p.c.eq.offhand = prevId; setEnh(p, 'offhand', prevEnh);
+        p.c.eq.weapon = null; setEnh(p, 'weapon', 0);
+        p.dirty = true; p.bagDirty = true;
+      } else if (putItem(p, prevId, prevEnh)) {
+        p.c.eq.weapon = null; setEnh(p, 'weapon', 0);
+      } // Preserve legacy slot if no space, rather than losing a shield.
+      if (!p.c.eq.weapon && p.c.cls === 'ผู้พิทักษ์') {
+        p.c.eq.weapon = CFG.items.sword_wood ? 'sword_wood' : null;
+        setEnh(p, 'weapon', 0); p.dirty = true; p.bagDirty = true;
+      }
+    }
     p.c.sk = Object.assign({}, p.c.sk || {});
     p.c.look = cleanLook(p.c.look) || { g: 'm', hair: 0, outfit: 0 };
     p.c.st = CFG.stats.clean(p.c.st); if (CFG.stats.free(p.c.lv, p.c.st) < 0) p.c.st = CFG.stats.clean({}); // ข้อมูลเกินแต้มที่มี = รีเซ็ต
@@ -201,7 +221,7 @@ function createSim({ rand = Math.random } = {}) {
     const bag = p.c.bag;
     if (op === 'use' || op === 'equip') {
       const i = Math.floor(+arg), s = bag[i]; if (!Number.isInteger(i) || !s) return 'empty';
-      const it = CFG.items[s.id];
+      const it = CFG.items[s.id]; if (!it) return 'invalid';
       if (op === 'use') {
         if (it.type !== 'use') return 'not-usable';
         if (now < p.potionAt) return 'cooldown';
@@ -210,7 +230,8 @@ function createSim({ rand = Math.random } = {}) {
         if (--s.n <= 0) bag.splice(i, 1);
       } else {
         if (it.type !== 'eq') return 'not-equip';
-        if (it.cls && it.cls !== clsOf(p)) return 'wrong-class';
+        if (it.cls && it.cls !== clsOf(p) && !(clsOf(p) === 'ผู้พิทักษ์' && it.slot === 'weapon' && it.cls === 'นักดาบ')) return 'wrong-class';
+        if (it.slot === 'offhand' && clsOf(p) !== 'ผู้พิทักษ์') return 'wrong-class';
         const old = p.c.eq[it.slot], oldEnh = eqEnh(p, it.slot);
         p.c.eq[it.slot] = s.id; setEnh(p, it.slot, s.enh);
         if (old) bag[i] = entry(old, oldEnh); else bag.splice(i, 1);
@@ -238,7 +259,7 @@ function createSim({ rand = Math.random } = {}) {
     if (N.zone !== p.c.zone) return 'far';
     if (Math.hypot(p.c.x - N.tx * W.T, p.c.y - N.ty * W.T) > CFG.economy.shopRange * W.T) return 'far';
     const row = N.shop.find(r => r[0] === id); if (!row) return 'invalid';
-    if (CFG.items[id].cls && CFG.items[id].cls !== clsOf(p)) return 'wrong-class';
+    if (CFG.items[id].cls && CFG.items[id].cls !== clsOf(p) && !(clsOf(p) === 'ผู้พิทักษ์' && CFG.items[id].slot === 'weapon' && CFG.items[id].cls === 'นักดาบ')) return 'wrong-class';
     const cnt = Math.floor(+n); if (!(cnt >= 1 && cnt <= 99)) return 'invalid';
     const total = row[1] * cnt;
     if ((p.c.gold || 0) < total) return 'no-gold';
