@@ -23,9 +23,10 @@ def load_cfg():
 
 
 def step(cfg, lv):
-    """ค่าของขั้น lv หลังใช้เพดานเงินต่อการพยายาม (goldCap, คำสั่งเจ้าของ V2-R79)"""
+    """ค่าของขั้น lv หลังใช้เพดานเงินต่อการพยายาม (เพดานมีผลตั้งแต่ระดับ goldCapFrom ขึ้นไป)"""
     s = cfg['steps'][lv]
-    return s['rate'], min(s['gold'], cfg['goldCap']), s['stone'], bool(s.get('prov'))
+    g = min(s['gold'], cfg['goldCap']) if lv >= cfg['goldCapFrom'] else s['gold']
+    return s['rate'], g, s['stone'], bool(s.get('prov'))
 
 
 def expected(cfg, a, b):
@@ -66,7 +67,7 @@ def main():
         s = cfg['steps'][10 + k]
         assert abs(s['rate'] - r) < 1e-12 and s['gold'] == g and s['stone'] == 1 and not s.get('prov'), 'ไม่ตรงข้อกำหนด +%d' % (10 + k)
 
-    print('## 1. ตารางตีบวก +10 ถึง +15 (อ่านจาก CFG.enhance; เพดานเงินต่อครั้ง %s)' % f"{cfg['goldCap']:,}")
+    print('## 1. ตารางตีบวก +10 ถึง +15 (อ่านจาก CFG.enhance; เพดานเงินต่อครั้ง %s ตั้งแต่ +%d ขึ้นไป)' % (f"{cfg['goldCap']:,}", cfg['goldCapFrom']))
     print('| จาก → ไป | โอกาสสำเร็จ | เงินตาม V1.2 | เงินที่ใช้จริง | หินป้องกันต่อครั้ง | ครั้งที่คาดหวังในขั้นนี้ | เงินที่คาดหวังในขั้นนี้ |')
     print('| --- | --- | --- | --- | --- | --- | --- |')
     for lv in range(10, 15):

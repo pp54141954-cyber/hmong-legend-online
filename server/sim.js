@@ -289,7 +289,7 @@ function createSim({ rand = Math.random } = {}) {
     const it = CFG.items[id]; if (!it || it.type !== 'eq' || it.slot !== 'weapon') return 'not-weapon';
     if (lv >= EH.cap) return 'max';
     const st = EH.steps[lv]; if (!st) return 'invalid';
-    const gold = Math.min(st.gold, EH.goldCap); // เพดานเงินต่อการพยายาม 55,000 ตามคำสั่งเจ้าของ (V2-R79)
+    const gold = lv >= EH.goldCapFrom ? Math.min(st.gold, EH.goldCap) : st.gold; // เพดาน 55,000 ตั้งแต่ระดับ +12 ขึ้นไป (คำสั่งเจ้าของ V2-R79/R80)
     if ((c.gold || 0) < gold) return 'no-gold';
     if (countItem(p, EH.stone) < st.stone) return 'no-stone';
     c.gold -= gold; takeItem(p, EH.stone, st.stone); // หักก่อนสุ่มเสมอ (ล้มเหลวก็หัก)
