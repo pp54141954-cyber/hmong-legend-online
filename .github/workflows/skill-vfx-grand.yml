@@ -57,6 +57,8 @@ jobs:
           node --check game/skill-vfx-bridge.js
           node --check server/server.js
           node --check tools/skill-vfx-grand-test.js
+          node --check game/martial-vfx.js
+          node --check tools/martial-nine-skill-test.js
       - name: Pixel 7 Chromium original game + VFX regression
         run: node tools/skill-vfx-grand-test.js
         env:
@@ -66,10 +68,21 @@ jobs:
         run: node tools/skill-vfx-grand-test.js
         env:
           VFX_BROWSER: webkit
+      - name: Nine real martial skills — Pixel 7 Chromium
+        run: node tools/martial-nine-skill-test.js
+        env:
+          VFX_BROWSER: chromium
+      - name: Nine real martial skills — iPhone Safari WebKit
+        if: ${{ always() }}
+        run: node tools/martial-nine-skill-test.js
+        env:
+          VFX_BROWSER: webkit
       - name: Upload grand VFX gameplay screenshots
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: grand-vfx-mobile-previews
-          path: tools/test-artifacts/grand-vfx-*.png
+          path: |
+            tools/test-artifacts/grand-vfx-*.png
+            tools/test-artifacts/martial-*.png
           if-no-files-found: ignore
