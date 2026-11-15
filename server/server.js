@@ -86,9 +86,9 @@ function createServer(opts = {}) {
             fs.promises.readFile(path.join(gameDir, 'skill-vfx-bridge.js'), 'utf8')
           ]);
           if (!html.includes('</body>')) return json(res, 500, { error: 'grand-vfx body marker unavailable' });
-          const script = '<script>\\n' + grand + '\\n</script><script>\\n' + bridge + '\\n</script>';
+          const script = '<script>' + grand + '</script><script>' + bridge + '</script>';
           res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
-          return res.end(html.replace('</body>', script + '\\n</body>'));
+          return res.end(html.replace('</body>', script + '</body>'));
         }
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
         return fs.createReadStream(conf.gameFile).pipe(res);
