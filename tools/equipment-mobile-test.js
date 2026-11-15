@@ -31,7 +31,7 @@ const { ZONES, CFG } = require('../shared/world.js');
     page = await browser.newPage({ ...devices[deviceName] });
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
-    await page.goto('http://127.0.0.1:' + port + '/');
+    await page.goto('http://127.0.0.1:' + port + '/?splash=0');
     await page.waitForSelector('#net:not([hidden])', { timeout: 10000 });
     await page.fill('#netn', 'EquipUiTester');
     await page.fill('#netp', 'secret123');
