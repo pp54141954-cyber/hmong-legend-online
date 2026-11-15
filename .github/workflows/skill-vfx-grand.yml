@@ -1,0 +1,32 @@
+name: VFX renderer validation (staging only)
+on:
+  push:
+    branches: [feature/skill-vfx-grand-v1]
+  workflow_dispatch:
+jobs:
+  vfx:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install existing server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Install Chromium for staging tests
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-vfx-test playwright@1.56.1
+          node /tmp/hl-vfx-test/node_modules/playwright/cli.js install --with-deps chromium
+          echo "NODE_PATH=/tmp/hl-vfx-test/node_modules" >> "$GITHUB_ENV"
+      - name: Discover actual game canvas and skill render hooks
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),s=fs.readFileSync('game/index.html','utf8');
+          console.log('GAME SIZE:',s.length);
+          for(const q of ['window.HL','HLNET','function draw','drawEffects','drawFx','function release','const fx=','let fx=','<canvas','</head>','<script','requestAnimationFrame']) {
+            const at=s.indexOf(q); console.log('ANCHOR',q,at,at>=0?s.slice(Math.max(0,at-120),at+300).replace(/\n/g,' '):'missing');
+          }
+          NODE
+      - name: Syntax-check grand effect renderer
+        run: node --check game/skill-vfx-grand.js
