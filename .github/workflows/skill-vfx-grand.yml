@@ -17,7 +17,7 @@ jobs:
       - name: Install Chromium for staging tests
         run: |
           npm install --no-save --no-package-lock --prefix /tmp/hl-vfx-test playwright@1.56.1
-          node /tmp/hl-vfx-test/node_modules/playwright/cli.js install --with-deps chromium
+          node /tmp/hl-vfx-test/node_modules/playwright/cli.js install --with-deps chromium webkit
           echo "NODE_PATH=/tmp/hl-vfx-test/node_modules" >> "$GITHUB_ENV"
       - name: Discover actual game canvas and skill render hooks
         run: |
@@ -50,4 +50,24 @@ jobs:
           console.log('FX_ARRAY',fx,s.slice(fx-160,fx+250).replace(/\n/g,' '));
           NODE
       - name: Syntax-check grand effect renderer
-        run: node --check game/skill-vfx-grand.js
+        run: |
+          node --check game/skill-vfx-grand.js
+          node --check game/skill-vfx-bridge.js
+          node --check server/server.js
+          node --check tools/skill-vfx-grand-test.js
+      - name: Pixel 7 Chromium original game + VFX regression
+        run: node tools/skill-vfx-grand-test.js
+        env:
+          VFX_BROWSER: chromium
+      - name: iPhone Safari WebKit original game + VFX regression
+        if: ${{ always() }}
+        run: node tools/skill-vfx-grand-test.js
+        env:
+          VFX_BROWSER: webkit
+      - name: Upload grand VFX gameplay screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: grand-vfx-mobile-previews
+          path: tools/test-artifacts/grand-vfx-*.png
+          if-no-files-found: ignore
