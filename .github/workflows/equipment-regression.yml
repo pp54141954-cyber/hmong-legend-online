@@ -36,6 +36,14 @@ jobs:
         run: node tools/equipment-mobile-test.js
         env:
           MOBILE_BROWSER: webkit
+      - name: Two-player mobile gameplay walkthrough (isolated)
+        if: ${{ always() }}
+        run: node tools/equipment-gameplay-test.js
+      - name: Read-only live Render health
+        if: ${{ always() }}
+        continue-on-error: true
+        run: |
+          curl -sS --location --retry 2 --retry-delay 5 --max-time 50 --fail https://hmong-legend-2.onrender.com/healthz
       - name: Upload mobile inventory screenshots
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
