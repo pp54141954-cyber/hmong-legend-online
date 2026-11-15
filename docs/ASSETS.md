@@ -140,6 +140,13 @@
 - `assets/design_refs/v7/extracted/` (48 เฟรม) ตัดจากภาพ 02 ด้วยวิธีใน `docs/CHARACTER_BASE_V7.md` ยังไม่ได้ใช้ในเกม
 - ภาพที่สร้างด้วย AI อาจได้รับการคุ้มครองลิขสิทธิ์ต่างจากงานของมนุษย์ เจ้าของควรตรวจเงื่อนไขของบริการที่ใช้สร้างภาพก่อนขาย
 
+## แผนที่จาก Kenney Tiny Town (V2-R76)
+
+- ที่มา: Kenney Tiny Town 1.1 · สัญญา CC0 1.0 (ตาม `License.txt` ในชุด) · ไฟล์กระเบื้องอยู่ที่ `assets/third_party/kenney-tiny-town/Tiles/`
+- ใช้ใน `game/maps/village2.webp` (หมู่บ้านกางเขา) ผลิตด้วย `tools/build_village2_tinytown.py` จากลำดับกระเบื้องแบบกำหนดได้ (seed 751)
+- ภาพต้นฉบับของแผนที่: `assets/maps_src/village2_tinytown.png` · ผังชน: `assets/maps_src/village2_tinytown.mask.json`
+- สำรองภาพเดิม: `assets/maps_src/village2_before_tinytown.webp` · ผังชนเดิม: `assets/maps_src/village2_r74_mask.json`
+
 ## ไอคอนที่สร้างจากไอคอนของโครงการ (V2-R73)
 
 - `assets/items/sword_silver.png` และ `assets/items/sword_hmong.png` (34 × 34) สร้างจาก `assets/items/sword_iron.png` ด้วยการปรับสีในโครงการ ไม่ใช้ไฟล์จากภายนอก

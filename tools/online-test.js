@@ -20,7 +20,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   // ภาพแผนที่แยกไฟล์ (V2-R14)
   { const s1 = createServer({ dbFile: dbFile + '.maps', quiet: true }), p1 = await s1.listen(0), B = 'http://127.0.0.1:' + p1;
     const sp = await fetch(B + '/sprites/boar_walk.webp'), ok = await fetch(B + '/maps/village2.webp'), bad = await fetch(B + '/maps/..%2fserver.webp'), miss = await fetch(B + '/maps/nozone.webp');
-    rec('เซิร์ฟเวอร์ส่งภาพแผนที่ /maps/*.webp และภาพมอนสเตอร์ /sprites/*.webp และปฏิเสธชื่อแปลก/ไม่มีไฟล์', sp.status === 200 && ok.status === 200 && ok.headers.get('content-type') === 'image/webp' && (await ok.arrayBuffer()).byteLength > 100000 && bad.status === 404 && miss.status === 404, ok.status + '/' + bad.status + '/' + miss.status);
+    rec('เซิร์ฟเวอร์ส่งภาพแผนที่ /maps/*.webp และภาพมอนสเตอร์ /sprites/*.webp และปฏิเสธชื่อแปลก/ไม่มีไฟล์', sp.status === 200 && ok.status === 200 && ok.headers.get('content-type') === 'image/webp' && (await ok.arrayBuffer()).byteLength > 20000 && bad.status === 404 && miss.status === 404, ok.status + '/' + bad.status + '/' + miss.status);
     await s1.close(); }
   // ทดสอบที่เหลือเริ่มที่หมู่บ้านเดิม (มีบ้าน/มอนสเตอร์ที่ฉากทดสอบใช้)
   let srv = createServer({ dbFile, quiet: true, saveEverySec: 2, startZone: 'village', admins: [' tester_a\u200b'] }); // ตั้งแบบตัวเล็ก + อักขระมองไม่เห็น: ต้องยังตรงกับ Tester_A // V2-R27: A = แอดมิน (ADMIN_USERS)
