@@ -21,7 +21,7 @@ const { createServer } = require('../server/server.js');
   await page.click('#cstart [data-g="m"]');await page.click('#csgo');
   await page.waitForSelector('#atgo');await page.click('#atgo');
   await page.waitForFunction(()=>{const e=document.getElementById('cstart');return e.hidden||getComputedStyle(e).display==='none'});
-  await page.click('#bagbtn');
+  await page.click('#bagb');
   await page.waitForSelector('#bag:not([hidden]) .eqs .it');
   const sizes=await page.evaluate(()=>{
    const bag=document.getElementById('bag'),eq=[...bag.querySelectorAll('.eqs .it')],items=[...bag.querySelectorAll('.bag-grid .it')];
