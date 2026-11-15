@@ -926,8 +926,8 @@ cv.addEventListener('pointerdown',e=>{if(joy||e.pointerType==='mouse'&&e.button!
   e.preventDefault()});
 cv.addEventListener('pointermove',e=>{if(joy&&e.pointerId===joy.id){const p=joyXY(e);joy.x=p.x;joy.y=p.y}});
 ['pointerup','pointercancel','lostpointercapture'].forEach(n=>cv.addEventListener(n,e=>releaseJoy(e.pointerId)));
-addEventListener('blur',()=>{releaseJoy();atkHeld=false;for(const k in keys)delete keys[k]});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseJoy();atkHeld=false;for(const k in keys)delete keys[k]}});
+addEventListener('blur',()=>{releaseJoy();clearAttackInput();for(const k in keys)delete keys[k]});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseJoy();clearAttackInput();for(const k in keys)delete keys[k]}});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 function inputDir(){let dx=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0),dy=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0);
   if(!dx&&!dy&&joy){const jx=joy.x-joy.ox,jy=joy.y-joy.oy,d=Math.hypot(jx,jy);if(d>JOY.dead){const m=Math.min(1,(d-JOY.dead)/(JOY.r-JOY.dead)*1.4);dx=jx/d*m;dy=jy/d*m}}
@@ -938,13 +938,27 @@ $('free').onclick=()=>{freeMode=!freeMode;$('free').setAttribute('aria-pressed',
 $('zi').onclick=()=>{fitAll=false;bza.setAttribute('aria-pressed',false);zoomMul=Math.min(4,zoomMul*1.25)};
 $('zo').onclick=()=>{fitAll=false;bza.setAttribute('aria-pressed',false);zoomMul=Math.max(.2,zoomMul/1.25)};
 bza.onclick=()=>{fitAll=!fitAll;bza.setAttribute('aria-pressed',fitAll)};
-let atkHeld=false;
-$('atk').addEventListener('pointerdown',e=>{e.preventDefault();atkHeld=true;try{$('atk').setPointerCapture(e.pointerId)}catch(err){}attack()});
-['pointerup','pointercancel','pointerleave','lostpointercapture'].forEach(n=>$('atk').addEventListener(n,()=>{atkHeld=false}));
+/* R85: attack hold is owned by exactly one pointer; keyboard hold remains independent. */
+let atkHeld=false,atkPointer=null,atkKeyHeld=false;
+const atkButton=$('atk');
+function syncHeldAttack(){atkHeld=atkPointer!==null||atkKeyHeld}
+function releaseAttackPointer(id){
+  if(atkPointer===null||(id!==undefined&&id!==atkPointer))return;
+  const old=atkPointer;atkPointer=null;syncHeldAttack();
+  try{if(atkButton.hasPointerCapture(old))atkButton.releasePointerCapture(old)}catch(err){}
+}
+function clearAttackInput(){atkKeyHeld=false;releaseAttackPointer();syncHeldAttack()}
+atkButton.addEventListener('pointerdown',e=>{
+  if(atkPointer!==null||(e.pointerType==='mouse'&&e.button!==0))return;
+  e.preventDefault();atkPointer=e.pointerId;syncHeldAttack();
+  try{atkButton.setPointerCapture(e.pointerId)}catch(err){releaseAttackPointer(e.pointerId);return}
+  attack();
+});
+['pointerup','pointercancel','pointerleave','lostpointercapture'].forEach(n=>atkButton.addEventListener(n,e=>releaseAttackPointer(e.pointerId)));
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=1;if(e.key.startsWith('Arrow'))e.preventDefault();
   if(e.key==='+'||e.key==='=')zoomMul=Math.min(4,zoomMul*1.25);if(e.key==='-')zoomMul=Math.max(.2,zoomMul/1.25);
-  if(e.key===' '||k==='j'){atkHeld=true;e.preventDefault()}const n=+e.key;if(n>=1&&n<=9){const r=useSkill(n);if(r==='locked')say(PS.job<CFG.skills[n-1].job?CFG.skills[n-1].name+' ปลดล็อกที่ Job '+CFG.skills[n-1].job:CFG.skills[n-1].name+' ต้องอัปสกิลก่อน (📜)')}});
-addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0;if(e.key===' '||e.key.toLowerCase()==='j')atkHeld=false});
+  if(e.key===' '||k==='j'){atkKeyHeld=true;syncHeldAttack();e.preventDefault()}const n=+e.key;if(n>=1&&n<=9){const r=useSkill(n);if(r==='locked')say(PS.job<CFG.skills[n-1].job?CFG.skills[n-1].name+' ปลดล็อกที่ Job '+CFG.skills[n-1].job:CFG.skills[n-1].name+' ต้องอัปสกิลก่อน (📜)')}});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0;if(e.key===' '||e.key.toLowerCase()==='j'){atkKeyHeld=false;syncHeldAttack()}});
 let dpr=1,cw=0,ch=0;function fit(){dpr=window.devicePixelRatio||1;cw=cv.clientWidth;ch=cv.clientHeight;cv.width=cw*dpr;cv.height=ch*dpr}addEventListener('resize',fit);fit();
 
 function step(dx,dy,dt,auto){const px0=player.x,py0=player.y,sp=CFG.player.speed*(netOn()?1+(HLNET.bon.spd||0):1)*dt;
