@@ -76,6 +76,20 @@ function createServer(opts = {}) {
     try {
       if (req.method === 'GET' && url.pathname === '/healthz') return json(res, 200, { ok: true, ver: 'V2-R80', online: online.size, uptime: Math.round(process.uptime()), admins: conf.admins.length }); // admins = จำนวนชื่อใน ADMIN_USERS (ไม่เปิดเผยชื่อ) ใช้ตรวจว่าตั้งค่าบน Render แล้ว
       if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
+        // Opt-in visual-only grand skill effects. Default responses are byte-for-byte unchanged.
+        // Never rewrite any movement, combat, inventory, map, or character source.
+        if (url.searchParams.get('grandvfx') === '1') {
+          const gameDir = path.dirname(conf.gameFile);
+          const [html, grand, bridge] = await Promise.all([
+            fs.promises.readFile(conf.gameFile, 'utf8'),
+            fs.promises.readFile(path.join(gameDir, 'skill-vfx-grand.js'), 'utf8'),
+            fs.promises.readFile(path.join(gameDir, 'skill-vfx-bridge.js'), 'utf8')
+          ]);
+          if (!html.includes('</body>')) return json(res, 500, { error: 'grand-vfx body marker unavailable' });
+          const script = '<script>\\n' + grand + '\\n</script><script>\\n' + bridge + '\\n</script>';
+          res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
+          return res.end(html.replace('</body>', script + '\\n</body>'));
+        }
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
         return fs.createReadStream(conf.gameFile).pipe(res);
       }
