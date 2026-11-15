@@ -266,6 +266,10 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
   SA().warpAt = 0; /* ฉาก: ข้ามคูลดาวน์วาร์ปของปุ่มทดสอบ */ await A.page.click('#gear'); await A.page.click('#wp'); await A.page.click('#gear');
   await until(async () => (await st(B.page)).others.some(o => o.name === 'Tester_A'));
 
+  // V2-R63: สปริตไม่ค้างในแคช — ตรวจกับเซิร์ฟเวอร์ทุกครั้ง (no-cache + ETag) และตอบ 304 เมื่อไม่เปลี่ยน
+  { const r1 = await fetch(url + 'sprites/pcl_assassin_m.webp?v=test'); const etag = r1.headers.get('etag') || ''; const cc = r1.headers.get('cache-control') || ''; await r1.arrayBuffer();
+    const r2 = await fetch(url + 'sprites/pcl_assassin_m.webp?v=test', { headers: { 'if-none-match': etag } }); await r2.arrayBuffer();
+    rec('สปริตส่งแบบตรวจซ้ำทุกครั้ง (no-cache + ETag, ตอบ 304 เมื่อไม่เปลี่ยน)', r1.status === 200 && cc.includes('no-cache') && etag.length > 2 && r2.status === 304, JSON.stringify({ st1: r1.status, cc, etag, st2: r2.status })); }
   // V2-R27: แอดมิน (เฉพาะบัญชีใน ADMIN_USERS) + อาชีพออนไลน์
   { const hz = await (await fetch(url + 'healthz')).json(); rec('/healthz บอกจำนวนบัญชีแอดมินที่ตั้งไว้ (ไม่บอกชื่อ) + เวอร์ชัน', hz.admins === 1 && hz.ver && !JSON.stringify(hz).includes('Tester_A'), JSON.stringify(hz)); }
   rec('เมนู ⚙ บอกชื่อบัญชีและสิทธิ์ (A = แอดมิน, B = ผู้เล่น)', (await A.page.textContent('#acctinfo')).includes('แอดมิน') && (await B.page.textContent('#acctinfo')).includes('ผู้เล่น') && (await A.page.textContent('#acctinfo code')) === 'Tester_A');

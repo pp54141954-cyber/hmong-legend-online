@@ -129,6 +129,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 </div>
 <script>
 (function(){
+const ASSET_V='7b201f2af9';/*ASSET_V*/const sprUrl=f=>'sprites/'+f+'?v='+ASSET_V; /* V2-R63: รุ่นของสปริต กันเครื่องที่แคชไฟล์เก่าไว้ */
 const T=32,COLS=48,ROWS=32,W=COLS*T,H=ROWS*T;
 const hh=(x,y,s)=>{let n=(x*374761393+y*668265263+(s||0)*982451653)|0;n=Math.imul(n^(n>>>13),1274126177);return(((n^(n>>>16))>>>0)/4294967295)};
 const inb=(x,y)=>x>=0&&y>=0&&x<COLS&&y<ROWS;
@@ -855,7 +856,7 @@ function recolor(img,l,fem){const H=HAIRS[l.hair].c,O=OUTFITS[l.outfit];if(!H&&!
     else if(O.base&&lum<78&&mx-mn<42){const v=.32+lum/78*.95;a[i]=Math.min(255,O.base[0]*v);a[i+1]=Math.min(255,O.base[1]*v);a[i+2]=Math.min(255,O.base[2]*v)}}
   k.putImageData(d,0,0);return c}
 /* ชั้นภาพ (V2-R35): sprites/pc_<ชุด>_<h|b>_<walk|idle|attack>.webp — โหลดเมื่อใช้ */
-const LAYER={};const layer=(id,part,sh)=>{const k=id+'_'+part+'_'+sh;if(!LAYER[k]){const im=new Image();im.src='sprites/pc_'+k+'.webp';LAYER[k]=im}return LAYER[k]};
+const LAYER={};const layer=(id,part,sh)=>{const k=id+'_'+part+'_'+sh;if(!LAYER[k]){const im=new Image();im.src=sprUrl('pc_'+k+'.webp');LAYER[k]=im}return LAYER[k]};
 const imOk=im=>im.complete&&im.naturalWidth>0;
 /* ประกอบทีละพิกเซล: มีพิกเซลหัว → ใช้หัว (คงค่า alpha 254 = ผม) ไม่งั้นใช้ตัว */
 function composeLayers(head,body){const w=body.naturalWidth,h=body.naturalHeight,c=document.createElement('canvas');c.width=w;c.height=h;const k=c.getContext('2d');
@@ -883,7 +884,7 @@ function drawPlayer(){if(PS.dead)return;if(PS.hurt>0&&Math.floor(PS.hurt*20)%2)r
   drawPlayerBody();if(PS.look&&PS.look.g==='f'&&!sheetsFor(PS.look).fem&&!sheetsFor(PS.look).tmp){const d=PS.cast?(player.dir==='E'||player.dir==='W'?player.dir:player.lastH==='W'?'W':'E'):player.dir;femHair(player.x,player.y,PS.cast&&(player.dir==='N'||player.dir==='S')?player.dir:d,PS.look,SCALE)}}
 /* ท่าทางอาชีพ (V2-R38): ภาพจากเจ้าของ tools/build_class_poses.py — ใช้ตอนโจมตี/ใช้สกิล ถ้ามีภาพของอาชีพ+เพศนั้น */
 /* ตัวละครต้นแบบแต่ละอาชีพ (tools/build_class_bodies.py) */
-const ATK4={cw:240,ax:120,sets:["m0", "f0"],body:{"นักสู้":{"f":{"id":"fighter_f","n":5},"m":{"id":"fighter_m","n":5}},"นักฆ่า":{"m":{"id":"assassin_m","n":4},"f":{"id":"assassin_f","n":4}},"นักธนู":{"m":{"id":"archer_m","n":4},"f":{"id":"archer_f","n":4}},"ผู้รักษา":{"m":{"id":"healer_m","n":4},"f":{"id":"healer_f","n":4}},"ผู้สืบวิญญาณ":{"m":{"id":"spirit_m","n":4},"f":{"id":"spirit_f","n":4}},"ผู้ใช้มนตรา":{"m":{"id":"mage_m","n":4},"f":{"id":"mage_f","n":4}}}};/*ATK4*/
+const ATK4={cw:240,ax:120,sets:["m0", "f0"],body:{"นักสู้":{"f":{"id":"fighter_f","n":5},"m":{"id":"fighter_m","n":5}},"นักฆ่า":{"m":{"id":"assassin_m","n":4},"f":{"id":"assassin_f","n":4}},"นักธนู":{"m":{"id":"archer_m","n":4},"f":{"id":"archer_f","n":4}},"ผู้รักษา":{"m":{"id":"healer_m","n":4},"f":{"id":"healer_f","n":4}},"ผู้พิทักษ์":{"m":{"id":"guardian_m","n":4},"f":{"id":"guardian_f","n":4}},"ผู้สืบวิญญาณ":{"m":{"id":"spirit_m","n":4},"f":{"id":"spirit_f","n":4}},"ผู้ใช้มนตรา":{"m":{"id":"mage_m","n":4},"f":{"id":"mage_f","n":4}}}};/*ATK4*/
 /* ท่าโจมตี 4 ทิศที่วาดจริง (V2-R53): ชั้นหัว/ตัว pc_<ชุด>_<h|b>_atk4 ช่อง 240×124 เท้าที่ x=120 — ใช้เมื่อทรงผมและแบบชุดมีภาพนี้ (เปลี่ยนสีผม/ชุดได้) */
 const ATK4C={};function atk4For(l){l=cleanLook(l);const ls=lookSets(l);if(!ls||!ATK4.sets.includes(ls.h)||!ATK4.sets.includes(ls.b))return null;const key=lookKey(l);if(ATK4C[key])return ATK4C[key];
   const H=layer(ls.h,'h','atk4'),B=layer(ls.b,'b','atk4');if(!imOk(H)||!imOk(B))return null;return ATK4C[key]=recolor(composeLayers(H,B),l,true)}
@@ -895,22 +896,22 @@ function drawAtk4(K,img,x,y,dir,p,S,mode){const M=ATK4_SEQ[mode||'sword'],row={S
   K.drawImage(img,fi*ATK4.cw,row*CHc,ATK4.cw,CHc,dx,dy,dw,dh)}
 /* ภาพท่าโจมตีของตัวละครประจำอาชีพ (V2-R54): sprites/pca_<id>.webp — 4 หรือ 5 เฟรมต่อทิศ */
 const CATKIMG={};function classAtk(cls,look){const C=ATK4.body&&ATK4.body[cls];if(!C)return null;const e=C[look&&look.g==='f'?'f':'m'];if(!e)return null;
-  let im=CATKIMG[e.id];if(!im){im=CATKIMG[e.id]=new Image();im.src='sprites/pca_'+e.id+'.webp'}return imOk(im)?{img:im,n:e.n}:null}
+  let im=CATKIMG[e.id];if(!im){im=CATKIMG[e.id]=new Image();im.src=sprUrl('pca_'+e.id+'.webp')}return imOk(im)?{img:im,n:e.n}:null}
 const atkMode=(A,basic,cls)=>A.n>=5?(basic?'b5':'s5'):cls==='นักธนู'?'bow':'sword'; /* 4 เฟรม: พร้อม · ง้าง · ฟาด · กลับ (จังหวะเดียวกับนักดาบ) */
 const CBIMG={};function classBody(cls,look){const C=CLASS_BODY[cls];if(!C)return null;const e=C[look&&look.g==='f'?'f':'m']||C.m||C.f;if(!e)return null;
-  if(!CBIMG[e.id]){const im=new Image();im.src='sprites/pcl_'+e.id+'.webp';CBIMG[e.id]=im}const im=CBIMG[e.id];return im.complete&&im.naturalWidth?im:null}
+  if(!CBIMG[e.id]){const im=new Image();im.src=sprUrl('pcl_'+e.id+'.webp');CBIMG[e.id]=im}const im=CBIMG[e.id];return im.complete&&im.naturalWidth?im:null}
 const CLASS_BODY={"นักสู้":{"m":{"id":"fighter_m","dirs":"SNWE"},"f":{"id":"fighter_f","dirs":"SNWE"}},"นักฆ่า":{"m":{"id":"assassin_m","dirs":"SNWE"},"f":{"id":"assassin_f","dirs":"SNWE"}},"นักธนู":{"m":{"id":"archer_m","dirs":"SNWE"},"f":{"id":"archer_f","dirs":"SNWE"}},"ผู้พิทักษ์":{"m":{"id":"guardian_m","dirs":"SNWE"},"f":{"id":"guardian_f","dirs":"SNWE"}},"ผู้รักษา":{"m":{"id":"healer_m","dirs":"SNWE"},"f":{"id":"healer_f","dirs":"SNWE"}},"ผู้ใช้มนตรา":{"m":{"id":"mage_m","dirs":"SNWE"},"f":{"id":"mage_f","dirs":"SNWE"}},"ผู้สืบวิญญาณ":{"m":{"id":"spirit_m","dirs":"SNWE"},"f":{"id":"spirit_f","dirs":"SNWE"}}};/*CLASS_BODY*/
 const CLASS_POSE={"นักธนู":{"m":{"id":"archer_m","seq":{"basic":[5,6,8,10],"skill":[4,6,7,8,10,11]}}}};/*CLASS_POSE*/
 /* เอฟเฟกต์สกิลจากตารางท่าของเจ้าของ (tools/build_skill_fx.py) */
 /* ตารางแบบ 4 ทิศ (tools/build_skill_fx4.py): ทิศลง = FRONT, ทิศขึ้น = BACK — ภาพเดียวต่อทิศ เล่นแบบขยาย/เรือง/จาง */
 /* ตารางขึ้น/ลงแบบ 5 จังหวะ (tools/build_skill_fxud.py): แถว 0–8 = DOWN, 9–17 = UP */
 const SKILL_FXUD={"cw":300,"ch":300,"fig":92,"anch":{"down":[150,200],"up":[150,200]},"cls":{"นักดาบ":"swordsman","นักธนู":"archer","นักฆ่า":"assassin","นักสู้":"fighter","ผู้สืบวิญญาณ":"spirit_heir","ผู้รักษา":"healer","ผู้ใช้มนตรา":"mage","ผู้พิทักษ์":"guardian"}};/*SKILL_FXUD*/
-const SKFXUDIMG={};const skfxudImg=cls=>{const n=SKILL_FXUD.cls&&SKILL_FXUD.cls[cls];if(!n)return null;if(!SKFXUDIMG[n]){const im=new Image();im.src='sprites/skfxud_'+n+'.webp';SKFXUDIMG[n]=im}const im=SKFXUDIMG[n];return im.complete&&im.naturalWidth?im:null};
+const SKFXUDIMG={};const skfxudImg=cls=>{const n=SKILL_FXUD.cls&&SKILL_FXUD.cls[cls];if(!n)return null;if(!SKFXUDIMG[n]){const im=new Image();im.src=sprUrl('skfxud_'+n+'.webp');SKFXUDIMG[n]=im}const im=SKFXUDIMG[n];return im.complete&&im.naturalWidth?im:null};
 const SKILL_FX4={"cw":300,"ch":260,"ax":150,"ay":226,"fig":92,"cls":{"ผู้รักษา":"healer"}};/*SKILL_FX4*/
-const SKFX4IMG={};const skfx4Img=cls=>{const n=SKILL_FX4.cls&&SKILL_FX4.cls[cls];if(!n)return null;if(!SKFX4IMG[n]){const im=new Image();im.src='sprites/skfx4_'+n+'.webp';SKFX4IMG[n]=im}const im=SKFX4IMG[n];return im.complete&&im.naturalWidth?im:null};
+const SKFX4IMG={};const skfx4Img=cls=>{const n=SKILL_FX4.cls&&SKILL_FX4.cls[cls];if(!n)return null;if(!SKFX4IMG[n]){const im=new Image();im.src=sprUrl('skfx4_'+n+'.webp');SKFX4IMG[n]=im}const im=SKFX4IMG[n];return im.complete&&im.naturalWidth?im:null};
 /* ขนาดเอฟเฟกต์จากตาราง เทียบตัวละคร (V2-R49: เจ้าของขอให้ใหญ่ขึ้นเหมือนตาราง) */
 const FXK=1.7;
-const SKFXIMG={};const skfxImg=cls=>{const n=SKILL_FX.cls&&SKILL_FX.cls[cls];if(!n)return null;if(!SKFXIMG[n]){const im=new Image();im.src='sprites/skfx_'+n+'.webp';SKFXIMG[n]=im}const im=SKFXIMG[n];return im.complete&&im.naturalWidth?im:null};
+const SKFXIMG={};const skfxImg=cls=>{const n=SKILL_FX.cls&&SKILL_FX.cls[cls];if(!n)return null;if(!SKFXIMG[n]){const im=new Image();im.src=sprUrl('skfx_'+n+'.webp');SKFXIMG[n]=im}const im=SKFXIMG[n];return im.complete&&im.naturalWidth?im:null};
 /* เล่นเอฟเฟกต์จากตาราง: แถว = ช่องสกิล-3, จังหวะ WIND-UP→ACTION→RELEASE→RECOVER (คอลัมน์ 1–4) วางที่เท้าตัวละคร */
 function chartFx(cls,i){if(i>=3&&i<=11&&(player.dir==='N'||player.dir==='S')&&SKILL_FXUD.cls&&SKILL_FXUD.cls[cls]){skfxudImg(cls);fx.push({k:'cchartud',cls,row:i-3,up:player.dir==='N',t:1.05,T:1.05});return true}
   if(i>=3&&i<=11&&(player.dir==='N'||player.dir==='S')&&SKILL_FX4.cls&&SKILL_FX4.cls[cls]){skfx4Img(cls);fx.push({k:'cchart4',cls,row:i-3,col:player.dir==='S'?0:1,t:1.05,T:1.05});return true}
@@ -921,7 +922,7 @@ function drawChart(f){const im=skfxImg(f.cls);if(!im)return;const F=SKILL_FX,p=1
 const SKILL_FX={"cw":320,"ch":200,"ax":70,"ay":172,"fig":92,"cls":{"นักธนู":"archer","นักฆ่า":"assassin","นักสู้":"fighter","ผู้สืบวิญญาณ":"spirit_heir","ผู้รักษา":"healer","นักดาบ":"swordsman","ผู้ใช้มนตรา":"mage","ผู้พิทักษ์":"guardian"}};/*SKILL_FX*/
 const POSEIMG={},POSEC={};
 function poseFor(cls,look){const P=CLASS_POSE[cls];if(!P)return null;const g=look&&look.g==='f'?'f':'m',e=P[g];if(!e)return null;
-  if(!POSEIMG[e.id]){const im=new Image();im.src='sprites/pose_'+e.id+'.webp';POSEIMG[e.id]=im}const im=POSEIMG[e.id];if(!(im.complete&&im.naturalWidth))return null;
+  if(!POSEIMG[e.id]){const im=new Image();im.src=sprUrl('pose_'+e.id+'.webp');POSEIMG[e.id]=im}const im=POSEIMG[e.id];if(!(im.complete&&im.naturalWidth))return null;
   const key=e.id+lookKey(cleanLook(look));if(!POSEC[key])POSEC[key]=recolor(im,cleanLook(look),true);return{img:POSEC[key],seq:e.seq}}
 /* ท่าใช้สกิลแบบวาดด้วยโค้ด (V2-R40) — ใช้กับอาชีพ/เพศที่ยังไม่มีภาพท่าจริง: ตัวละครหันข้าง + อาวุธประจำอาชีพขยับตามจังหวะ
    ภาพจริงจากเจ้าของ (CLASS_POSE) มาแทนอัตโนมัติเมื่อมี */
@@ -1410,8 +1411,8 @@ enterZone(CFG.player.home,ZONES[CFG.player.home].start[0],ZONES[CFG.player.home]
 let last=performance.now();
 function loop(n){const dt=Math.min((n-last)/1000,.05);last=n;update(dt);draw();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
-window.HL={classAtk:(c,l)=>classAtk(c,l),atkMode:(a,b,c)=>atkMode(a,b,c),atk4For:l=>atk4For(l),drawAtk4:(...a)=>drawAtk4(...a),drawAtkPose:(...a)=>drawAtkPose(...a),skfxImg:c=>skfxImg(c),classBody:(c,l)=>classBody(c,l||PS.look),CLASS_BODY,SKILL_FXUD,skfxudReady:c=>!!skfxudImg(c),SKILL_FX4,skfx4Ready:c=>!!skfx4Img(c),DV,SKILL_FX,skfxReady:c=>!!skfxImg(c),get fxList(){return fx},CLASS_WEAPON,get castDraw(){return[drawClassCast.n||0,drawClassCast.w]},poseFor:(c,l)=>poseFor(c,l||PS.look),get CLASS_POSE(){return CLASS_POSE},skillFor:i=>CFG.skillFor(curCls(),i),basicNow:()=>CFG.basicFor(curCls()),get shotsN(){return shots.length},CHAR_CAT,lookSets,femReady,get femDraws(){return femHair.n||0},HAIRS,OUTFITS,cleanLook,setLook,sheetsFor,femHair,get SPRcur(){return SPR},preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
-  for(let i=0;i<=11;i++)out.push({src:'icons/sk_'+i+'.png',label:'ไอคอนสกิล'});for(const c of Object.values(CLASS_BODY))for(const e of Object.values(c))if(!out.some(o=>o.src==='sprites/pcl_'+e.id+'.webp'))out.push({src:'sprites/pcl_'+e.id+'.webp',label:'ตัวละครอาชีพ'});for(const n of Object.values(SKILL_FXUD.cls||{}))out.push({src:'sprites/skfxud_'+n+'.webp',label:'เอฟเฟกต์สกิล'});for(const n of Object.values(SKILL_FX4.cls||{}))out.push({src:'sprites/skfx4_'+n+'.webp',label:'เอฟเฟกต์สกิล'});for(const n of Object.values(SKILL_FX.cls||{}))out.push({src:'sprites/skfx_'+n+'.webp',label:'เอฟเฟกต์สกิล'});for(const g of['m','f']){const ls=lookSets({g,hs:0,of:0});if(ls)for(const f of['walk','idle','attack'])for(const[id,pt]of[[ls.h,'h'],[ls.b,'b']])out.push({src:'sprites/pc_'+id+'_'+pt+'_'+f+'.webp',label:'ภาพตัวละคร'})}out.push({src:'icons/sk_p.png',label:'ไอคอนสกิล'});
+window.HL={sprUrl:f=>sprUrl(f),classAtk:(c,l)=>classAtk(c,l),atkMode:(a,b,c)=>atkMode(a,b,c),atk4For:l=>atk4For(l),drawAtk4:(...a)=>drawAtk4(...a),drawAtkPose:(...a)=>drawAtkPose(...a),skfxImg:c=>skfxImg(c),classBody:(c,l)=>classBody(c,l||PS.look),CLASS_BODY,SKILL_FXUD,skfxudReady:c=>!!skfxudImg(c),SKILL_FX4,skfx4Ready:c=>!!skfx4Img(c),DV,SKILL_FX,skfxReady:c=>!!skfxImg(c),get fxList(){return fx},CLASS_WEAPON,get castDraw(){return[drawClassCast.n||0,drawClassCast.w]},poseFor:(c,l)=>poseFor(c,l||PS.look),get CLASS_POSE(){return CLASS_POSE},skillFor:i=>CFG.skillFor(curCls(),i),basicNow:()=>CFG.basicFor(curCls()),get shotsN(){return shots.length},CHAR_CAT,lookSets,femReady,get femDraws(){return femHair.n||0},HAIRS,OUTFITS,cleanLook,setLook,sheetsFor,femHair,get SPRcur(){return SPR},preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
+  for(let i=0;i<=11;i++)out.push({src:'icons/sk_'+i+'.png',label:'ไอคอนสกิล'});for(const c of Object.values(CLASS_BODY))for(const e of Object.values(c))if(!out.some(o=>o.src===sprUrl('pcl_'+e.id+'.webp')))out.push({src:sprUrl('pcl_'+e.id+'.webp'),label:'ตัวละครอาชีพ'});for(const n of Object.values(SKILL_FXUD.cls||{}))out.push({src:sprUrl('skfxud_'+n+'.webp'),label:'เอฟเฟกต์สกิล'});for(const n of Object.values(SKILL_FX4.cls||{}))out.push({src:sprUrl('skfx4_'+n+'.webp'),label:'เอฟเฟกต์สกิล'});for(const n of Object.values(SKILL_FX.cls||{}))out.push({src:sprUrl('skfx_'+n+'.webp'),label:'เอฟเฟกต์สกิล'});for(const g of['m','f']){const ls=lookSets({g,hs:0,of:0});if(ls)for(const f of['walk','idle','attack'])for(const[id,pt]of[[ls.h,'h'],[ls.b,'b']])out.push({src:sprUrl('pc_'+id+'_'+pt+'_'+f+'.webp'),label:'ภาพตัวละคร'})}out.push({src:'icons/sk_p.png',label:'ไอคอนสกิล'});
   for(const t of new Set((ZONES.field2.spawns||[]).map(s=>s.type))){const d=MON_SPR[t];if(!d)continue;if(d.walk)out.push({src:d.walk,label:'ภาพ'+t});if(d.act)out.push({src:d.act,label:'ภาพ'+t})}return out},CLASSES,CLS_ACTIVE,CLS_PATHS,curCls,skName,setClassLocal(c){if(!CLS_ACTIVE[c])return'invalid';if(!inSafe(player.x,player.y))return'not-safe';PS.cls=c;buildSkills();hudT=0;return'ok'},get inSafeNow(){return inSafe(player.x,player.y)},buildSkills,adminLocal,clearWarpCd(){warpCd=0},monShown,warp,openWorld,openAutoCfg,statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
 })();
 
@@ -1574,7 +1575,7 @@ const CLS_DESC={'นักดาบ':'ดาบประชิดตัว ส�
 const csEl=document.createElement('div');csEl.id='cstart';csEl.hidden=true;csEl.setAttribute('role','dialog');csEl.setAttribute('aria-label','เลือกอาชีพเริ่มต้น');document.getElementById('app').appendChild(csEl);
 /* รูปตัวละครของอาชีพบนการ์ด (เฟรมหันหน้า) — นักดาบใช้ภาพที่ประกอบแล้วของตัวละครเดิม */
 const SWP={};const swordPortrait=g=>{if(SWP[g])return SWP[g];const S=HL.sheetsFor({g,hair:0,outfit:0,hs:0,of:0});if(S.tmp||!S.SPR.toDataURL)return '';return SWP[g]=S.SPR.toDataURL()};
-const clsPortrait=(c,g)=>{const C=HL.CLASS_BODY[c],e=C&&(C[g]||C.m),src=e?'sprites/pcl_'+e.id+'.webp':swordPortrait(g);return '<span class="cpt" style="background-image:url('+src+')"></span>'};
+const clsPortrait=(c,g)=>{const C=HL.CLASS_BODY[c],e=C&&(C[g]||C.m),src=e?HL.sprUrl('pcl_'+e.id+'.webp'):swordPortrait(g);return '<span class="cpt" style="background-image:url('+src+')"></span>'};
 /* หน้าเลือกตัวละคร (V2-R50) อ้างอิง: Diablo Immortal (อาชีพก่อน → เพศ, ตัวละครใหญ่กลางจอ+แสดงท่า), RO2 (พื้นหลังเปลี่ยนตามอาชีพ), MapleStory M (แถบค่าพลัง+ความยาก) */
 const CLS_INFO={'นักดาบ':{role:'ประชิด · สมดุล',wpn:'ดาบ',st:[4,3,3,2],col:'#6b8cff'},'นักธนู':{role:'ระยะไกล · กับดัก',wpn:'ธนู',st:[4,2,4,3],col:'#7bd36a'},'นักฆ่า':{role:'ลอบโจมตี · พิษ',wpn:'มีดคู่',st:[5,1,5,4],col:'#b06bff'},'นักสู้':{role:'ประชิด · ทนทาน',wpn:'หมัด',st:[4,4,3,2],col:'#ff7a4a'},
  'ผู้สืบวิญญาณ':{role:'อัญเชิญ · วิญญาณ',wpn:'ไม้เท้าวิญญาณ',st:[3,3,2,4],col:'#5fe0b0'},'ผู้รักษา':{role:'สนับสนุน · ฟื้นฟู',wpn:'ไม้เท้าศักดิ์สิทธิ์',st:[2,3,2,3],col:'#ffd35a'},'ผู้ใช้มนตรา':{role:'เวทวงกว้าง · คำสาป',wpn:'คทาเวท',st:[5,1,2,4],col:'#9b7bff'},'ผู้พิทักษ์':{role:'แทงก์ · ปกป้องทีม',wpn:'โล่ + ดาบ',st:[2,5,1,2],col:'#5fb4ff'}};

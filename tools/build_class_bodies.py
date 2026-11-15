@@ -140,8 +140,8 @@ SETS = [  # (id, อาชีพ, เพศที่ใช้, ฟังก์�
     # V2-R57: เจ้าของเปลี่ยนนักธนูเป็นแบบผมดำ ชุดดำลายแดง (แบบเดิม archer_m.png / archer_f.png เก็บไว้)
     ('archer_m', 'นักธนู', ['m'], lambda: grid4('archer_m2.png')),
     ('archer_f', 'นักธนู', ['f'], lambda: grid4('archer_f2.png')),
-    ('guardian_m', 'ผู้พิทักษ์', ['m'], lambda: grid4('guardian_m4.png', (225, 70, 1200, 1200))),
-    ('guardian_f', 'ผู้พิทักษ์', ['f'], lambda: grid4('guardian_f4.png', (175, 90, 1230, 1215))),
+    ('guardian_m', 'ผู้พิทักษ์', ['m'], lambda: grid_tr('guardian_m_walk_v3.png')),  # V2-R63: ผู้พิทักษ์ชุดใหม่ (โปร่งใส)
+    ('guardian_f', 'ผู้พิทักษ์', ['f'], lambda: grid_tr('guardian_f_walk_v3.png')),  # V2-R63
     ('healer_m', 'ผู้รักษา', ['m'], lambda: grid_tr('healer_m_walk_v3.png')),  # V2-R62: ผู้รักษาชุดใหม่ (ไม้เท้าใบไม้สีเงินประดับอัญมณีเขียว กระเป๋าสมุนไพร)
     ('healer_f', 'ผู้รักษา', ['f'], lambda: grid_tr('healer_f_walk_v3.png')),  # V2-R62
     ('mage_m', 'ผู้ใช้มนตรา', ['m'], lambda: grid_tr('mage_m_walk_v2.png')),  # V2-R61: ผู้ใช้มนตราชุดใหม่ (หมวกแหลม ไม้เท้าอัญมณีม่วง)
@@ -167,3 +167,4 @@ s, n = re.subn(r'const CLASS_BODY=\{.*?\};/\*CLASS_BODY\*/', lambda m: js, s, co
 if n != 1: raise SystemExit('ไม่พบจุดฝัง CLASS_BODY')
 open(p, 'w', encoding='utf-8').write(s); print(js)
 import runpy; runpy.run_path(os.path.join(ROOT, 'tools', 'clean_floor_shadow.py'))  # V2-R52: ลบเงาพื้นสีขาวใต้เท้า
+import asset_version; asset_version.stamp()   # V2-R63: รุ่นของสปริต (ASSET_V) หลังจัดการเงาพื้น

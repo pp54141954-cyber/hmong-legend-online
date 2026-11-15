@@ -25,6 +25,8 @@ BODY_SETS = [  # (id, อาชีพ, เพศ, ไฟล์ต้นฉบั
     ('archer_f', 'นักธนู', 'f', 'archer_f2_attack.png'),
     ('healer_m', 'ผู้รักษา', 'm', 'healer_m_attack_v3.png'),  # V2-R62: ท่าโจมตี 4 เฟรมของผู้รักษาชุดใหม่ (คัดพื้นหลังจากขอบภาพ)
     ('healer_f', 'ผู้รักษา', 'f', 'healer_f_attack_v3.png'),
+    ('guardian_m', 'ผู้พิทักษ์', 'm', 'guardian_m_attack_v3.png'),  # V2-R63: ผู้พิทักษ์ชุดใหม่
+    ('guardian_f', 'ผู้พิทักษ์', 'f', 'guardian_f_attack_v3.png'),
     ('spirit_m', 'ผู้สืบวิญญาณ', 'm', 'spirit_m_attack_v2.png'),  # V2-R61: ท่าโจมตีใหม่ (ยังไม่เคยมีท่าโจมตีของอาชีพนี้)
     ('spirit_f', 'ผู้สืบวิญญาณ', 'f', 'spirit_f_attack_v2.png'),
     ('mage_m', 'ผู้ใช้มนตรา', 'm', 'mage_m_attack_v2.png'),
@@ -93,33 +95,68 @@ def merge_small(segs, maxn=5):
         a, b = sorted((i, j)); segs[a:b + 1] = [(segs[a][0], segs[b][1])]
     return segs
 
-def cut(name, nframes=4, holes_ratio=.7):
+def walk_standing_h(sid):
+    """ความสูงยืนนิ่งของท่าเดิน (มัธยฐานของแถว S ใน game/sprites/pcl_<sid>.webp) — ท่าโจมตีต้องสูงเท่านี้ (V2-R63)
+    เดิมท่าโจมตีถูกย่อตามความสูงของตัวเอง จึงสูงกว่าท่าเดินถึง 22% (นักสู้ชาย) ทำให้ตัวละครดูขยาย/หดตอนโจมตี"""
+    p = os.path.join(ROOT, 'game/sprites', 'pcl_%s.webp' % sid)
+    if not os.path.exists(p): return None
+    a = np.asarray(Image.open(p).convert('RGBA'))[..., 3] > 40
+    hs = []
+    for c in range(4):
+        ys = np.nonzero(a[0:124, c * 96:(c + 1) * 96].any(1))[0]
+        if len(ys): hs.append(int(ys.max() - ys.min() + 1))
+    return float(np.median(hs)) if hs else None
+
+def walk_feet(sid):
+    """เส้นเท้าของท่าเดินแต่ละทิศ = มัธยฐานขอบล่างของ 4 เฟรมในแถวนั้นของ game/sprites/pcl_<sid>.webp (V2-R63)
+    ท่าโจมตีต้องวางเท้าที่เส้นเดียวกับท่าเดินของทิศนั้น — เดิมวางที่ FOOT=120 ทุกอาชีพ ทำให้ตัวละครทรุดลง 1–8 พิกเซลตอนโจมตี"""
+    p = os.path.join(ROOT, 'game/sprites', 'pcl_%s.webp' % sid)
+    if not os.path.exists(p): return None
+    a = np.asarray(Image.open(p).convert('RGBA'))[..., 3] > 40
+    out = []
+    for r in range(4):
+        bs = []
+        for c in range(4):
+            ys = np.nonzero(a[r * 124:(r + 1) * 124, c * 96:(c + 1) * 96].any(1))[0]
+            if len(ys): bs.append(int(ys.max()))
+        out.append(int(round(float(np.median(bs)))) if bs else FOOT)
+    return out
+
+def cut(name, nframes=4, holes_ratio=.7, walk_h=None, equal_cols=False, foot=None):
     """แยกแถว/เฟรมของตาราง: nframes = จำนวนเฟรมต่อทิศ (4 ตามค่าเริ่มต้น; นักสู้ใช้ 5) — เกินจำนวนจะรวมชิ้นที่แคบที่สุด (V2-R61)"""
     im = unbg(os.path.join(SRC, name)); n_holes = holes(im, ratio=holes_ratio); print('  พื้นขาวที่ถูกล้อม:', n_holes, 'ก้อน'); B = bands(im)
     if len(B) != 4: B = bands_strong(im)
     assert len(B) == 4, (name, 'แถว', B)
     rows = []
     for b0, b1 in B:
-        band = im.crop((0, b0, im.size[0], b1)); segs = merge_small(col_segments(band), maxn=nframes)
+        band = im.crop((0, b0, im.size[0], b1))
+        # V2-R63: ตารางที่อาวุธ/โล่ซ้อนข้ามเฟรม (ผู้พิทักษ์) แบ่งเป็นช่องเท่ากัน แทนการหาช่องว่างคอลัมน์
+        segs = [(round(i * im.size[0] / nframes), round((i + 1) * im.size[0] / nframes)) for i in range(nframes)] if equal_cols else merge_small(col_segments(band), maxn=nframes)
         fr = [band.crop((x0, 0, x1, band.size[1])) for x0, x1 in segs]; fr = [f.crop(f.getbbox()) for f in fr]
         assert len(fr) == nframes, (name, 'เฟรมในแถว', len(fr), nframes); rows.append(fr)
     assert len({len(r) for r in rows}) == 1, (name, 'จำนวนเฟรมแต่ละแถวไม่เท่ากัน', [len(r) for r in rows])
-    ref = sorted(r[0].size[1] for r in rows); s = H_TARGET / ref[len(ref) // 2]   # เฟรมแรก = ท่าพร้อม (ยืนตรง)
+    if walk_h:   # V2-R63: สูงเท่าท่าเดิน (แถว S ของตารางเดียวกันที่ตัดจากภาพของเจ้าของ)
+        src_h = float(np.median([f.size[1] for f in rows[0]])); s = walk_h / src_h
+    else:
+        ref = sorted(r[0].size[1] for r in rows); s = H_TARGET / ref[len(ref) // 2]   # เฟรมแรก = ท่าพร้อม (ยืนตรง)
     n = len(rows[0]); out = Image.new('RGBA', (CW4 * n, CH * 4), (0, 0, 0, 0))
     for r, fr in enumerate(rows):
+        F = foot[r] if foot else FOOT   # V2-R63: เท้าของทิศนี้วางที่เส้นเดียวกับท่าเดิน
         for c, f in enumerate(fr):
             g = shrink(f, s); fx, fy = feet(g)
-            x0, y0 = c * CW4 + round(AX4 - fx), r * CH + FOOT - fy
+            x0, y0 = c * CW4 + round(AX4 - fx), r * CH + F - fy
+            gb = g.getchannel('A').getbbox()
+            if gb and y0 + gb[1] < r * CH: print('  เตือน: ยอดภาพถูกตัด', name, 'แถว', r, 'เฟรม', c, 'ล้ำ', r * CH - (y0 + gb[1]), 'px')
             t = Image.new('RGBA', out.size, (0, 0, 0, 0)); t.alpha_composite(g, (max(0, x0), max(0, y0)), (max(0, -x0), max(0, -y0)))
             cell = (c * CW4, r * CH, (c + 1) * CW4, (r + 1) * CH); out.alpha_composite(t.crop(cell), cell[:2])
     return out, n, s
 
-def check(out, sid, n):
+def check(out, sid, n, foot=None):
     chk = Image.new('RGBA', out.size, (70, 90, 70, 255)); chk.alpha_composite(out)
     d = chk.load()
     for r in range(4):
         for c in range(n):
-            for k in range(-4, 5): d[c * CW4 + AX4 + k, r * CH + FOOT] = (255, 255, 0, 255)
+            for k in range(-4, 5): d[c * CW4 + AX4 + k, r * CH + (foot[r] if foot else FOOT)] = (255, 255, 0, 255)
     chk.resize((out.size[0] * 2, out.size[1] * 2), Image.NEAREST).save(os.path.join(ROOT, 'docs/evidence', 'atk4_%s_check.png' % sid))
 
 def mark_hair_atk(im, warm=7, front_warm=6.5):
@@ -172,12 +209,15 @@ body = {}
 for sid, cls, g, name in BODY_SETS:
     if not os.path.exists(os.path.join(SRC, name)): print('ข้าม', sid); continue
     # ผู้รักษา: ก้อนพื้นขาวที่ถูกล้อมระหว่างไม้เท้ากับลำตัวมีสัดส่วนขาวบริสุทธิ์ราว 52% → ใช้เกณฑ์ 50% (V2-R62)
-    out, n, sc = cut(name, 5 if sid.startswith('fighter') else 4, holes_ratio=.5 if sid.startswith('healer') else .7)
-    out.save(os.path.join(ROOT, 'game/sprites', 'pca_%s.webp' % sid), 'WEBP', lossless=True); check(out, sid, n)
-    body.setdefault(cls, {})[g] = {'id': sid, 'n': n}; print('สร้าง', sid, 'เฟรม', n, 'scale', round(sc, 3))
+    wh = walk_standing_h(sid)   # V2-R63: ความสูงมาตรฐาน = ท่าเดินของอาชีพเดียวกัน (ต้องสร้าง pcl ก่อนรันไฟล์นี้)
+    wf = walk_feet(sid)         # V2-R63: เส้นเท้าของแต่ละทิศ = ท่าเดินของอาชีพเดียวกัน
+    out, n, sc = cut(name, 5 if sid.startswith('fighter') else 4, holes_ratio=.5 if sid.startswith('healer') else .7, walk_h=wh, equal_cols=sid.startswith('guardian'), foot=wf)
+    out.save(os.path.join(ROOT, 'game/sprites', 'pca_%s.webp' % sid), 'WEBP', lossless=True); check(out, sid, n, wf)
+    body.setdefault(cls, {})[g] = {'id': sid, 'n': n}; print('สร้าง', sid, 'เฟรม', n, 'scale', round(sc, 3), 'ความสูงเดิน', wh, 'เท้า', wf)
 p = os.path.join(ROOT, 'game/index.html'); s = open(p, encoding='utf-8').read()
 js = 'const ATK4={cw:%d,ax:%d,sets:%s,body:%s};/*ATK4*/' % (CW4, AX4, json.dumps(done), json.dumps(body, ensure_ascii=False, separators=(',', ':')))
 s, n = re.subn(r'const ATK4=\{.*?\};/\*ATK4\*/', lambda m: js, s, count=1, flags=re.S)
 if n != 1:
     a = 'const CBIMG={};'; assert s.count(a) == 1; s = s.replace(a, js + '\n' + a, 1)
 open(p, 'w', encoding='utf-8').write(s); print(js)
+import asset_version; asset_version.stamp()   # V2-R63: รุ่นของสปริต (ASSET_V) หลังเขียน index.html
