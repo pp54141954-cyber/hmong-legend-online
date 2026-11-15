@@ -1,0 +1,61 @@
+name: Martial nine-skill offline tester (Android + iPhone)
+on:
+  push:
+    branches: [test/martial-nine-mobile-playground]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  visual-playground:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build standalone self-contained HTML using approved nine-skill renderer
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path('game/martial-nine-test.html')
+          page=path.read_text(encoding='utf-8')
+          effect=Path('game/martial-vfx.js').read_text(encoding='utf-8')
+          marker='<script src="./martial-vfx.js"></script>'
+          assert page.count(marker)==1,'refuse mismatched standalone marker'
+          assert '</script>' not in effect.lower(),'renderer cannot contain script close tag'
+          output=page.replace(marker,'<script>\n'+effect+'\n</script>')
+          Path('dist').mkdir(exist_ok=True)
+          dest=Path('dist/Hmong_Legend_Martial_9_Skills_Test.html')
+          dest.write_text(output,encoding='utf-8')
+          assert output.count('HLMartialVFX')>=2
+          assert '<script src=' not in output,'standalone HTML must have no remote script dependency'
+          print('STANDALONE_OK',dest, dest.stat().st_size,'bytes')
+          PY
+      - name: Check skill renderer and browser test syntax
+        run: |
+          node --check game/martial-vfx.js
+          node --check tools/martial-playground-browser-test.js
+      - name: Install Chromium + WebKit for mobile browser proof
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-playground playwright@1.56.1
+          node /tmp/hl-playground/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-playground/node_modules" >> "$GITHUB_ENV"
+      - name: Pixel 7 Chromium — all nine original skills
+        run: node tools/martial-playground-browser-test.js
+        env:
+          PLAYGROUND_BROWSER: chromium
+      - name: iPhone 13 WebKit — all nine original skills
+        if: ${{ always() }}
+        run: node tools/martial-playground-browser-test.js
+        env:
+          PLAYGROUND_BROWSER: webkit
+      - name: Publish downloadable offline HTML and screenshot evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hmong-Legend-Martial-9-Skills-Offline-Tester
+          path: |
+            dist/Hmong_Legend_Martial_9_Skills_Test.html
+            dist/screenshots/*.png
+          if-no-files-found: error
