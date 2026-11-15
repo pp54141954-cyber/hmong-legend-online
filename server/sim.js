@@ -108,14 +108,23 @@ function createSim({ rand = Math.random } = {}) {
   const cleanCname = s => { if (typeof s !== 'string') return null; const t = s.trim(); return t.length >= 2 && t.length <= 12 && /^[฀-๿a-zA-Z0-9_]+(?: [฀-๿a-zA-Z0-9_]+)*$/.test(t) ? t : null; };
   const cleanLook = l => { l = l && typeof l === 'object' ? l : {}; const ok = (v, n) => Number.isInteger(v) && v >= 0 && v < n; const opt = (v, n) => v === undefined || ok(+v, n); return ok(+l.hair, CFG.look.hair) && ok(+l.outfit, CFG.look.outfit) && opt(l.hs, CFG.look.hs) && opt(l.of, CFG.look.of) && (l.g === 'm' || l.g === 'f') ? { g: l.g, hair: +l.hair, outfit: +l.outfit, hs: +(l.hs || 0), of: +(l.of || 0) } : null; };
   function setLook(p, l) { const v = cleanLook(l); if (!v) return 'invalid'; p.c.look = v; p.dirty = true; p.personal.push({ k: 'look', look: v }); return 'ok'; }
+  // อาวุธตามอาชีพ (V2-R74): เปลี่ยนอาชีพแล้วอาวุธของอาชีพเดิมไปกระเป๋า ใส่อาวุธระดับไม้ของอาชีพใหม่ (กระเป๋าเต็มจะไม่เปลี่ยน)
+  function swapClassWeapon(p, cls) {
+    const cur = p.c.eq.weapon, it = cur && CFG.items[cur];
+    if (!it || !it.cls || it.cls === cls) return;
+    if (!addItem(p, cur, 1)) return;
+    p.c.eq.weapon = null;
+    const next = (CFG.classWeapon[cls] || 'sword') + '_wood';
+    p.c.eq.weapon = CFG.items[next] ? next : null;
+  }
   function setClass(p, cls, first) {
     cls = String(cls); if (!ROWS[cls]) return 'invalid';
     const firstPick = !!first && !p.c.clsset;
     if (first && !firstPick) return 'already';
     if (cls === clsOf(p) && !firstPick) return 'same';
     if (p.dead) return 'dead';
-    const D = ZONES[p.c.zone]; if (!firstPick && (!D || !D.safe || !D.safe(p.c.x, p.c.y))) return 'not-safe';
-    p.c.cls = cls; p.c.clsset = 1; stats(p); p.skDirty = true; p.dirty = true; p.personal.push({ k: 'cls', cls, first: firstPick });
+    const D = ZONES[p.c.zone]; if (!firstPick && (!D || !D.safe || !D.safe(Math.floor(p.c.x / W.T), Math.floor(p.c.y / W.T)))) return 'not-safe';
+    p.c.cls = cls; p.c.clsset = 1; swapClassWeapon(p, cls); stats(p); p.skDirty = true; p.dirty = true; p.personal.push({ k: 'cls', cls, first: firstPick });
     return 'ok';
   }
   // แอดมิน (ADMIN_USERS): ปรับค่าตัวเองเพื่อทดสอบ — server.js ตรวจสิทธิ์ก่อนเรียก
@@ -177,7 +186,8 @@ function createSim({ rand = Math.random } = {}) {
     return n - left;
   }
   function rollDrops(p, m) {
-    for (const [id, chance, n] of CFG.drops[m.type] || []) {
+    for (const [drop, chance, n] of CFG.drops[m.type] || []) {
+      const id = drop[0] === '*' ? (CFG.classWeapon[clsOf(p)] || 'sword') + (drop === '*w4' ? '_hmong' : '_silver') : drop;
       if (rand() >= chance) continue;
       const got = addItem(p, id, n);
       if (got) p.personal.push({ k: 'loot', id, n: got, from: m.id });
@@ -198,6 +208,7 @@ function createSim({ rand = Math.random } = {}) {
         if (--s.n <= 0) bag.splice(i, 1);
       } else {
         if (it.type !== 'eq') return 'not-equip';
+        if (it.cls && it.cls !== clsOf(p)) return 'wrong-class';
         const old = p.c.eq[it.slot];
         p.c.eq[it.slot] = s.id;
         if (old) bag[i] = { id: old, n: 1 }; else bag.splice(i, 1);
@@ -225,6 +236,7 @@ function createSim({ rand = Math.random } = {}) {
     if (N.zone !== p.c.zone) return 'far';
     if (Math.hypot(p.c.x - N.tx * W.T, p.c.y - N.ty * W.T) > CFG.economy.shopRange * W.T) return 'far';
     const row = N.shop.find(r => r[0] === id); if (!row) return 'invalid';
+    if (CFG.items[id].cls && CFG.items[id].cls !== clsOf(p)) return 'wrong-class';
     const cnt = Math.floor(+n); if (!(cnt >= 1 && cnt <= 99)) return 'invalid';
     const total = row[1] * cnt;
     if ((p.c.gold || 0) < total) return 'no-gold';
@@ -478,6 +490,6 @@ function createSim({ rand = Math.random } = {}) {
     }
   }
 
-  return { party, partyView, parties, get WT() { return WT; }, setTimeOffset(s) { timeOff = s; }, zones, players, addPlayer, removePlayer, statOp, statFree, setLook, cleanLook, cleanCname, setClass, admin, CLASSES, clsOf, act, step, pathClear, stats, gain, addItem, inv, buy, giveGold, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
+  return { party, partyView, parties, get WT() { return WT; }, setTimeOffset(s) { timeOff = s; }, zones, players, addPlayer, removePlayer, statOp, statFree, setLook, cleanLook, cleanCname, setClass, admin, CLASSES, clsOf, act, step, pathClear, stats, gain, addItem, inv, buy, giveGold, rollDrops, learn, freePoints, skLv, skillBonus, SKROWS, setRand(f) { rand = f; } };
 }
 module.exports = { createSim };

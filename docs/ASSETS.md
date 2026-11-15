@@ -121,6 +121,19 @@
 | --- | --- | --- |
 | `game/sprites/player_f_walk.webp` / `_idle` / `_attack` | เจ้าของทำด้วย ChatGPT ตามชุดคำสั่ง `docs/prompts/female_character_sprites.md` | ต้นฉบับ `assets/sprites_src/female/`, แปลงด้วย `tools/build_female_sprites.py`, พิกเซลผม alpha=254 |
 
+## ชุด CC0 ที่ใช้ในรอบ 4–5 (V2-R74)
+
+| ไฟล์/โฟลเดอร์ | ที่มา | สัญญา (หลักฐาน) | การใช้ |
+| --- | --- | --- | --- |
+| `assets/items/{bow,daggers,fists,staff,leafstaff,book,sword}_*.png` (28 ชิ้น) | ชุด 496 RPG icons (gnola14, OpenGameArt) · ระบุไฟล์ต้นทางรายชิ้นใน `assets/items/icon_sources.json` | CC0 ตามหน้าต้นทาง (ตรวจ 2026-11-10) · ดาวน์โหลด zip ซ้ำ 2026-11-15 ไม่มีไฟล์ LICENSE ในชุด | ไอคอนอาวุธประจำอาชีพ |
+| `assets/third_party/kenney-tiny-town/` | Kenney Tiny Town 1.1 · https://kenney.nl/assets/tiny-town (ซ้ำจาก https://opengameart.org/content/tiny-town) | CC0 1.0 · ตรวจจากไฟล์ `License.txt` ในชุดเอง 2026-11-15 | วัตถุดิบสำหรับสร้างแผนที่ใหม่ (รอบ 5) ยังไม่ได้ใช้ในเกม |
+| `assets/items/shield_*.png` (4 ชิ้น) | วาดขึ้นใหม่ในโครงการ | ของโครงการ | โล่ชั่วคราว รอภาพจริง |
+
+ตัวเลือกที่พบจากการค้นหา (ยังไม่ได้ดาวน์โหลดหรือเปิดไฟล์ไลเซนส์):
+- OpenGameArt "RPG Town Pixel Art Assets" (https://opengameart.org/content/rpg-town-pixel-art-assets) — ผลค้นหาระบุว่า CC0
+- OpenGameArt "Overworld base set" (https://opengameart.org/node/155014) — ผลค้นหาระบุว่า CC0 มีหญ้า ต้นไม้ และทางดิน
+- OpenGameArt "RPG Town Tileset" (https://opengameart.org/content/rpg-town-tileset) — CC-BY 3.0 ต้องให้เจ้าของอนุมัติก่อนใช้และให้เครดิต
+
 ## ไอคอนที่สร้างจากไอคอนของโครงการ (V2-R73)
 
 - `assets/items/sword_silver.png` และ `assets/items/sword_hmong.png` (34 × 34) สร้างจาก `assets/items/sword_iron.png` ด้วยการปรับสีในโครงการ ไม่ใช้ไฟล์จากภายนอก
