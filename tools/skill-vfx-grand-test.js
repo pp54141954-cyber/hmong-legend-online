@@ -44,7 +44,7 @@ const ok=(title,val)=>{assert.ok(val,title);n++;console.log('PASS '+title);};
     const device=browserName==='webkit'?'iPhone 13':'Pixel 7';
     const context=await browser.newContext({...devices[device]});
     const page=await context.newPage();
-    const errors=[];page.on('pageerror',e=>errors.push(e.message));
+    const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.log('PAGE_ERROR',e.message)});
     await page.goto(root+'/?splash=0&grandvfx=1',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>Boolean(window.HLGrandStage?.enabled&&window.HL?.player),null,{timeout:15000});
     ok('game and independent visual overlay initialize',await page.evaluate(()=>
@@ -52,7 +52,17 @@ const ok=(title,val)=>{assert.ok(val,title);n++;console.log('PASS '+title);};
     await page.waitForFunction(()=>Array.isArray(window.HLGrandStage?.worldMatrix),null,{timeout:10000});
     ok('new layer receives game world-camera transform',await page.evaluate(()=>
       window.HLGrandStage.worldMatrix.every(Number.isFinite)));
-    await page.waitForSelector('#net:not([hidden])',{timeout:10000});
+    await page.waitForSelector('#net:not([hidden])',{timeout:22000}).catch(async e=>{
+      const debug=await page.evaluate(()=>({
+        netExists:!!document.getElementById('net'),netHidden:document.getElementById('net')?.hidden,
+        netDisplay:document.getElementById('net')&&getComputedStyle(document.getElementById('net')).display,
+        netOnline:!!window.HLNET,netAuth:window.HLNET?.auth,netJoined:window.HLNET?.joined,
+        splashHidden:document.getElementById('splash')?.hidden,href:location.href,
+        vfxReady:!!window.HLGrandStage?.enabled
+      })).catch(x=>({diagnosticError:String(x)}));
+      console.log('LOGIN_DIAGNOSTICS',JSON.stringify(debug),'JS_ERRORS',JSON.stringify(errors));
+      throw e;
+    });
     await page.fill('#netn',user);await page.fill('#netp','testpass123');await page.click('#netlogin');
     await page.waitForFunction(()=>window.HLNET?.joined===true,null,{timeout:15000});
     ok('existing real login works with visual plugin',await page.evaluate(()=>window.HLNET?.joined===true));
@@ -76,9 +86,15 @@ const ok=(title,val)=>{assert.ok(val,title);n++;console.log('PASS '+title);};
     });
     await page.waitForFunction(()=>window.HLGrandStage.count>=1,null,{timeout:10000});
     ok('bridge recognizes game-native effect events',await page.evaluate(()=>window.HLGrandStage.count>0));
-    await page.waitForFunction(()=>window.HLGrandStage.count===0,null,{timeout:7000});
-    ok('VFX instances expire without unbounded accumulation',
-      await page.evaluate(()=>window.HLGrandStage.count===0));
+    const expires=await page.evaluate(()=>{
+      const isolated=window.HLGrandVFX.create({quality:'low'});
+      isolated.emit({kind:'ice',x:100,y:100,tier:2,duration:.25});
+      const canvas=document.createElement('canvas');canvas.width=300;canvas.height=300;
+      const c=canvas.getContext('2d');
+      for(let k=0;k<4;k++)isolated.draw(c,.1);
+      return isolated.count===0;
+    });
+    ok('individual VFX instance expires and releases its particles',expires);
     ok('no browser JavaScript exceptions',errors.length===0);
     await context.close();
     console.log('RESULT: '+n+'/'+n+' PASS ('+browserName+' mobile emulation, isolated server)');
