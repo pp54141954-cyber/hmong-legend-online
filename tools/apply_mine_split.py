@@ -4,7 +4,7 @@
 - แก้ทางออกของทุ่งน้ำตก/ป่าดิบชื้น/ยอดเขาที่เคยไปถ้ำเดิม ให้ไปโซนใหม่ที่ถูกต้อง
 - ย้ายบอส มังกรภูเขาดำ ไปลานหินกลาง; อัปเดตลำดับแผนที่โลก
 รัน: python3 tools/build_mine_split.py && python3 tools/apply_mine_split.py && python3 tools/embed_maps.py && node tools/extract-shared.js
-(apply อ่านไฟล์เกมจาก HEAD ของ git — ต้อง commit ไฟล์เกมก่อนรันซ้ำ หรือเปลี่ยนเป็นไฟล์สำรองที่ต้องการ)
+(apply อ่านไฟล์เกมจากสำรอง game/versions/r57-before-mine-split.html)
 """
 import json, os, re
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,9 +28,8 @@ def zone_js(zid):
             "  objects(){},\n"
             "  spawns:[%s],start:[%d.5*T,%d.5*T]},\n") % (zid, jstr(z['name']), jstr(zid), zid, ex, sp, sx, sy)
 
-# เริ่มจากไฟล์เกมที่ commit ไว้ล่าสุด (V2-R57) ทุกครั้ง ทำให้รันซ้ำได้โดยไม่ซ้อนกัน
-import subprocess
-s = subprocess.run(['git', '-C', ROOT, 'show', 'HEAD:game/index.html'], capture_output=True, check=True).stdout.decode('utf-8')
+# เริ่มจากไฟล์เกมก่อนการแบ่งถ้ำ (สำรอง V2-R57) ทุกครั้ง ทำให้รันซ้ำได้โดยไม่ซ้อนกัน
+s = open(os.path.join(ROOT, 'game/versions/r57-before-mine-split.html'), encoding='utf-8').read()
 # 1) โซนถ้ำ: แทนบล็อก mine เดิม
 a = s.index("\n mine:{name:'ถ้ำและภูเขาหิน'")
 b = s.index("\n peak:{name:", a)

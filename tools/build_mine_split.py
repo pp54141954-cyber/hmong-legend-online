@@ -431,8 +431,8 @@ def pick_spawns(keep, start, avoid, n):
         return int(keep[max(0, y - 2):y + 3, max(0, x - 2):x + 3].sum())
     cand = [(int(x), int(y)) for y, x in np.argwhere(keep)]
     cand = [c for c in cand if 4 <= c[0] <= COLS - 5 and 4 <= c[1] <= ROWS - 5
-            and min(max(abs(c[0] - a[0]), abs(c[1] - a[1])) for a in avoid) >= 3
-            and max(abs(c[0] - start[0]), abs(c[1] - start[1])) >= 4 and room(*c) >= 17]
+            and min(max(abs(c[0] - a[0]), abs(c[1] - a[1])) for a in avoid) >= 4
+            and max(abs(c[0] - start[0]), abs(c[1] - start[1])) >= 9 and room(*c) >= 17]
     if not cand: return []
     pts = [max(cand, key=lambda c: min(max(abs(c[0] - a[0]), abs(c[1] - a[1])) for a in avoid + [start]))]
     while len(pts) < n and len(pts) < len(cand):
@@ -551,6 +551,12 @@ def write_outputs(R, F):
         for d, (zi_, x_, y_) in enter.items():
             if zi_ == ZONES[k][0]:
                 F[k]['start'] = (x_, y_); meta[ZONES[k][0]]['start'] = [x_, y_]; break
+    for k in ZONES:   # จุดเกิดคำนวณใหม่หลังจุดเริ่มสุดท้าย (ห่างจุดเริ่มอย่างน้อย 9 ช่อง ไม่ให้มอนสเตอร์เข้าหาทันที)
+        zi = ZONES[k][0]
+        avoid = [(e['x'], e['y']) for e in F[k]['exits']] + [tuple(t) for t in F[k]['arr']]
+        spec = SPAWNS.get(zi, [])
+        pts = pick_spawns(F[k]['keep'], tuple(F[k]['start']), avoid, len(spec))
+        meta[zi]['spawns'] = [dict(type=t, tx=p[0], ty=p[1], count=c) for (t, c), p in zip(spec, pts)]
     json.dump(meta, open(os.path.join(ROOT, 'tools/mine_split.json'), 'w'), ensure_ascii=False, indent=1)
     return meta, rows_all
 
