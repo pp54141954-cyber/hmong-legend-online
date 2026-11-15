@@ -167,7 +167,7 @@ function createSim({ rand = Math.random } = {}) {
   }
   function addPlayer(p) {
     p.c.bag = Array.isArray(p.c.bag) ? p.c.bag.filter(s => s && CFG.items[s.id] && s.n > 0) : [];
-    p.c.eq = Object.assign({ weapon: null, armor: null, acc: null }, p.c.eq || {});
+    p.c.eq = Object.assign({ weapon: null, offhand: null, armor: null, acc: null }, p.c.eq || {});
     p.c.sk = Object.assign({}, p.c.sk || {});
     p.c.look = cleanLook(p.c.look) || { g: 'm', hair: 0, outfit: 0 };
     p.c.st = CFG.stats.clean(p.c.st); if (CFG.stats.free(p.c.lv, p.c.st) < 0) p.c.st = CFG.stats.clean({}); // ข้อมูลเกินแต้มที่มี = รีเซ็ต
