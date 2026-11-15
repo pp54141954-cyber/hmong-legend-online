@@ -110,12 +110,22 @@ function createSim({ rand = Math.random } = {}) {
   function setLook(p, l) { const v = cleanLook(l); if (!v) return 'invalid'; p.c.look = v; p.dirty = true; p.personal.push({ k: 'look', look: v }); return 'ok'; }
   // อาวุธตามอาชีพ (V2-R74): เปลี่ยนอาชีพแล้วอาวุธของอาชีพเดิมไปกระเป๋า ใส่อาวุธระดับไม้ของอาชีพใหม่ (กระเป๋าเต็มจะไม่เปลี่ยน)
   function swapClassWeapon(p, cls) {
-    const cur = p.c.eq.weapon, it = cur && CFG.items[cur];
-    if (!it || !it.cls || it.cls === cls) return;
-    if (!addItem(p, cur, 1)) return;
-    p.c.eq.weapon = null;
-    const next = (CFG.classWeapon[cls] || 'sword') + '_wood';
-    p.c.eq.weapon = CFG.items[next] ? next : null;
+    const oldWeapon = p.c.eq.weapon;
+    const oldShield = p.c.eq.offhand;
+    const weapon = oldWeapon && CFG.items[oldWeapon];
+    const keepWeapon = weapon && (weapon.cls === cls || (cls === 'ผู้พิทักษ์' && weapon.cls === 'นักดาบ'));
+    const removeWeapon = !!weapon && !keepWeapon;
+    const removeShield = !!oldShield && cls !== 'ผู้พิทักษ์';
+    const required = Number(removeWeapon) + Number(removeShield);
+    if (p.c.bag.length + required > CFG.bag.slots) return false;
+    if (removeWeapon) { addItem(p, oldWeapon, 1); p.c.eq.weapon = null; }
+    if (removeShield) { addItem(p, oldShield, 1); p.c.eq.offhand = null; }
+    if (!p.c.eq.weapon) {
+      const next = (cls === 'ผู้พิทักษ์' ? 'sword' : (CFG.classWeapon[cls] || 'sword')) + '_wood';
+      p.c.eq.weapon = CFG.items[next] ? next : null;
+    }
+    p.bagDirty = true;
+    return true;
   }
   function setClass(p, cls, first) {
     cls = String(cls); if (!ROWS[cls]) return 'invalid';
@@ -124,7 +134,8 @@ function createSim({ rand = Math.random } = {}) {
     if (cls === clsOf(p) && !firstPick) return 'same';
     if (p.dead) return 'dead';
     const D = ZONES[p.c.zone]; if (!firstPick && (!D || !D.safe || !D.safe(Math.floor(p.c.x / W.T), Math.floor(p.c.y / W.T)))) return 'not-safe';
-    p.c.cls = cls; p.c.clsset = 1; swapClassWeapon(p, cls); stats(p); p.skDirty = true; p.dirty = true; p.personal.push({ k: 'cls', cls, first: firstPick });
+    if (!swapClassWeapon(p, cls)) return 'bag-full';
+    p.c.cls = cls; p.c.clsset = 1; stats(p); p.skDirty = true; p.dirty = true; p.personal.push({ k: 'cls', cls, first: firstPick });
     return 'ok';
   }
   // แอดมิน (ADMIN_USERS): ปรับค่าตัวเองเพื่อทดสอบ — server.js ตรวจสิทธิ์ก่อนเรียก
