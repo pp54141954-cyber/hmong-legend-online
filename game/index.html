@@ -1992,7 +1992,7 @@ function loop(n){const dt=Math.min(.1,(n-last)/1000);last=n;
   requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
 
-hello().then(ok=>{if(!ok)return;NET.state='ready';token=store.get();if(token)connect();else if(SND.splash&&SND.splash.shown&&!SND.splash.gone)SND.splash.loginPending=true;else $('net').hidden=false});
+hello().then(ok=>{if(!ok)return;NET.state='ready';token=store.get();const showLogin=()=>{if(token)connect();else{const snd=window.SND;if(snd&&snd.splash&&snd.splash.shown&&!snd.splash.gone)snd.splash.loginPending=true;else $('net').hidden=false}};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',showLogin,{once:true});else showLogin()});
 })();
 </script>
 <!--AUDIO_SPLASH_BEGIN-->

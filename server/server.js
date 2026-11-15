@@ -80,13 +80,14 @@ function createServer(opts = {}) {
         // Never rewrite any movement, combat, inventory, map, or character source.
         if (url.searchParams.get('grandvfx') === '1') {
           const gameDir = path.dirname(conf.gameFile);
-          const [html, grand, bridge] = await Promise.all([
+          const [html, grand, martial, bridge] = await Promise.all([
             fs.promises.readFile(conf.gameFile, 'utf8'),
             fs.promises.readFile(path.join(gameDir, 'skill-vfx-grand.js'), 'utf8'),
+            fs.promises.readFile(path.join(gameDir, 'martial-vfx.js'), 'utf8'),
             fs.promises.readFile(path.join(gameDir, 'skill-vfx-bridge.js'), 'utf8')
           ]);
           if (!html.includes('</body>')) return json(res, 500, { error: 'grand-vfx body marker unavailable' });
-          const script = '<script>' + grand + '</script><script>' + bridge + '</script>';
+          const script = '<script>' + grand + '</script><script>' + martial + '</script><script>' + bridge + '</script>';
           res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
           return res.end(html.replace('</body>', script + '</body>'));
         }

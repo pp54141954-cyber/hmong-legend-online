@@ -49,12 +49,16 @@ jobs:
           const fx=s.indexOf('const fx=[],nums=[],shots=[]');
           console.log('FX_ARRAY',fx,s.slice(fx-160,fx+250).replace(/\n/g,' '));
           NODE
+      - name: Inspect real martial artist skill triggers
+        run: node tools/inspect-martial-hooks.js
       - name: Syntax-check grand effect renderer
         run: |
           node --check game/skill-vfx-grand.js
           node --check game/skill-vfx-bridge.js
           node --check server/server.js
           node --check tools/skill-vfx-grand-test.js
+          node --check game/martial-vfx.js
+          node --check tools/martial-nine-skill-test.js
       - name: Pixel 7 Chromium original game + VFX regression
         run: node tools/skill-vfx-grand-test.js
         env:
@@ -64,10 +68,22 @@ jobs:
         run: node tools/skill-vfx-grand-test.js
         env:
           VFX_BROWSER: webkit
+      - name: Nine real martial skills — Pixel 7 Chromium
+        if: ${{ always() }}
+        run: node tools/martial-nine-skill-test.js
+        env:
+          VFX_BROWSER: chromium
+      - name: Nine real martial skills — iPhone Safari WebKit
+        if: ${{ always() }}
+        run: node tools/martial-nine-skill-test.js
+        env:
+          VFX_BROWSER: webkit
       - name: Upload grand VFX gameplay screenshots
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: grand-vfx-mobile-previews
-          path: tools/test-artifacts/grand-vfx-*.png
+          path: |
+            tools/test-artifacts/grand-vfx-*.png
+            tools/test-artifacts/martial-*.png
           if-no-files-found: ignore
