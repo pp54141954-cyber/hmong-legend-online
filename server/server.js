@@ -74,7 +74,7 @@ function createServer(opts = {}) {
     const url = new URL(req.url, 'http://x');
     for (const [k, v] of Object.entries(SEC_HEADERS)) res.setHeader(k, v);
     try {
-      if (req.method === 'GET' && url.pathname === '/healthz') return json(res, 200, { ok: true, ver: 'V2-R76', online: online.size, uptime: Math.round(process.uptime()), admins: conf.admins.length }); // admins = จำนวนชื่อใน ADMIN_USERS (ไม่เปิดเผยชื่อ) ใช้ตรวจว่าตั้งค่าบน Render แล้ว
+      if (req.method === 'GET' && url.pathname === '/healthz') return json(res, 200, { ok: true, ver: 'V2-R78', online: online.size, uptime: Math.round(process.uptime()), admins: conf.admins.length }); // admins = จำนวนชื่อใน ADMIN_USERS (ไม่เปิดเผยชื่อ) ใช้ตรวจว่าตั้งค่าบน Render แล้ว
       if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
         return fs.createReadStream(conf.gameFile).pipe(res);
@@ -176,6 +176,13 @@ function createServer(opts = {}) {
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'inv', op: m.op, r }); }
         return;
       }
+      if (m.t === 'enh') { // ตีบวกอาวุธ (V2-R78): เซิร์ฟเวอร์สุ่มและหักเงิน/หินป้องกันเอง บันทึกประวัติ และบันทึกลงฐานข้อมูลทันที
+        const r = sim.enhance(p, m, now / 1000);
+        if (typeof r === 'string') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'enh', r }); return; }
+        try { db.logEnh(p.id, p.c.name, p.c.zone, r); } catch (e) { log('enh log error', e.message); }
+        flush(p);
+        return;
+      }
       if (m.t === 'skill') {
         const r = m.op === 'up' ? sim.learn(p, m.name) : 'invalid';
         if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'skill', name: m.name, r }); }
@@ -273,7 +280,7 @@ function createServer(opts = {}) {
       const ev = (ez[c.zone] || []).filter(e => cur.has(e.id) || e.by === p.id); if (ev.length) out.ev = ev;
       out.me = { zone: c.zone, x: R(c.x), y: R(c.y), hp: Math.ceil(p.hp), maxHp: p.maxHp, atk: p.atk, def: p.def, lv: c.lv, exp: c.exp, job: c.job, jexp: c.jexp, gold: c.gold || 0, dead: p.dead,
         buffT: +p.buffT.toFixed(1), guardT: +p.guardT.toFixed(1), ...(p.personal.length ? { ev: p.personal } : {}),
-        ...(p.bagDirty ? { bag: c.bag, eq: c.eq } : {}),
+        ...(p.bagDirty ? { bag: c.bag, eq: c.eq, enh: c.enh || {} } : {}),
         ...(p.skDirty ? { sk: c.sk, pts: sim.freePoints(p), bon: p.bon, st: c.st, spts: sim.statFree(p), cls: sim.clsOf(p) } : {}),
         ...(p.partyDirty || (p.party && tickN % 10 === 0) ? { party: sim.partyView(p) } : {}) };
       send(p.ws, out);

@@ -23,6 +23,19 @@ function open(file) {
       token TEXT PRIMARY KEY,
       account_id INTEGER NOT NULL REFERENCES accounts(id),
       expire_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS enh_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      zone TEXT NOT NULL,
+      item TEXT NOT NULL,
+      from_lv INTEGER NOT NULL,
+      to_lv INTEGER NOT NULL,
+      ok INTEGER NOT NULL,
+      gold INTEGER NOT NULL,
+      stone INTEGER NOT NULL,
+      at INTEGER NOT NULL
     );`);
   // V2-R4: กระเป๋าและอุปกรณ์ (JSON) — เพิ่มคอลัมน์ให้ฐานข้อมูลเก่า
   const cols = db.prepare('PRAGMA table_info(characters)').all().map(c => c.name);
@@ -44,6 +57,8 @@ function open(file) {
   if (!cols.includes('starter')) db.exec('ALTER TABLE characters ADD COLUMN starter INTEGER NOT NULL DEFAULT 0');
   // V2-R73: เงินในเกม (จำนวนเต็ม ไม่ติดลบ)
   if (!cols.includes('gold')) db.exec('ALTER TABLE characters ADD COLUMN gold INTEGER NOT NULL DEFAULT 0');
+  // V2-R78: ค่าตีบวกของอาวุธที่ใส่อยู่ (JSON ช่องอุปกรณ์ → ระดับ)
+  if (!cols.includes('enh')) db.exec("ALTER TABLE characters ADD COLUMN enh TEXT NOT NULL DEFAULT '{}'");
 
   const hash = pass => {
     const salt = crypto.randomBytes(16);
@@ -59,10 +74,11 @@ function open(file) {
     getAcc: db.prepare('SELECT * FROM accounts WHERE username = ?'),
     insChar: db.prepare('INSERT INTO characters (account_id, name, zone, x, y, dir, lv, exp, job, jexp, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
     getChar: db.prepare('SELECT * FROM characters WHERE account_id = ?'),
-    saveChar: db.prepare('UPDATE characters SET zone=?, x=?, y=?, dir=?, lv=?, exp=?, job=?, jexp=?, bag=?, eq=?, skills=?, stat=?, look=?, cls=?, clsset=?, cname=?, starter=?, gold=?, updated_at=? WHERE account_id=?'),
+    saveChar: db.prepare('UPDATE characters SET zone=?, x=?, y=?, dir=?, lv=?, exp=?, job=?, jexp=?, bag=?, eq=?, enh=?, skills=?, stat=?, look=?, cls=?, clsset=?, cname=?, starter=?, gold=?, updated_at=? WHERE account_id=?'),
     insSess: db.prepare('INSERT INTO sessions VALUES (?, ?, ?)'),
     getSess: db.prepare('SELECT * FROM sessions WHERE token = ? AND expire_at > ?'),
     delOld: db.prepare('DELETE FROM sessions WHERE expire_at <= ?'),
+    insEnh: db.prepare('INSERT INTO enh_log (account_id, name, zone, item, from_lv, to_lv, ok, gold, stone, at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'),
   };
 
   return {
@@ -85,8 +101,10 @@ function open(file) {
       return token;
     },
     session(token) { return typeof token === 'string' ? q.getSess.get(token, Date.now()) : undefined; },
-    character(accountId) { const c = q.getChar.get(accountId); if (c) { c.bag = JSON.parse(c.bag || '[]'); c.eq = JSON.parse(c.eq || '{}'); c.sk = JSON.parse(c.skills || '{}'); delete c.skills; c.st = JSON.parse(c.stat || '{}'); delete c.stat; try { c.look = JSON.parse(c.look || '{}'); } catch (e) { c.look = {}; } } return c; },
-    save(c) { q.saveChar.run(c.zone, c.x, c.y, c.dir, c.lv, c.exp, c.job, c.jexp, JSON.stringify(c.bag || []), JSON.stringify(c.eq || {}), JSON.stringify(c.sk || {}), JSON.stringify(c.st || {}), JSON.stringify(c.look || {}), c.cls || 'นักดาบ', c.clsset ? 1 : 0, String(c.cname || ''), c.starter ? 1 : 0, Math.max(0, Math.floor(c.gold || 0)), Date.now(), c.account_id); },
+    character(accountId) { const c = q.getChar.get(accountId); if (c) { c.bag = JSON.parse(c.bag || '[]'); c.eq = JSON.parse(c.eq || '{}'); c.enh = JSON.parse(c.enh || '{}'); c.sk = JSON.parse(c.skills || '{}'); delete c.skills; c.st = JSON.parse(c.stat || '{}'); delete c.stat; try { c.look = JSON.parse(c.look || '{}'); } catch (e) { c.look = {}; } } return c; },
+    save(c) { q.saveChar.run(c.zone, c.x, c.y, c.dir, c.lv, c.exp, c.job, c.jexp, JSON.stringify(c.bag || []), JSON.stringify(c.eq || {}), JSON.stringify(c.enh || {}), JSON.stringify(c.sk || {}), JSON.stringify(c.st || {}), JSON.stringify(c.look || {}), c.cls || 'นักดาบ', c.clsset ? 1 : 0, String(c.cname || ''), c.starter ? 1 : 0, Math.max(0, Math.floor(c.gold || 0)), Date.now(), c.account_id); },
+    // ประวัติการตีบวกทุกครั้ง (V2-R78): สำเร็จหรือล้มเหลวก็บันทึก
+    logEnh(accountId, name, zone, r) { q.insEnh.run(accountId, String(name), String(zone), String(r.item), r.from, r.to, r.ok ? 1 : 0, r.gold, r.stone, Date.now()); },
     close() { db.close(); },
   };
 }

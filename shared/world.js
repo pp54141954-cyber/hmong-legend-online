@@ -298,9 +298,12 @@ const CFG={
  starter:{eq:{weapon:'sword_wood',armor:'coat_cloth'},bag:[['potion_s',10],['potion_m',3]]},
  /* เศรษฐกิจ (V2-R73): เงินเริ่มต้น · เงินต่อค่าประสบการณ์ของมอนสเตอร์ · เงินบอส · ระยะซื้อของ (ช่อง) — ค่าทดลอง */
  economy:{startGold:100,goldPerExp:.12,bossGold:150,shopRange:3.5},
+ /* ตีบวกอาวุธ (V2-R78 · ข้อกำหนด V1.2 ฉบับยืนยัน): steps[ระดับปัจจุบัน] = โอกาสสำเร็จ · เงินต่อครั้ง · หินป้องกันต่อครั้ง
+    ยืนยันแล้ว: +10 ถึง +15 · ระดับ +0 ถึง +9 (prov:1) เป็นค่าชั่วคราวรอตรวจ · powerPerLv (ATK ต่อระดับตีบวก) เป็นค่าทดลอง ยังไม่มีข้อกำหนดยืนยัน */
+ enhance:{cap:15,stone:'enh_stone',powerPerLv:.06,cooldownMs:800,steps:[{rate:1,gold:2000,stone:1,prov:1},{rate:1,gold:2000,stone:1,prov:1},{rate:1,gold:2000,stone:1,prov:1},{rate:.85,gold:5000,stone:1,prov:1},{rate:.85,gold:5000,stone:1,prov:1},{rate:.85,gold:5000,stone:1,prov:1},{rate:.65,gold:15000,stone:1,prov:1},{rate:.65,gold:15000,stone:1,prov:1},{rate:.65,gold:15000,stone:1,prov:1},{rate:.65,gold:15000,stone:1,prov:1},{rate:.35,gold:40000,stone:1},{rate:.15,gold:60000,stone:1},{rate:.1,gold:90000,stone:1},{rate:.1,gold:140000,stone:1},{rate:.05,gold:200000,stone:1}]},
  classWeapon:{'นักดาบ':'sword','นักธนู':'bow','นักฆ่า':'daggers','นักสู้':'fists','ผู้สืบวิญญาณ':'staff','ผู้รักษา':'leafstaff','ผู้ใช้มนตรา':'book','ผู้พิทักษ์':'shield'},
  /* NPC ร้านค้า (V2-R73): ตำแหน่งเป็นช่อง · ร้านขาย [ไอเทม, ราคา] — ค่าทดลอง ยังไม่มีข้อกำหนดยืนยัน */
- npcs:[{id:'shop1',name:'ป้าขายของ',zone:'village',tx:12.5,ty:18.6,shop:[['potion_s',10],['potion_m',30],['sword_wood',50],['sword_iron',150],['bow_wood',50],['bow_iron',150],['daggers_wood',50],['daggers_iron',150],['fists_wood',50],['fists_iron',150],['staff_wood',50],['staff_iron',150],['leafstaff_wood',50],['leafstaff_iron',150],['book_wood',50],['book_iron',150],['shield_wood',50],['shield_iron',150]]},{id:'shop2',name:'ป้าขายของ',zone:'village2',tx:22.5,ty:22.6,shop:[['potion_s',10],['potion_m',30],['sword_wood',50],['sword_iron',150],['bow_wood',50],['bow_iron',150],['daggers_wood',50],['daggers_iron',150],['fists_wood',50],['fists_iron',150],['staff_wood',50],['staff_iron',150],['leafstaff_wood',50],['leafstaff_iron',150],['book_wood',50],['book_iron',150],['shield_wood',50],['shield_iron',150]]}],
+ npcs:[{id:'shop1',name:'ป้าขายของ',zone:'village',tx:12.5,ty:18.6,shop:[['potion_s',10],['potion_m',30],['sword_wood',50],['sword_iron',150],['bow_wood',50],['bow_iron',150],['daggers_wood',50],['daggers_iron',150],['fists_wood',50],['fists_iron',150],['staff_wood',50],['staff_iron',150],['leafstaff_wood',50],['leafstaff_iron',150],['book_wood',50],['book_iron',150],['shield_wood',50],['shield_iron',150]]},{id:'shop2',name:'ป้าขายของ',zone:'village2',tx:22.5,ty:22.6,shop:[['potion_s',10],['potion_m',30],['sword_wood',50],['sword_iron',150],['bow_wood',50],['bow_iron',150],['daggers_wood',50],['daggers_iron',150],['fists_wood',50],['fists_iron',150],['staff_wood',50],['staff_iron',150],['leafstaff_wood',50],['leafstaff_iron',150],['book_wood',50],['book_iron',150],['shield_wood',50],['shield_iron',150]]},{id:'smith1',name:'ช่างตีเหล็ก',role:'smith',zone:'village',tx:19.5,ty:14.5,shop:[['enh_stone',500]]},{id:'smith2',name:'ช่างตีเหล็ก',role:'smith',zone:'village2',tx:25.5,ty:15.5,shop:[['enh_stone',500]]}],
  items:{
   potion_s:{name:'ยาสมุนไพรเล็ก',type:'use',heal:40},
   potion_m:{name:'ยาสมุนไพรกลาง',type:'use',heal:100},
@@ -310,6 +313,7 @@ const CFG={
   feather:{name:'ขนไก่ฟ้า',type:'mat'},
   fang:{name:'เขี้ยวสัตว์ป่า',type:'mat'},
   ore:{name:'เศษหินแร่',type:'mat'},
+  enh_stone:{name:'หินป้องกันการตีบวก',type:'mat'},
   spirit:{name:'เศษวิญญาณ',type:'mat'},
   sword_wood:{name:'ดาบไม้ฝึกหัด',type:'eq',slot:'weapon',cls:'นักดาบ',atk:4},
   sword_iron:{name:'ดาบเหล็กตีมือ',type:'eq',slot:'weapon',cls:'นักดาบ',atk:10},

@@ -1,176 +1,106 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""ตารางสมดุลระบบอาวุธ (V2-R77) — ค่าข้อเสนอ ยังไม่ได้ใช้ในเกมหรือเซิร์ฟเวอร์
+"""คำนวณค่าสมดุลตีบวกอาวุธตามข้อกำหนด V1.2 ฉบับยืนยัน (V2-R78) — ไม่แก้เกมและไม่เขียนฐานข้อมูล
 
-รัน: python3 tools/weapon_balance.py
-- อ่านค่าตั้งต้นจากค่าที่เกมใช้อยู่ (CFG.player และสูตร pAtk ใน CFG.balance)
-- ไม่แก้ไฟล์เกม ไม่เขียนฐานข้อมูล
-- มีการตรวจตัวเอง (assert) และเทียบค่าวิเคราะห์กับการจำลองแบบสุ่ม
+- อ่านค่าจริงจาก CFG.enhance ใน shared/world.js (ไฟล์เดียวกับที่เกมและเซิร์ฟเวอร์ใช้) จึงไม่คลาดเคลื่อนจากโค้ด
+- กติกา (กฎหินป้องกันแบบ A): ทุกครั้งใช้หินป้องกัน 1 ก้อน · สำเร็จ +1 · ล้มเหลวคงระดับเดิม (ไม่ลด ไม่แตก ไม่หาย)
+  จึงไม่มีการย้อนระดับ: จำนวนครั้งที่คาดหวังของแต่ละขั้น = 1 / อัตราสำเร็จ
+- มีการจำลองแบบสุ่มเพื่อเทียบกับค่าที่คำนวณได้ (ถ้าต่างเกิน 2% จะหยุดพร้อมข้อผิดพลาด)
+
+รัน: python3 -B tools/weapon_balance.py
 """
-import random
+import json, os, random, subprocess
 
-# ---- ค่าจากเกม (game/index.html: CFG.player.baseAtk=12, atkPerLv=3; CFG.balance.pAtk บวก 1 ต่อเลเวลจาก STR) ----
-BASE_ATK = 12
-ATK_PER_LV = 3 + 1
-
-
-def p_atk(lv):
-    """ATK อ้างอิงของผู้เล่นที่เลเวล lv (เป้าหมายสมดุลของ CFG.balance)"""
-    return BASE_ATK + (lv - 1) * ATK_PER_LV
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+EXP_TIGER = 193   # EXP ของเสือ (Lv 22) จาก docs/BALANCE.md — ใช้เป็นมอนสเตอร์ทั่วไปที่ให้เงินสูงสุดในตารางนั้น
+GOLD_PER_EXP = 0.12  # CFG.economy.goldPerExp
 
 
-# ---- ค่าข้อเสนอ (ยังไม่อนุมัติ) ----
-ENH_CAP = 15            # ตัวเลือก +15 ตามคำแนะนำในข้อเสนอ (+10 / +20 ใช้ค่านี้แทนได้ แต่ +20 ต้องมีอัตราเพิ่ม)
-ENH_PER_LEVEL = 0.06    # โบนัสตีบวก = ATK ฐานอาวุธ × 0.06 × ระดับ (ค่านี้ให้ตัวอย่าง 286 = 220 + 66)
-DROP_CHANCE_789 = 0.5   # โอกาสลด 1 ระดับเมื่อล้มเหลวที่ +7 ถึง +9 (ข้อเสนอเขียนว่า "มีโอกาส")
-RATIO = {               # ATK ฐานอาวุธ = pAtk(เลเวลอาวุธ) × ตัวคูณความหายาก
-    'ธรรมดา': 0.10, 'ชั้นดี': 0.15, 'หายาก': 0.20, 'มหากาพย์': 0.25,
-    'ตำนาน': 0.30, 'เทพนิยาย': 0.35, 'ศักดิ์สิทธิ์': 0.40,
-}
-ENH_TIERS = [
-    # (ช่วงเป้าหมาย, อัตราสำเร็จ, ผลเมื่อล้มเหลว)
-    ((1, 3), 1.00, 'ไม่มี'),
-    ((4, 6), 0.85, 'เสียวัตถุดิบ ระดับเดิม'),
-    ((7, 9), 0.65, 'มีโอกาส 50% ลด 1 ระดับ'),
-    ((10, 12), 0.40, 'ลด 1 ระดับ'),
-    ((13, 15), 0.20, 'ลด 1 ระดับ'),
-]
-# จำนวนวัตถุดิบหินเสริมต่อการพยายาม 1 ครั้ง (ค่าทดลองของผู้ออกแบบ ไม่ใช่ข้อเสนอของเจ้าของ)
-STONE_COST_TIER = [(1, 3, 1), (4, 6, 2), (7, 9, 3), (10, 12, 5), (13, 15, 8)]
+def load_cfg():
+    out = subprocess.run(['node', '-e', "console.log(JSON.stringify(require('./shared/world.js').CFG.enhance))"],
+                         cwd=ROOT, capture_output=True, text=True, check=True)
+    return json.loads(out.stdout)
 
 
-def rate(t):
-    """อัตราสำเร็จของการเสริมไปยังระดับ t (ใช้ระดับเป้าหมาย ไม่มีช่องว่างที่ +0)"""
-    for (lo, hi), r, _ in ENH_TIERS:
-        if lo <= t <= hi:
-            return r
-    raise ValueError('ระดับตีบวกนอกช่วงข้อเสนอ: %s' % t)
+def step(cfg, lv):
+    s = cfg['steps'][lv]
+    return s['rate'], s['gold'], s['stone'], bool(s.get('prov'))
 
 
-def stone_cost(t):
-    for lo, hi, c in STONE_COST_TIER:
-        if lo <= t <= hi:
-            return c
-    raise ValueError('ระดับตีบวกนอกช่วงข้อเสนอ: %s' % t)
+def expected(cfg, a, b):
+    """ค่าคาดหวังจากระดับ +a ถึง +b: (จำนวนครั้ง, เงิน, หินป้องกัน)"""
+    att = gold = stone = 0.0
+    for lv in range(a, b):
+        r, g, st, _ = step(cfg, lv)
+        att += 1 / r
+        gold += g / r
+        stone += st / r
+    return att, gold, stone
 
 
-def solve(A, b):
-    """แก้ระบบสมการเชิงเส้นด้วยการกำจัดแบบเกาส์ (มีการเลือกแถวหลัก)"""
-    n = len(b)
-    M = [row[:] + [b[i]] for i, row in enumerate(A)]
-    for col in range(n):
-        piv = max(range(col, n), key=lambda r: abs(M[r][col]))
-        M[col], M[piv] = M[piv], M[col]
-        d = M[col][col]
-        for r in range(n):
-            if r != col and M[r][col] != 0.0:
-                k = M[r][col] / d
-                for c in range(col, n + 1):
-                    M[r][c] -= k * M[col][c]
-    return [M[i][n] / M[i][i] for i in range(n)]
-
-
-def expected(cap, cost=lambda t: 1.0, drop_q=DROP_CHANCE_789, protect_from=None, protect_cost=0.0):
-    """ค่าคาดหวัง (จำนวนครั้ง หรือปริมาณวัตถุดิบ) จากระดับ +0 ไปถึง +cap
-
-    สถานะ s = ระดับปัจจุบัน 0..cap-1; E[cap] = 0
-    protect_from: ถ้ากำหนด จะใช้หินป้องกันทุกครั้งที่ระดับเป้าหมาย >= ค่านี้ (ไม่ลดระดับ และเสียต้นทุนเพิ่ม)
-    """
-    A = [[0.0] * cap for _ in range(cap)]
-    b = [0.0] * cap
-    for s in range(cap):
-        t = s + 1
-        p = rate(t)
-        f = 1.0 - p
-        protected = protect_from is not None and t >= protect_from
-        A[s][s] += 1.0
-        b[s] = cost(t) + (protect_cost if protected else 0.0)
-        if s + 1 < cap:
-            A[s][s + 1] -= p
-        if 4 <= t <= 6 or protected:
-            outcomes = [(s, f)]
-        elif 7 <= t <= 9:
-            outcomes = [(max(s - 1, 0), f * drop_q), (s, f * (1.0 - drop_q))]
-        elif t >= 10:
-            outcomes = [(max(s - 1, 0), f)]
-        else:
-            outcomes = []
-        for dest, pr in outcomes:
-            A[s][dest] -= pr
-    return solve(A, b)[0]
-
-
-def simulate(cap, runs, seed=77):
-    """จำลองแบบสุ่มเพื่อเทียบกับค่าวิเคราะห์ (จำนวนครั้งต่อการไปถึง cap)"""
+def simulate(cfg, a, b, runs, seed=78):
     rng = random.Random(seed)
-    total = 0
+    ta = tg = ts = 0
     for _ in range(runs):
-        lv, n = 0, 0
-        while lv < cap:
-            t = lv + 1
-            n += 1
-            if rng.random() < rate(t):
+        lv, n, g, s = a, 0, 0, 0
+        while lv < b:
+            r, gg, st, _ = step(cfg, lv)
+            n += 1; g += gg; s += st
+            if rng.random() < r:
                 lv += 1
-            elif 4 <= t <= 6:
-                pass
-            elif 7 <= t <= 9:
-                if rng.random() < DROP_CHANCE_789:
-                    lv = max(lv - 1, 0)
-            else:
-                lv = max(lv - 1, 0)
-        total += n
-    return total / runs
+        ta += n; tg += g; ts += s
+    return ta / runs, tg / runs, ts / runs
 
 
-def self_check():
-    assert abs(expected(1) - 1.0) < 1e-9
-    assert abs(expected(4) - (3 + 1 / 0.85)) < 1e-9          # +1..+3 ไม่ล้มเหลว, +4 ล้มเหลวแล้วอยู่ที่เดิม
-    assert abs(expected(15) - expected(14)) > 0              # เพิ่มระดับต้องใช้ครั้งมากขึ้นเสมอ
-    base = 286 / (1 + ENH_PER_LEVEL * 5)
-    assert abs(base - 220) < 1e-9 and abs(base * ENH_PER_LEVEL * 5 - 66) < 1e-9
-    mc = simulate(10, 40000)
-    an = expected(10)
-    assert abs(mc - an) / an < 0.03, 'จำลอง %.2f ไม่ตรงกับวิเคราะห์ %.2f' % (mc, an)
-    return mc, an
+def close(x, y, tol=0.02):
+    return abs(x - y) <= tol * max(abs(y), 1e-9)
 
 
 def main():
-    mc, an = self_check()
-    print('ตรวจตัวเอง: ผ่าน (การจำลอง cap 10 = %.2f ครั้ง, วิเคราะห์ = %.2f ครั้ง)\n' % (mc, an))
+    cfg = load_cfg()
+    assert cfg['cap'] == 15, 'ระดับสูงสุดต้องเป็น +15'
+    # ตรวจว่าค่า +10 ถึง +14 ตรงกับข้อกำหนด V1.2
+    v12 = [(.35, 40000), (.15, 60000), (.10, 90000), (.10, 140000), (.05, 200000)]
+    for k, (r, g) in enumerate(v12):
+        s = cfg['steps'][10 + k]
+        assert abs(s['rate'] - r) < 1e-12 and s['gold'] == g and s['stone'] == 1 and not s.get('prov'), 'ไม่ตรงข้อกำหนด +%d' % (10 + k)
 
-    print('## 1. ตัวอย่างของเจ้าของ: 286 ATK, +66 จากตีบวก, Lv.50, +5')
-    base = 286 / (1 + ENH_PER_LEVEL * 5)
-    print('- ATK ฐานอาวุธ = 286 / (1 + 0.06 × 5) = %.0f' % base)
-    print('- โบนัสตีบวก = %.0f × 0.06 × 5 = %.0f' % (base, base * ENH_PER_LEVEL * 5))
-    print('- ATK อ้างอิงผู้เล่น Lv.50 (pAtk) = %d → อาวุธฐาน = %.2f เท่าของ pAtk' % (p_atk(50), base / p_atk(50)))
-    print('- ข้อเสนอในเอกสารใช้ 0.10–0.40 เท่าของ pAtk จึงตัวอย่างนี้แรงกว่าข้อเสนอมาก\n')
-
-    print('## 2. ATK ฐานอาวุธตามเลเวลและความหายาก (ปัดเป็นจำนวนเต็ม)')
-    levels = [1, 25, 50, 75, 100]
-    print('| ความหายาก | ' + ' | '.join('Lv.%d' % lv for lv in levels) + ' |')
-    print('| --- |' + ' --- |' * len(levels))
-    for name, r in RATIO.items():
-        print('| %s (×%.2f) | ' % (name, r) + ' | '.join('%d' % round(p_atk(lv) * r) for lv in levels) + ' |')
-    print('- pAtk: ' + ', '.join('Lv.%d = %d' % (lv, p_atk(lv)) for lv in levels) + '\n')
-
-    print('## 3. ตารางตีบวกรายระดับ (ระดับเป้าหมาย t, cap = t)')
-    print('| เป้าหมาย | อัตราสำเร็จ | ผลเมื่อล้มเหลว | ตัวคูณ ATK | ครั้งที่คาดหวังจาก +0 | หินเสริมที่คาดหวังจาก +0 |')
+    print('## 1. ตารางที่ยืนยันแล้ว: +10 ถึง +15 (อ่านจาก CFG.enhance)')
+    print('| จาก → ไป | โอกาสสำเร็จ | เงินต่อครั้ง | หินป้องกันต่อครั้ง | ครั้งที่คาดหวังในขั้นนี้ | เงินที่คาดหวังในขั้นนี้ |')
     print('| --- | --- | --- | --- | --- | --- |')
-    for t in range(1, ENH_CAP + 1):
-        tier = next(x for x in ENH_TIERS if x[0][0] <= t <= x[0][1])
-        print('| +%d | %d%% | %s | ×%.2f | %.1f | %.1f |' % (
-            t, round(rate(t) * 100), tier[2], 1 + ENH_PER_LEVEL * t,
-            expected(t), expected(t, cost=stone_cost)))
+    for lv in range(10, 15):
+        r, g, st, _ = step(cfg, lv)
+        a, gg, ss = expected(cfg, lv, lv + 1)
+        print('| +%d → +%d | %d%% | %s | %d | %.1f | %s |' % (lv, lv + 1, round(r * 100), f'{g:,}', st, a, f'{gg:,.0f}'))
+    a10, g10, s10 = expected(cfg, 10, 15)
+    print('| **รวม +10 → +15** | | | | **%.1f** | **%s** |' % (a10, f'{g10:,.0f}'))
     print()
+    print('- หินป้องกันที่คาดหวังจาก +10 ถึง +15: %.1f ก้อน (ครั้งละ 1 ก้อน ทุกการพยายาม)' % s10)
 
-    print('## 4. ความไวต่อค่าที่ยังไม่ตัดสิน (เป้าหมาย +15 จาก +0)')
-    print('| สถานการณ์ | ครั้งที่คาดหวัง | หินเสริมที่คาดหวัง |')
-    print('| --- | --- | --- |')
-    for q in (0.25, 0.5, 0.75):
-        print('| โอกาสลด +7–9 = %d%% ไม่ใช้หินป้องกัน | %.1f | %.1f |' % (
-            round(q * 100), expected(ENH_CAP, drop_q=q), expected(ENH_CAP, cost=stone_cost, drop_q=q)))
-    print('| ใช้หินป้องกันทุกครั้งตั้งแต่ +7 (ทดลองราคา 1 ก้อนต่อครั้ง) | %.1f | %.1f |' % (
-        expected(ENH_CAP, protect_from=7), expected(ENH_CAP, cost=stone_cost, protect_from=7, protect_cost=1.0)))
+    print('\n## 2. การจำลองแบบสุ่มเทียบกับค่าคำนวณ (100,000 ครั้ง ต่อช่วง)')
+    ma, mg, ms = simulate(cfg, 10, 15, 100000)
+    print('- +10 → +15: จำลอง %.2f ครั้ง · %s เงิน · %.2f หิน | คำนวณ %.2f · %s · %.2f' % (
+        ma, f'{mg:,.0f}', ms, a10, f'{g10:,.0f}', s10))
+    assert close(ma, a10) and close(mg, g10) and close(ms, s10), 'การจำลองไม่ตรงกับค่าคำนวณ'
+
+    a0, g0, s0 = expected(cfg, 0, 15)
+    print('\n## 3. จาก +0 ถึง +15 (รวมค่าชั่วคราวของ +0 ถึง +9)')
+    print('- ครั้งที่คาดหวัง %.1f · เงิน %s · หินป้องกัน %.1f ก้อน' % (a0, f'{g0:,.0f}', s0))
+    prov_g = sum(step(cfg, lv)[1] / step(cfg, lv)[0] for lv in range(0, 10))
+    print('- ส่วนที่เป็นค่าชั่วคราว (+0 ถึง +9): เงิน %s' % f'{prov_g:,.0f}')
+
+    print('\n## 4. ค่าใช้จ่ายเทียบกับเศรษฐกิจปัจจุบัน')
+    per_kill = GOLD_PER_EXP * EXP_TIGER
+    print('- เงินจากการล่าปัจจุบัน: EXP × %.2f เงิน — เสือ (EXP %d) ให้ประมาณ %.0f เงินต่อตัว' % (GOLD_PER_EXP, EXP_TIGER, per_kill))
+    print('- ต้องล่าประมาณ %s ตัว เพื่อจ่ายเงิน +10 ถึง +15 (ไม่รวมหิน)' % f'{g10 / per_kill:,.0f}')
+    print('- ต้องล่าประมาณ %s ตัว เพื่อไปถึง +15 จาก +0 (ค่าชั่วคราว)' % f'{g0 / per_kill:,.0f}')
+
+    print('\n## 5. ค่าโจมตีอาวุธตามระดับตีบวก (โบนัส = ATK ฐาน × %.2f × ระดับ)' % cfg['powerPerLv'])
+    print('| ระดับ | ตัวคูณ | ดาบไม้ฝึกหัด (ATK 4) | ดาบด้ามแดงม้ง (ATK 24) |')
+    print('| --- | --- | --- | --- |')
+    for lv in range(0, 16):
+        m = 1 + cfg['powerPerLv'] * lv
+        print('| +%d | ×%.2f | %.2f | %.2f |' % (lv, m, 4 * m, 24 * m))
 
 
 if __name__ == '__main__':

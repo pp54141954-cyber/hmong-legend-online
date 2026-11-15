@@ -30,5 +30,6 @@
  "shield_wood": "original placeholder drawn for this project (no shield icon in the CC0 pack)",
  "shield_iron": "original placeholder drawn for this project (no shield icon in the CC0 pack)",
  "shield_silver": "original placeholder drawn for this project (no shield icon in the CC0 pack)",
- "shield_hmong": "original placeholder drawn for this project (no shield icon in the CC0 pack)"
+ "shield_hmong": "original placeholder drawn for this project (no shield icon in the CC0 pack)",
+ "enh_stone": "original icon drawn for this project (tools/build_enh_stone_icon.py); not an external asset"
 }
