@@ -38,5 +38,16 @@ jobs:
             console.log('HOOK',n,i,i<0?'':s.slice(Math.max(0,i-80),i+1800).replace(/\n/g,' '));
           }
           NODE
+      - name: Inspect effect render tail and public state exports
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),s=fs.readFileSync('game/index.html','utf8');
+          const base=s.indexOf('window.HL={');
+          console.log('EXPORTS',s.slice(base,base+7000).replace(/\n/g,' '));
+          const d=s.indexOf('function draw(){'),end=s.indexOf('function loop(',d);
+          console.log('DRAW_TAIL',s.slice(end-9000,end).replace(/\n/g,' '));
+          const fx=s.indexOf('const fx=[],nums=[],shots=[]');
+          console.log('FX_ARRAY',fx,s.slice(fx-160,fx+250).replace(/\n/g,' '));
+          NODE
       - name: Syntax-check grand effect renderer
         run: node --check game/skill-vfx-grand.js
