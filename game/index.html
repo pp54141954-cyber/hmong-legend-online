@@ -1515,7 +1515,7 @@ function draw(){
     ctx.fillStyle='rgba(255,213,112,.18)';ctx.fill();ctx.stroke();
     ctx.font='bold 14px sans-serif';ctx.textAlign='center';ctx.fillStyle='#ffda85';ctx.fillText('📍',p.x,p.y-9);ctx.restore();
   }
-  if(debug){for(let y=sy0;y<sy1;yfor(let x=sx0;x<sx1;x++)if(tileBlocked(x,y)){ctx.fillStyle='rgba(255,40,40,.35)';ctx.fillRect(x*T,y*T,T,T)}
+  if(debug){for(let y=sy0;y<sy1;y++)for(let x=sx0;x<sx1;x++)if(tileBlocked(x,y)){ctx.fillStyle='rgba(255,40,40,.35)';ctx.fillRect(x*T,y*T,T,T)}
     ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1;ctx.strokeRect(player.x-HW,player.y-HH,HW*2,HH*2)}
   ctx.setTransform(dpr,0,0,dpr,0,0);
   if(WT.night){ctx.fillStyle=WT.blood?'rgba(120,10,20,.30)':'rgba(10,20,70,.34)';ctx.fillRect(0,0,cw,ch)}
