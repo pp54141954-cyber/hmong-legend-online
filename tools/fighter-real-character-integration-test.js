@@ -62,6 +62,8 @@ const check=(name,condition)=>{assert.ok(condition,name);console.log('PASS '+nam
   const out=path.join(__dirname,'test-artifacts');fs.mkdirSync(out,{recursive:true});
   for(const spec of M.SKILLS){
     await page.waitForFunction(()=>!window.HL.PS.cast,null,{timeout:11000});
+    const d=['E','W','S','N'][(spec.slot-3)%4];
+    await page.evaluate(direction=>{window.HL.player.dir=direction;},d);
     const returned=await page.evaluate(slot=>window.HL.useSkill(slot),spec.slot);
     check('real useSkill('+spec.slot+') accepts '+spec.name,returned==='ok');
     await page.waitForFunction(v=>window.HLGrandStage.martialEvents.some(e=>e.slot===v.slot&&e.name===v.name),
@@ -71,6 +73,18 @@ const check=(name,condition)=>{assert.ok(condition,name);console.log('PASS '+nam
       return {event:matched.at(-1),visible:H.martialCount>0,errors:!!window.HL?.player};
     },spec.slot);
     check('skill '+spec.slot+' renders its OWN correct type on real fighter',recent.event?.kind===spec.kind&&recent.visible);
+    await page.waitForFunction(()=>window.HLGrandStage.fighterApprovedAtlasReady&&
+      window.HLGrandStage.fighterDirectionalAtlasReady,null,{timeout:12000});
+    await page.waitForFunction(slot=>window.HLGrandStage.fighterLastFrame?.slot===slot,
+      spec.slot,{timeout:9000});
+    check('skill '+spec.slot+' uses approved 9x5 Fighter atlas (not generic circles)',
+      await page.evaluate(slot=>{
+        const stage=window.HLGrandStage;
+        return stage.fighterAtlasFrames>0&&stage.fighterLastFrame.slot===slot;
+      },spec.slot));
+    check('existing chart art for '+spec.slot+' is suppressed only in Fighter preview',
+      await page.evaluate(()=>window.HL.fxList.some(f=>f.cls==='นักสู้'&&
+       /^cchart/.test(f.k||'')&&f.q===true)));
     if(spec.slot>=9){
       await page.waitForFunction(()=>window.HLGrandStage.fighterTigerReady,null,{timeout:12000});
       check('spectral tiger uses existing game tiger sprite for skill '+spec.slot,
