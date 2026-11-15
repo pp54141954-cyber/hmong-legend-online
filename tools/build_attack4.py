@@ -5,6 +5,7 @@
 ช่องผลลัพธ์ 240×124 จุดกึ่งกลางเท้า x=120 y=120 · ย่อให้ตัวสูงเท่าภาพเดิน (วัดจากเฟรมท่าพร้อม ที่อาวุธไม่ชูเหนือหัว)
 รัน: python3 tools/build_attack4.py"""
 import json, os, re, sys
+import numpy as np
 from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'tools'))
@@ -17,6 +18,7 @@ ATK4_SETS = [  # (ชุด, ไฟล์ต้นฉบับ) — ตัวล
 ]
 BODY_SETS = [  # (id, อาชีพ, เพศ, ไฟล์ต้นฉบับ) — ตัวละครประจำอาชีพ → game/sprites/pca_<id>.webp (V2-R54) จำนวนเฟรมต่อแถวตามภาพ (4 หรือ 5)
     ('fighter_f', 'นักสู้', 'f', 'fighter_f_attack.png'),
+    ('fighter_m', 'นักสู้', 'm', 'fighter_m_attack.png'),  # V2-R60: นักสู้ชาย 5 เฟรม (ชุดเดียวกับชุดเดินใหม่)
     ('assassin_m', 'นักฆ่า', 'm', 'assassin_m_attack.png'),
     ('assassin_f', 'นักฆ่า', 'f', 'assassin_f_attack.png'),
     ('archer_m', 'นักธนู', 'm', 'archer_m2_attack.png'),
@@ -62,12 +64,36 @@ def holes(im, mn=150):
                 n += 1
     return n
 
+def bands_strong(im, thr=10):
+    """แถวแบบเข้ม: นับเฉพาะพิกเซลที่ทึบพอ (alpha > thr) เพื่อไม่ให้เงาจาง ๆ ทำให้สองแถวติดกัน (V2-R60)"""
+    a = np.asarray(im.split()[3]); H = a.shape[0]
+    occ = (a > thr).sum(1) > 3
+    out, st = [], None
+    for y, o in enumerate(list(occ) + [False]):
+        if o and st is None: st = y
+        elif not o and st is not None:
+            if y - st > H * .1: out.append((st, y))
+            st = None
+    return out
+
+def merge_small(segs, maxn=5):
+    """เกินจำนวนเฟรมสูงสุด: รวมชิ้นที่แคบที่สุด (เช่น ปลายอาวุธที่แยกจากตัว) เข้ากับเพื่อนบ้านที่อยู่ใกล้กว่า (V2-R60)"""
+    segs = list(segs)
+    while len(segs) > maxn:
+        i = min(range(len(segs)), key=lambda k: segs[k][1] - segs[k][0])
+        if i == 0: j = 1
+        elif i == len(segs) - 1: j = i - 1
+        else: j = i - 1 if (segs[i][0] - segs[i - 1][1]) <= (segs[i + 1][0] - segs[i][1]) else i + 1
+        a, b = sorted((i, j)); segs[a:b + 1] = [(segs[a][0], segs[b][1])]
+    return segs
+
 def cut(name):
     im = unbg(os.path.join(SRC, name)); print('  พื้นขาวที่ถูกล้อม:', holes(im), 'ก้อน'); B = bands(im)
+    if len(B) != 4: B = bands_strong(im)
     assert len(B) == 4, (name, 'แถว', B)
     rows = []
     for b0, b1 in B:
-        band = im.crop((0, b0, im.size[0], b1)); segs = col_segments(band)
+        band = im.crop((0, b0, im.size[0], b1)); segs = merge_small(col_segments(band))
         fr = [band.crop((x0, 0, x1, band.size[1])) for x0, x1 in segs]; fr = [f.crop(f.getbbox()) for f in fr]
         assert len(fr) in (4, 5), (name, 'เฟรมในแถว', len(fr)); rows.append(fr)
     assert len({len(r) for r in rows}) == 1, (name, 'จำนวนเฟรมแต่ละแถวไม่เท่ากัน', [len(r) for r in rows])

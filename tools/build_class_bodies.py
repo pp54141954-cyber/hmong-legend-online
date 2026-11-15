@@ -46,6 +46,11 @@ def grid16(front, back):
     fr = frames_grid(unbg(os.path.join(SRC, front)), 4, 4)[:4]; bk = frames_grid(unbg(os.path.join(SRC, back)), 4, 4)[:4]
     return {'S': fr, 'N': bk}
 
+def grid_tr(name):
+    """ตารางโปร่งใส 4×4 (V2-R60): แถว 1 ลง S · แถว 2 ขึ้น N · แถว 3 ซ้าย W · แถว 4 ขวา E (ตรวจจากตำแหน่งใบหน้า)"""
+    fr = frames_grid(unbg(os.path.join(SRC, name)), 4, 4)
+    return {'S': fr[0:4], 'N': fr[4:8], 'W': fr[8:12], 'E': fr[12:16]}
+
 def quad(name):
     """ภาพแบบ 2×2 กลุ่ม (ไม่มีกรอบ): แถวบน ซ้าย=หน้า ขวา=หลัง · แถวสอง ซ้าย=หันซ้าย ขวา=หันขวา"""
     im = unbg(os.path.join(SRC, name)); W = im.size[0]
@@ -127,7 +132,7 @@ def grid4(name, box=None, bg='light'):
     return {d: row_frames(im.crop((0, b0, W, b1))) for d, (b0, b1) in zip('SNWE', bands)}
 
 SETS = [  # (id, อาชีพ, เพศที่ใช้, ฟังก์ชัน)
-    ('fighter_m', 'นักสู้', ['m'], lambda: fighter('m')),
+    ('fighter_m', 'นักสู้', ['m'], lambda: grid_tr('fighter_m_walk.png')),  # V2-R60: ชุดเดินใหม่ของนักสู้ชาย (โปร่งใส)
     ('assassin_m', 'นักฆ่า', ['m'], lambda: grid4('assassin_mf4.png', (8, 8, 880, 880))),
     ('assassin_f', 'นักฆ่า', ['f'], lambda: grid4('assassin_mf4.png', (896, 8, 1766, 880))),
     # V2-R57: เจ้าของเปลี่ยนนักธนูเป็นแบบผมดำ ชุดดำลายแดง (แบบเดิม archer_m.png / archer_f.png เก็บไว้)
