@@ -17,6 +17,8 @@ document.body.appendChild(overlay);
 const ctx=overlay.getContext('2d',{alpha:true});
 const motion=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 const renderer=window.HLGrandVFX.create({quality:'auto',reducedMotion:motion});
+const martial=window.HLMartialVFX?window.HLMartialVFX.create({quality:'auto',reducedMotion:motion}):null;
+const martialStarted=new WeakMap(),martialDone=new WeakSet(),martialEvents=[];
 const nativeSetTransform=gameCtx.setTransform;
 let worldMatrix=null,seen=new WeakSet(),last=0,lastKey='',lastEvent=0;
 let captureWorld=true,sawFrameReset=false;
@@ -47,10 +49,42 @@ function detectKind(e,cls){
   if(k==='sigil'&&cls==='ผู้พิทักษ์')return'shield';
   return window.HLGrandVFX.CLASSES[cls]||'default';
 }
+function trackMartial(){
+  const H=window.HL;
+  if(!H||!martial||typeof H.curCls!=='function'||H.curCls()!=='นักสู้')return;
+  const cast=H.PS&&H.PS.cast,player=H.player;
+  if(!cast||!player||typeof cast!=='object'||!Number.isInteger(cast.key)||cast.key<3||cast.key>11)return;
+  const spec=window.HLMartialVFX.profileFor(H,cast.key);
+  if(!spec)return; // Fail closed if existing game skill names or mechanics changed.
+  if(!martialStarted.has(cast))martialStarted.set(cast,{x:player.x,y:player.y,dir:player.dir});
+  if(!cast.done||martialDone.has(cast))return;
+  martialDone.add(cast);
+  const start=martialStarted.get(cast)||{x:player.x,y:player.y,dir:player.dir};
+  const dv={E:[1,0],W:[-1,0],N:[0,-1],S:[0,1]};
+  const dir=start.dir in dv?start.dir:player.dir;
+  const [ux,uy]=dv[dir]||dv.S,sk=cast.sk||{};
+  let x=player.x,y=player.y-14,fromX=start.x,fromY=start.y-14;
+  if(spec.location==='front'){
+    const dist=Math.min(80,Math.max(34,Number(sk.range)||65))*.57;
+    x+=ux*dist;y+=uy*dist;
+  }else if(spec.location==='target'){
+    const art=Array.isArray(H.fxList)?H.fxList.find(e=>e&&e.k==='cart'&&e.art===spec.art&&Number.isFinite(e.x)&&Number.isFinite(e.y)&&e.t>0):null;
+    if(art){x=art.x;y=art.y;}
+    else{x+=ux*(Number(sk.dist)||46);y+=uy*(Number(sk.dist)||46);}
+  }else if(spec.location==='dash'){
+    x=player.x;y=player.y-14;
+  }
+  if(martial.emit({slot:spec.slot,x,y,dir,fromX,fromY})){
+    martialEvents.push({slot:spec.slot,name:spec.name,path:spec.path,kind:spec.kind,x,y});
+    if(martialEvents.length>30)martialEvents.shift();
+  }
+}
+
 function track(){
   const H=window.HL;
   if(!H||!Array.isArray(H.fxList))return;
   const player=H.player,cls=typeof H.curCls==='function'?H.curCls():'';
+  if(cls==='นักสู้')return; // Nine dedicated martial skills supersede generic VFX.
   const arr=H.fxList;
   for(let i=0;i<arr.length;i++){
     const e=arr[i];
@@ -89,21 +123,26 @@ function frame(time){
   requestAnimationFrame(frame);
   if(!size())return;
   const dt=last?clamp((time-last)/1000,0,.06):.016;last=time;
+  trackMartial();
   track();
   ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,overlay.width,overlay.height);
   // World coordinates already include 3/4 projection in the main canvas.
   if(worldMatrix)ctx.setTransform(...worldMatrix);
   renderer.draw(ctx,dt);
+  if(martial)martial.draw(ctx,dt);
   captureWorld=true;sawFrameReset=false;
 }
 requestAnimationFrame(frame);
 window.HLGrandStage={
   get enabled(){return true},
   get count(){return renderer.count},
+  get martialCount(){return martial?martial.count:0},
+  get martialEvents(){return martialEvents.slice()},
+  get martialSkills(){return window.HLMartialVFX?window.HLMartialVFX.SKILLS:[]},
   get quality(){return renderer.lowQuality?'mobile':'full'},
   emit: e=>renderer.emit(e),
-  clear: ()=>renderer.clear(),
+  clear: ()=>{renderer.clear();if(martial)martial.clear();},
   get worldMatrix(){return worldMatrix&&worldMatrix.slice()},
   layer:overlay
 };
