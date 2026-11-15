@@ -125,8 +125,53 @@ const ios=process.env.MOBILE_BROWSER==='webkit';
     assert.deepEqual(state.dir,[0,0],'hidden app left movement active');
     await page.mouse.up();
 
+
+    // R85 tap-to-move: use an actual valid path tile, not a fake unlocked map.
+    const chooseGoal=async()=>page.evaluate(()=>{
+      const H=window.HL,p=H.player,step=H.T;
+      const candidates=[];
+      for(const r of [3,4,5,6,2,7,8])for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1],[1,1],[-1,1]])
+        candidates.push({x:p.x+dx*r*step,y:p.y+dy*r*step});
+      for(const c of candidates){
+        if(c.x<16||c.y<16||c.x>H.COLS*step-16||c.y>H.ROWS*step-16||H.boxBlocked(c.x,c.y))continue;
+        if(H.tapNavigate(c.x,c.y))return c;
+      }
+      return null;
+    });
+    const dest=await chooseGoal();
+    assert(dest,'No reachable test destination found within the same zone');
+    assert(await page.evaluate(()=>!!window.HL.tapDestination),'destination not installed');
+    const from=await page.evaluate(()=>({x:window.HL.player.x,y:window.HL.player.y}));
+    await page.waitForTimeout(175);
+    const after=await page.evaluate(()=>({x:window.HL.player.x,y:window.HL.player.y}));
+    assert(Math.hypot(after.x-from.x,after.y-from.y)>.3,'tap navigation did not move player');
+
+    // Manual joystick input has precedence over a marked route.
+    if(!await page.evaluate(()=>!!window.HL.tapDestination))await chooseGoal();
+    await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x+78,y,{steps:5});
+    assert.equal(await page.evaluate(()=>window.HL.tapDestination),null,'manual joystick did not cancel tap route');
+    await page.mouse.up();
+
+    // A blocked map tile must never be accepted as a destination.
+    const blocked=await page.evaluate(()=>{
+      const H=window.HL;
+      for(let y=2;y<H.ROWS-2;y++)for(let x=2;x<H.COLS-2;x++)if(H.tileBlocked(x,y)){
+        const wx=(x+.5)*H.T,wy=(y+.5)*H.T;
+        if(H.tapNavigate(wx,wy))return 'accepted blocked tile '+x+','+y;
+        return null;
+      }
+      return 'no blocked test tile found';
+    });
+    assert.equal(blocked,null,'blocked destination check failed: '+blocked);
+    assert.equal(await page.evaluate(()=>window.HL.tapDestination),null,'blocked map tap left route active');
+
+    await chooseGoal();
+    assert(await page.evaluate(()=>!!window.HL.tapDestination),'tap destination missing before blur');
+    await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
+    assert.equal(await page.evaluate(()=>window.HL.tapDestination),null,'blur did not cancel tap navigation');
+
     assert.deepEqual(errors,[],'browser JavaScript errors: '+errors.join('; '));
-    console.log('PASS R85 '+(ios?'iPhone WebKit':'Android Chromium')+': multi-pointer ownership, drag, cancel, app hide, focus loss and keyboard hold');
+    console.log('PASS R85 '+(ios?'iPhone WebKit':'Android Chromium')+': multi-pointer ownership, tap path, manual override, blocked destinations, app hide and keyboard hold');
   }catch(e){
     if(page)console.error('R85 diagnostics:',JSON.stringify({errors, state:await page.evaluate(()=>({auth:window.HLNET?.auth,joined:window.HLNET?.joined,joy:!!window.HL?.joy,net:document.getElementById('net')?.hidden})).catch(()=>null)}));
     throw e;
