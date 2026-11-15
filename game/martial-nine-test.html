@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#111321">
+<title>Hmong Legend V2.0 — ทดสอบสกิลนักสู้ 9 ท่า</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Noto Sans Thai",Tahoma,sans-serif;color:#f4e9d4;background:#111321;--gold:#eac683;--muted:#aaa7b1;--surface:#202433;--border:#54516a}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;overscroll-behavior-y:contain}button,select,input{font:inherit}button{touch-action:manipulation}
+.wrapper{max-width:1100px;margin:0 auto;padding:14px 14px max(28px,env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.kicker{color:#f1be65;font-size:11px;letter-spacing:.18em;font-weight:800}
+h1{font-size:clamp(19px,3vw,28px);margin:3px 0 5px;line-height:1.27}
+.sub{color:#c2b9ac;font-size:12px;line-height:1.45}
+.label{border:1px solid #655b49;border-radius:50px;padding:6px 9px;font-size:11px;color:#f6d5a1;white-space:nowrap}
+h2{margin:0 0 8px;font-size:15px;color:#ffe7b8}.game{border-radius:17px;overflow:hidden;border:1px solid #715d43;background:#181b23;box-shadow:0 8px 33px #0005;position:relative}
+canvas{width:100%;height:auto;display:block;aspect-ratio:960/555;touch-action:manipulation}
+.arena-badge{position:absolute;top:11px;left:12px;font-size:11px;color:#e5dfd2;background:#171820df;border:1px solid #625c58;padding:6px 9px;border-radius:20px;pointer-events:none}
+.fps{position:absolute;right:12px;top:11px;border:1px solid #545a62;background:#111a1bd9;border-radius:30px;font-size:11px;padding:6px 9px;pointer-events:none}
+.game-note{text-align:center;color:#b7a78f;font-size:11px;padding:10px 0}
+.panel{background:#1b1e2b;border:1px solid #3c3f4e;border-radius:15px;padding:12px;margin-top:10px}
+.controls{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.controls-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ctrl-title{font-size:12px;color:#cdbd9e;font-weight:700}
+.direction{display:flex;gap:5px;align-items:center}
+.dir{border:1px solid #65616b;background:#303344;border-radius:9px;min-width:43px;min-height:43px;color:#faf3e4;font-size:20px;cursor:pointer}
+.dir.active{border-color:#ffcf77;background:#66462c;box-shadow:0 0 0 1px #ffca7444 inset}
+.action{background:#373449;color:#f9e7c6;border:1px solid #78664d;border-radius:9px;padding:10px 12px;min-height:44px;cursor:pointer}
+.action.primary{background:#e1ae5c;border-color:#f7d08a;color:#211a14;font-weight:800}
+.action:active,.dir:active,.skill:active{transform:scale(.98)}
+select{color:#f6e8d3;background:#2e3040;border:1px solid #6a6470;padding:10px;border-radius:10px;min-height:44px}
+.paths{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.path{min-height:46px;line-height:1.25;border:1px solid #665d57;color:#e5d5bc;background:#2c2c3b;border-radius:10px;font-weight:700;font-size:12px;padding:7px;cursor:pointer}
+.path.active{background:linear-gradient(110deg,#7b4635,#5b3544);border:1px solid #e2ac68;color:#ffe7ac}
+.skills{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.skill{background:#252938;border:1px solid #53505c;border-radius:12px;min-height:110px;color:#fff0db;text-align:left;padding:9px;display:flex;flex-direction:column;align-items:stretch;gap:3px;cursor:pointer;position:relative;overflow:hidden}
+.skill:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--effect,#ffb16c)}
+.skill .top{font-size:11px;display:flex;justify-content:space-between;color:#bdb4ae}
+.skill b{font-size:clamp(12px,2.2vw,15px);line-height:1.25}
+.skill em{color:#abb3c3;font-size:11px;font-style:normal;line-height:1.28}
+.skill .cd{color:#ffc980;font-size:11px;margin-top:auto}
+.skill.current{border-color:#ffce76;background:#423c42;box-shadow:0 0 0 1px #a36c4190 inset}
+.skill .number{background:#565066;border:1px solid #83727e;color:white;border-radius:6px;padding:2px 5px;font-variant-numeric:tabular-nums}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.current-info{font-size:12px;color:#c6c7d1;line-height:1.5}
+.current-info strong{font-size:16px;color:#ffdc9f}
+.current-info .metric{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
+.current-info .metric span{border:1px solid #5f5762;background:#292938;border-radius:7px;padding:3px 6px;color:#edddbc}
+.small{color:#c1baca;font-size:12px;line-height:1.5}
+.footer{color:#b5aec0;font-size:12px;line-height:1.5;margin:12px 1px 0}
+.footer strong{color:#e6d08d}
+@media(max-width:650px){
+ .wrapper{padding:8px 8px max(20px,env(safe-area-inset-bottom))}
+ header{padding:4px 3px}
+ .game{border-radius:12px}
+ .controls{align-items:stretch}
+ .controls-left{width:100%;justify-content:space-between}
+ .controls .right{display:flex;align-items:center;justify-content:space-between;width:100%;gap:6px}
+ .two{grid-template-columns:1fr}
+ .skills{gap:5px}
+ .skill{min-height:118px;padding:7px}
+ .skill .top{font-size:10px}
+ .skill b{font-size:12px}
+ .skill em{font-size:10px}
+ .path{font-size:11px}
+ .panel{padding:9px;margin-top:8px}
+}
+@media(max-width:380px){.dir{min-width:38px;min-height:40px}.skill{min-height:122px}}
+@media(prefers-reduced-motion:reduce){.skill,.action,.dir{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrapper">
+<header>
+<div>
+<div class="kicker">HMONG LEGEND • MMORPG V2.0</div>
+<h1>สนามทดสอบสกิลนักสู้ 9 ท่า</h1>
+<div class="sub">ใช้เอฟเฟกต์จาก <code>martial-vfx.js</code> ของโปรเจกต์จริง • พร้อมทดสอบบนมือถือ</div>
+</div>
+<div class="label">VFX TEST • แยกจากเกมจริง</div>
+</header>
+<section class="game" aria-label="สนามทดสอบแอนิเมชัน">
+<canvas id="arena" width="960" height="555"></canvas>
+<div class="arena-badge">สนามจำลอง • ไม่ใช้บัญชีเกม</div><div class="fps" id="fps">พร้อมทดสอบ</div>
+</section>
+<div class="game-note">แตะสกิลด้านล่างเพื่อดูภาพ • แตะสนามเพื่อย้ายเป้าฝึก • เปลี่ยนทิศทางก่อนกดได้</div>
+<section class="panel controls">
+<div class="controls-left">
+<span class="ctrl-title">หันหน้า</span>
+<div class="direction" role="group" aria-label="ทิศตัวละคร">
+<button class="dir" data-dir="N" aria-label="ขึ้น">↑</button>
+<button class="dir" data-dir="W" aria-label="ซ้าย">←</button>
+<button class="dir active" data-dir="E" aria-label="ขวา">→</button>
+<button class="dir" data-dir="S" aria-label="ลง">↓</button>
+</div>
+<button class="action" id="move" title="ย้ายตัวละครกลับไปตำแหน่งเริ่มต้น">↺ ตั้งตำแหน่งใหม่</button>
+</div>
+<div class="right">
+<label class="ctrl-title" for="quality">คุณภาพแสง</label>
+<select id="quality">
+<option value="auto">อัตโนมัติ (มือถือ)</option>
+<option value="low">ประหยัดเครื่อง</option>
+<option value="high">สูง</option>
+</select>
+<button class="action primary" id="replay">▶ เล่นท่าล่าสุด</button>
+</div>
+</section>
+<section class="panel">
+<h2>เลือกสายสกิล</h2>
+<div class="paths" role="tablist" aria-label="สายอาชีพนักสู้">
+<button class="path active" data-group="0" role="tab" aria-selected="true">หมัดทะลวง</button>
+<button class="path" data-group="1" role="tab" aria-selected="false">กายาเหล็ก</button>
+<button class="path" data-group="2" role="tab" aria-selected="false">สัตว์ร้ายอาคม</button>
+</div>
+<div class="skills" id="skills" aria-live="polite"></div>
+</section>
+<div class="two">
+<section class="panel current-info">
+<h2>ท่าที่เลือก</h2>
+<div id="current"><strong>หมัดเจาะเกราะ</strong></div>
+</section>
+<section class="panel">
+<h2>สิ่งที่ทดสอบได้</h2>
+<div class="small">
+ดูภาพเคลื่อนไหวของทั้ง 9 ท่า เปลี่ยนทิศทาง เลื่อนเป้าฝึก เปรียบเทียบขนาดเอฟเฟกต์ และลองโหมดประหยัดกับโหมดคุณภาพสูง
+</div>
+</section>
+</div>
+<div class="footer"><strong>หมายเหตุ:</strong> นี่คือโปรแกรมทดสอบภาพสกิลแบบออฟไลน์ ใช้ตัวละครและสนามจำลองแทนภาพที่อนุมัติไว้ ไม่ได้ส่งคำสั่งไปยัง WebSocket และไม่ทดสอบดาเมจจริง สกิลทั้งหมดกดชมได้โดยไม่มีคูลดาวน์ แต่แสดงค่า CD เดิมของเกมให้เทียบ</div>
+</div>
+<script src="./martial-vfx.js"></script>
+<script>
+(function(){
+'use strict';
+const M=window.HLMartialVFX,canvas=document.getElementById('arena');
+const errorBox=document.getElementById('fps');
+if(!M){errorBox.textContent='ไม่พบ martial-vfx.js';errorBox.style.color='#ff7777';return;}
+const ctx=canvas.getContext('2d',{alpha:false});
+const W=960,H=555,TAU=Math.PI*2;
+const skillMechanics=[
+ {slot:3,shape:'line',mult:2.2,range:70,cd:5,hits:1,details:'หมัดพลังพุ่งตรง เจาะแนวศัตรู'},
+ {slot:4,shape:'multi',mult:.85,range:56,cd:7,hits:4,details:'หมัดรัว 4 ครั้งพร้อมวงกระแทก'},
+ {slot:5,shape:'circle',mult:4.5,range:140,cd:16,details:'แรงสั่นสะเทือนเป็นวงรอบตัว'},
+ {slot:6,shape:'guard',red:.6,dur:6,cd:14,details:'ลดความเสียหายที่ได้รับ 60% นาน 6 วินาที'},
+ {slot:7,shape:'counter',mult:2.4,back:30,range:90,cd:9,details:'ถอยตั้งหลัก 30 หน่วย แล้วสวนกลับ'},
+ {slot:8,shape:'trap',mult:4.2,dist:46,radius:70,delay:.2,cd:15,details:'ทุ่มเป้าหมายลงพื้น เกิดแรงกระแทก'},
+ {slot:9,shape:'buff',bonus:.35,dur:10,cd:20,details:'เพิ่มความแรงโจมตี 35% นาน 10 วินาที'},
+ {slot:10,shape:'dash',mult:2.5,range:150,cd:7,details:'จู่โจมพุ่งไปข้างหน้า'},
+ {slot:11,shape:'circle',mult:4.2,range:130,cd:15,details:'ปลดปล่อยพลังสัตว์ร้ายรอบตัว'}
+];
+const desc=['คมพลังหมัด','หมัดต่อเนื่อง','ระเบิดปฐพี','ผิวเกราะป้องกัน','รับแรงและสวนกลับ','หินพสุธากระแทก','ออร่าสัตว์ร้าย','พุ่งและกรงเล็บ','วงคำรามพลังสัตว์'];
+let group=0,selected=3,dir='E',quality='auto',last=0,frames=0,fpsAt=0,fps=0,hitFlash=0,pose=0;
+const fighter={x:320,y:330},target={x:620,y:330},D={E:[1,0],N:[0,-1],W:[-1,0],S:[0,1]};
+let vfx=M.create({quality:'auto',mobile:/Android|iPhone|iPad/i.test(navigator.userAgent),reducedMotion:window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches});
+function htmlEscape(s){return String(s).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]});}
+const profiles=M.SKILLS;
+function showGroup(g){
+ group=Math.max(0,Math.min(2,g));
+ document.querySelectorAll('.path').forEach(function(button){const on=Number(button.dataset.group)===group;button.classList.toggle('active',on);button.setAttribute('aria-selected',String(on));});
+ const container=document.getElementById('skills');
+ container.textContent='';
+ profiles.slice(group*3,group*3+3).forEach(function(s,j){
+  const mech=skillMechanics[s.slot-3],b=document.createElement('button');
+  b.className='skill'+(selected===s.slot?' current':'');b.dataset.slot=String(s.slot);
+  b.style.setProperty('--effect',group===0?'#ffa348':group===1?'#a3cff5':'#f277ad');
+  b.innerHTML='<span class="top"><span class="number">'+String(j+1)+'</span><span>ช่อง '+s.slot+'</span></span>'+
+    '<b>'+htmlEscape(s.name)+'</b>'+
+    '<em>'+htmlEscape(desc[s.slot-3])+'</em>'+
+    '<span class="cd">CD เกมจริง: '+mech.cd+' วิ</span>';
+  b.addEventListener('click',function(){play(s.slot);});
+  container.appendChild(b);
+ });
+}
+function setDir(d){if(!D[d])return;dir=d;document.querySelectorAll('.dir').forEach(function(b){b.classList.toggle('active',b.dataset.dir===d);});}
+function changeQuality(q){
+ quality=q;
+ const old=vfx;
+ vfx=M.create({quality:q,mobile:/Android|iPhone|iPad/i.test(navigator.userAgent),reducedMotion:window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches});
+ if(old)old.clear();
+ errorBox.textContent='โหมด '+(q==='auto'?'อัตโนมัติ':q==='low'?'ประหยัด':'คุณภาพสูง');
+}
+function play(slot){
+ const s=profiles[slot-3],mech=skillMechanics[slot-3];if(!s||!mech)return;
+ selected=slot;pose=1;hitFlash=1;
+ const dv=D[dir],x=fighter.x,y=fighter.y-18;
+ let px=x,py=y;
+ if(s.location==='front'){px+=dv[0]*Math.min(80,Math.max(34,mech.range||65))*.57;py+=dv[1]*Math.min(80,Math.max(34,mech.range||65))*.57;}
+ else if(s.location==='target'){px=target.x;py=target.y-10;}
+ else if(s.location==='dash'){px=x+dv[0]*Math.min(150,mech.range||150);py=y+dv[1]*Math.min(150,mech.range||150);}
+ vfx.emit({slot:slot,x:px,y:py,dir:dir,fromX:x,fromY:y});
+ document.getElementById('current').innerHTML='<strong>'+htmlEscape(s.name)+'</strong>'+
+ '<div>'+htmlEscape(s.path)+' • '+htmlEscape(desc[slot-3])+'</div>'+
+ '<div>'+htmlEscape(mech.details)+'</div>'+
+ '<div class="metric"><span>ช่อง '+slot+'</span><span>CD '+mech.cd+' วิ</span>'+
+ (mech.mult?'<span>ตัวคูณโจมตี '+mech.mult+'</span>':'')+
+ (mech.hits&&mech.hits>1?'<span>โจมตี '+mech.hits+' ครั้ง</span>':'')+
+ (mech.range?'<span>ระยะ '+mech.range+'</span>':'')+'</div>'+
+ '<p style="margin:7px 0 0;color:#b6aabc">ค่าด้านบนมาจากตารางเกมจริง แต่หน้านี้แสดงภาพเท่านั้น ไม่ลด HP เป้าฝึก</p>';
+ document.querySelectorAll('.skill').forEach(function(b){b.classList.toggle('current',Number(b.dataset.slot)===slot);});
+}
+function background(){
+ const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#232b33');g.addColorStop(1,'#12151e');
+ ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ ctx.fillStyle='#29303a';ctx.beginPath();ctx.ellipse(480,350,430,170,0,0,TAU);ctx.fill();
+ ctx.strokeStyle='#46434a';ctx.lineWidth=2;
+ ctx.beginPath();ctx.ellipse(480,352,395,147,0,0,TAU);ctx.stroke();
+ ctx.strokeStyle='#393844';
+ for(let y=205;y<530;y+=26){ctx.beginPath();ctx.moveTo(65,y);ctx.lineTo(895,y);ctx.stroke();}
+ for(let x=90;x<890;x+=38){ctx.beginPath();ctx.moveTo(x,198);ctx.lineTo(x,518);ctx.stroke();}
+ ctx.strokeStyle='#76634c';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(480,345,365,130,0,0,TAU);ctx.stroke();
+ for(let i=0;i<24;i++){const a=TAU*i/24;ctx.save();ctx.translate(480+Math.cos(a)*360,345+Math.sin(a)*129);ctx.rotate(a);ctx.fillStyle='#b08a59';ctx.fillRect(-4,-3,9,6);ctx.restore();}
+ for(let i=0;i<12;i++){const x=(i*149+47)%850+55,y=(i*83+61)%215+255;ctx.fillStyle='#313940';ctx.fillRect(x,y,8+(i%3)*5,6+(i%4)*3);}
+ // Decorative Hmong-inspired stepped geometric marks, separated from approved map.
+ ctx.strokeStyle='#c29962';ctx.lineWidth=4;
+ for(const side of [-1,1]){ctx.save();ctx.translate(480+side*390,105);ctx.scale(side,1);
+  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(26,0);ctx.lineTo(26,25);ctx.lineTo(47,25);ctx.lineTo(47,45);ctx.stroke();ctx.restore();}
+ ctx.fillStyle='#d9ccba';ctx.font='bold 18px system-ui,sans-serif';ctx.fillText('สนามฝึกนักสู้',44,80);
+ ctx.fillStyle='#9f9ba1';ctx.font='14px system-ui,sans-serif';ctx.fillText('ภาพทดสอบ • ไม่มีผลต่อเกมออนไลน์',44,104);
+}
+function mannequin(x,y,front,isTarget){
+ ctx.save();ctx.translate(x,y);
+ ctx.fillStyle='#0c101c99';ctx.beginPath();ctx.ellipse(0,0,35,11,0,0,TAU);ctx.fill();
+ if(isTarget){ctx.strokeStyle='#8ed5bf';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,-2,31,11,0,0,TAU);ctx.stroke();}
+ ctx.lineCap='round';ctx.lineJoin='round';
+ const v=isTarget?0:Math.sin(front)*3;
+ ctx.strokeStyle='#101523';ctx.lineWidth=15;
+ ctx.beginPath();ctx.moveTo(-8,-34);ctx.lineTo(-14,-9);ctx.moveTo(8,-34);ctx.lineTo(16,-9);ctx.stroke();
+ ctx.strokeStyle=isTarget?'#a5b0af':'#6c829e';ctx.lineWidth=10;
+ ctx.beginPath();ctx.moveTo(-8,-34);ctx.lineTo(-14,-9);ctx.moveTo(8,-34);ctx.lineTo(16,-9);ctx.stroke();
+ ctx.fillStyle=isTarget?'#b9a9a0':'#ab5c49';ctx.fillRect(-21,-76,42,44);
+ ctx.fillStyle='#322d39';ctx.fillRect(-15,-76,30,10);
+ ctx.strokeStyle='#1b1724';ctx.lineWidth=15;
+ ctx.beginPath();ctx.moveTo(-19,-62);ctx.lineTo(-30-v,-34);ctx.moveTo(20,-62);ctx.lineTo(30+v,-36);ctx.stroke();
+ ctx.strokeStyle=isTarget?'#bac7ca':'#e2a16a';ctx.lineWidth=10;
+ ctx.beginPath();ctx.moveTo(-19,-62);ctx.lineTo(-30-v,-34);ctx.moveTo(20,-62);ctx.lineTo(30+v,-36);ctx.stroke();
+ ctx.fillStyle=isTarget?'#ddcebd':'#f3c39b';ctx.beginPath();ctx.arc(0,-92,20,0,TAU);ctx.fill();
+ ctx.fillStyle=isTarget?'#64727b':'#332b31';ctx.fillRect(-20,-106,40,12);
+ ctx.fillStyle='#19202a';ctx.fillRect(-10,-94,5,4);ctx.fillRect(6,-94,5,4);
+ if(!isTarget){ctx.fillStyle='#df794d';ctx.fillRect(-22,-35,44,6);}
+ ctx.restore();
+}
+function draw(){
+ background();
+ // target position indicator
+ ctx.strokeStyle='#4dc6a7';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(target.x,target.y,39,15,0,0,TAU);ctx.stroke();
+ ctx.fillStyle='#d9ffdf';ctx.font='16px system-ui,sans-serif';ctx.textAlign='center';ctx.fillText('เป้าฝึก',target.x,target.y-132);
+ mannequin(target.x,target.y,0,true);
+ mannequin(fighter.x,fighter.y,pose*7,false);
+ // facing pointer
+ const dv=D[dir];ctx.strokeStyle='#ffc678';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(fighter.x,fighter.y+20);
+ ctx.lineTo(fighter.x+dv[0]*33,fighter.y+20+dv[1]*26);ctx.stroke();
+ ctx.fillStyle='#f7dfc4';ctx.font='bold 15px system-ui,sans-serif';ctx.textAlign='center';ctx.fillText('ตัวละครจำลอง',fighter.x,fighter.y-141);
+ ctx.textAlign='left';ctx.fillStyle='#ebc689';ctx.font='14px system-ui,sans-serif';ctx.fillText('ท่า '+selected+' / 11',28,H-24);
+}
+function loop(now){
+ const dt=last?Math.min(.05,(now-last)/1000):.016;last=now;
+ ctx.clearRect(0,0,W,H);
+ draw();
+ vfx.draw(ctx,dt);
+ hitFlash=Math.max(0,hitFlash-dt*2);pose=Math.max(0,pose-dt*2);
+ frames++;if(now-fpsAt>1000){fps=Math.round(frames*1000/(now-fpsAt));frames=0;fpsAt=now;errorBox.textContent=fps+' FPS • เอฟเฟกต์ '+vfx.count+'/'+vfx.max;}
+ requestAnimationFrame(loop);
+}
+canvas.addEventListener('pointerdown',function(event){
+ const rect=canvas.getBoundingClientRect();
+ const x=(event.clientX-rect.left)/rect.width*W,y=(event.clientY-rect.top)/rect.height*H;
+ target.x=Math.max(100,Math.min(W-60,x));target.y=Math.max(232,Math.min(H-40,y));
+});
+document.querySelectorAll('.dir').forEach(function(b){b.addEventListener('click',function(){setDir(b.dataset.dir)});});
+document.querySelectorAll('.path').forEach(function(b){b.addEventListener('click',function(){showGroup(Number(b.dataset.group))});});
+document.getElementById('replay').addEventListener('click',function(){play(selected);});
+document.getElementById('quality').addEventListener('change',function(e){changeQuality(e.target.value);});
+document.getElementById('move').addEventListener('click',function(){fighter.x=320;fighter.y=330;target.x=620;target.y=330;vfx.clear();play(selected);});
+document.addEventListener('keydown',function(e){
+ const m={ArrowUp:'N',ArrowDown:'S',ArrowLeft:'W',ArrowRight:'E',w:'N',s:'S',a:'W',d:'E'};
+ if(m[e.key]){e.preventDefault();setDir(m[e.key]);}
+ if(/^[1-9]$/.test(e.key))play(Number(e.key)+2);
+ if(e.key===' '){e.preventDefault();play(selected);}
+});
+showGroup(0);play(3);requestAnimationFrame(loop);
+window.HLMartialPlayground={get selected(){return selected;},get quality(){return quality;},
+ get count(){return vfx.count;},get skills(){return M.SKILLS.slice();},
+ get metrics(){return skillMechanics.slice();},play:play,setDir:setDir,showGroup:showGroup};
+})();
+</script>
+</body>
+</html>
