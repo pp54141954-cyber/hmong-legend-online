@@ -1,0 +1,63 @@
+name: Bag UX R82 mobile regressions
+on:
+  push:
+    branches:
+      - feature/bag-ux-r82-20261115
+  workflow_dispatch:
+jobs:
+  mobile-bag:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install existing server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Install browser testing tools
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-bag-r82 playwright@1.56.1
+          node /tmp/hl-bag-r82/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-bag-r82/node_modules" >> "$GITHUB_ENV"
+      - name: Validate modified game scripts and test syntax
+        run: |
+          node --check tools/bag-ux-r82-test.js
+          node --check server/sim.js
+          node --check server/server.js
+          node - <<'NODE'
+          const fs=require('node:fs'),vm=require('node:vm');
+          const html=fs.readFileSync('game/index.html','utf8');
+          const blocks=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+            .map(m=>m[1]).filter(s=>s.trim());
+          if(!blocks.length)throw Error('No scripts found');
+          for(const block of blocks)new vm.Script(block);
+          console.log('PASS game script syntax, blocks='+blocks.length);
+          NODE
+      - name: Android Chromium bag user journey
+        run: node tools/bag-ux-r82-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: iPhone WebKit bag user journey
+        run: node tools/bag-ux-r82-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: R81 bag and SQLite regression
+        run: node tools/bag-integrity-test.js
+      - name: Existing shield and enhancement migration
+        run: node tools/equipment-r78-migration-test.js
+      - name: Existing equipment mobile UI regression (Chromium)
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: Existing equipment mobile UI regression (WebKit)
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Upload bag screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: r82-bag-mobile-evidence
+          path: tools/test-artifacts/*.png
+          if-no-files-found: ignore
