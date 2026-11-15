@@ -105,6 +105,7 @@ function track(){
   const H=window.HL;
   if(!H||!Array.isArray(H.fxList))return;
   const player=H.player,cls=typeof H.curCls==='function'?H.curCls():'';
+  const arr=H.fxList;
   if(cls==='นักสู้') {
     if(fighterReal)for(const effect of arr){
       // The original skill chart contains a grey mannequin. During the
@@ -114,7 +115,6 @@ function track(){
     }
     return;
   }
-  const arr=H.fxList;
   for(let i=0;i<arr.length;i++){
     const e=arr[i];
     if(!e||typeof e!=='object'||seen.has(e))continue;
