@@ -1,0 +1,54 @@
+name: Bag HUD R82 mobile regression
+on:
+  push:
+    branches: [feature/bag-hud-r82-20261115]
+  workflow_dispatch:
+jobs:
+  mobile-bag-hud:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Install emulated mobile browsers
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-bag-browser playwright@1.56.1
+          node /tmp/hl-bag-browser/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-bag-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Check inline game JavaScript syntax
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),vm=require('vm');
+          const html=fs.readFileSync('game/index.html','utf8');
+          const blocks=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(s=>s.trim());
+          if(!blocks.length)throw Error('No inline game scripts');
+          for(const js of blocks)new vm.Script(js);
+          console.log('PASS '+blocks.length+' inline game JS blocks parse');
+          NODE
+      - name: Verify shared world unchanged
+        run: |
+          node tools/extract-shared.js
+          git diff --exit-code -- shared/world.js
+      - name: Android Chromium bag HUD, slots and shield
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: iPhone WebKit bag HUD, slots and shield
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Bag integrity and persistence regression
+        run: node tools/bag-integrity-test.js
+      - name: Two-player equipment regression
+        run: node tools/equipment-gameplay-test.js
+      - name: Upload UI evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bag-r82-hud-mobile
+          path: tools/test-artifacts/*.png
+          if-no-files-found: ignore

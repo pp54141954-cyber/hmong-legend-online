@@ -1,0 +1,73 @@
+name: Bag and shop feedback R83
+on:
+  push:
+    branches: [feature/bag-feedback-r83]
+  workflow_dispatch:
+jobs:
+  bag-feedback:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Install emulated mobile browsers
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-bag-browser playwright@1.56.1
+          node /tmp/hl-bag-browser/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-bag-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Check changed files syntax
+        run: |
+          node --check server/server.js
+          node --check server/sim.js
+          node --check tools/feedback-contract-test.js
+          node --check tools/feedback-ws-test.js
+          node --check tools/feedback-mobile-test.js
+      - name: Check inline game JavaScript syntax
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),vm=require('vm');
+          const html=fs.readFileSync('game/index.html','utf8');
+          const blocks=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(s=>s.trim());
+          if(!blocks.length)throw Error('No inline game scripts');
+          for(const js of blocks)new vm.Script(js);
+          console.log('PASS '+blocks.length+' inline game JS blocks parse');
+          NODE
+      - name: Verify shared world unchanged
+        run: |
+          node tools/extract-shared.js
+          git diff --exit-code -- shared/world.js
+      - name: Feedback messages contract (every server reason has a message)
+        run: node tools/feedback-contract-test.js
+      - name: Feedback over WebSocket (real server reasons, SQLite rollback)
+        run: node tools/feedback-ws-test.js
+      - name: Android Chromium feedback messages on screen
+        run: node tools/feedback-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: iPhone WebKit feedback messages on screen
+        run: node tools/feedback-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Bag integrity and persistence regression
+        run: node tools/bag-integrity-test.js
+      - name: Android Chromium bag HUD regression
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: iPhone WebKit bag HUD regression
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Two-player equipment regression
+        run: node tools/equipment-gameplay-test.js
+      - name: Upload feedback screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bag-r83-feedback-screenshots
+          path: tools/test-artifacts/*.png
+          if-no-files-found: ignore
