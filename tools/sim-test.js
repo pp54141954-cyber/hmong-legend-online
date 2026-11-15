@@ -340,7 +340,7 @@ const killFirst = (sim, p, type) => {
   const byLv = [...rows].sort((a, b) => a.lv - b.lv);
   rec('HP / ATK / EXP เพิ่มตามเลเวลไม่สลับลำดับ', byLv.every((r, i) => !i || (M[r.t].hp >= M[byLv[i - 1].t].hp && M[r.t].atk >= M[byLv[i - 1].t].atk && M[r.t].exp >= M[byLv[i - 1].t].exp)));
   // มอนสเตอร์ในแต่ละโซนอยู่ในช่วงเลเวลของโซน
-  const band = { field2: [1, 12], bamboo: [7, 22], rainforest: [15, 32], mine_camp: [27, 42], mine_tunnel: [27, 42], mine_plaza: [27, 42], mine_river: [27, 42], mine_station: [27, 42], mine_cliff: [27, 42], peak: [37, 47] };
+  const band = { field2: [1, 12], bamboo: [7, 22], rainforest: [15, 32], mine_camp: [27, 32], mine_river: [27, 32], mine_tunnel: [32, 37], mine_plaza: [37, 42], mine_station: [37, 42], mine_cliff: [42, 47], peak: [37, 47] };
   const badZ = Object.entries(band).filter(([z, [lo, hi]]) => !W.ZONES[z].spawns.every(s => M[s.type].lv >= lo && M[s.type].lv <= hi));
   rec('มอนสเตอร์ในแต่ละโซนอยู่ในช่วงเลเวลของโซน', badZ.length === 0, Object.entries(band).map(([z]) => z + ':' + W.ZONES[z].spawns.map(s => M[s.type].lv).join('/')).join(' '));
   rec('บอสเลเวลสูงกว่ามอนสเตอร์ในโซนเดียวกัน', Object.entries(W.CFG.bosses).every(([z, bs]) => bs.every(b => W.ZONES[z].spawns.every(s => M[b.type].lv >= M[s.type].lv))));

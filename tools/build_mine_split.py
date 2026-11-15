@@ -136,7 +136,9 @@ def zoom_zone(clean, lab, tl, k):
     ys, xs = np.nonzero(circ)
     cx0, cx1, cy0, cy1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
     s = min(PW / (cx1 - cx0), PH / (cy1 - cy0), 2.8) * 0.94
-    x0 = (cx0 + cx1) / 2 - PW / (2 * s); y0 = (cy0 + cy1) / 2 - PH / (2 * s)
+    win_w, win_h = PW / s, PH / s
+    x0 = (cx0 + cx1) / 2 - win_w / 2; y0 = (cy0 + cy1) / 2 - win_h / 2
+    x0 = min(max(0.0, x0), clean.shape[1] - win_w); y0 = min(max(0.0, y0), clean.shape[0] - win_h)   # หน้าต่างอยู่ในภาพต้นฉบับเสมอ
     frac_k = circ.reshape(ROWS, T, COLS, T).mean(axis=(1, 3))
     yy, xx = np.mgrid[0:ROWS, 0:COLS]
     dist = np.full((ROWS, COLS), 1e9)
@@ -147,12 +149,10 @@ def zoom_zone(clean, lab, tl, k):
     content = circ | (tl_px & (lab == 0))
     mt = Image.fromarray((content * 255).astype(np.uint8))
     data = (1 / s, 0, x0, 0, 1 / s, y0)
-    crop = Image.fromarray(clean.astype(np.uint8)).transform((PW, PH), Image.AFFINE, data, resample=Image.BICUBIC, fillcolor=tuple(int(v) for v in VOID))
+    # ภาพขยายเต็มช่อง: เป็นภาพแผนที่จริงทั้งหมด (เหมือนแผ่นที่ใหม่) ไม่มีพื้นมืดหรือเกาะลอย
+    art = Image.fromarray(clean.astype(np.uint8)).transform((PW, PH), Image.AFFINE, data, resample=Image.BICUBIC)
     cmask = mt.transform((PW, PH), Image.AFFINE, data, resample=Image.NEAREST, fillcolor=0)
-    cmask = cmask.filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.GaussianBlur(4))
-    alpha = np.asarray(cmask).astype(float)[..., None] / 255
-    art = np.asarray(crop).astype(float) * alpha + VOID * (1 - alpha)
-    art = Image.fromarray(np.clip(art, 0, 255).astype(np.uint8))
+    cmask = cmask.filter(ImageFilter.MaxFilter(3))
     conv = dict(x0=float(x0), y0=float(y0), s=float(s), ox=0.0, oy=0.0)
     return art, conv, np.asarray(cmask) >= 128
 
@@ -298,13 +298,13 @@ def build():
         enter[dest] = (k, (best[1], best[2]) if best else None)
     return dict(clean=clean, tl=tl, W=W, arts=arts, convs=convs, Wz=Wz, blk=blk, cms=cms, E=E, ext=ext, enter=enter)
 
-SPAWNS = {  # ชนิดมอนสเตอร์ประจำโซน (ชนิดเดียวกับแผนที่ถ้ำเดิม) และจำนวนต่อจุดเกิด
-    'mine_camp': [('หมีเขา', 2), ('กระทิงผี', 2)],
-    'mine_tunnel': [('โกเลมหิน', 2), ('ปีศาจ', 1)],
-    'mine_plaza': [('ปีศาจ', 2), ('โกเลมหิน', 2)],
-    'mine_station': [('หมีเขา', 2), ('ปีศาจ', 1)],
-    'mine_river': [('กระทิงผี', 2), ('หมีเขา', 1)],
-    'mine_cliff': [('โกเลมหิน', 2), ('กระทิงผี', 1)],
+SPAWNS = {  # มอนสเตอร์ประจำโซนตามเลเวล (CFG.balance.lv): ค่ายบน/ลำธาร Lv 27–32 · ปากถ้ำ Lv 32–37 · ลานหิน/สถานี Lv 37–42 · หน้าผา Lv 42–47
+    'mine_camp': [('หมีเขา', 2), ('กระทิงผี', 2), ('หมีเขา', 2), ('กระทิงผี', 2)],
+    'mine_river': [('หมีเขา', 2), ('กระทิงผี', 2), ('หมีเขา', 2), ('กระทิงผี', 2)],
+    'mine_tunnel': [('กระทิงผี', 2), ('โกเลมหิน', 2), ('กระทิงผี', 2), ('โกเลมหิน', 2)],
+    'mine_plaza': [('โกเลมหิน', 2), ('ปีศาจ', 2), ('โกเลมหิน', 2), ('ปีศาจ', 2)],
+    'mine_station': [('โกเลมหิน', 2), ('ปีศาจ', 2), ('โกเลมหิน', 2), ('ปีศาจ', 2)],
+    'mine_cliff': [('ปีศาจ', 2), ('วิญญาณไม้', 2), ('ปีศาจ', 2), ('วิญญาณไม้', 2)],
 }
 # พื้นที่ในวงที่เป็นพื้นเดินได้แต่ตัวกรองสีพลาด (พื้นถ้ำ ลานหญ้า) — (x0,y0,x1,y1) ช่องในแผนที่เดิม; ไม่รวมผาและน้ำ
 FLOOR_ADD = {
@@ -508,7 +508,6 @@ def write_outputs(R, F):
         zi = ZONES[k][0]
         open(os.path.join(ROOT, 'assets/maps', zi + '.mask.txt'), 'w').write('\n'.join(rows_all[zi]) + '\n')
         os.makedirs(os.path.join(ROOT, 'game/maps'), exist_ok=True)
-        R['arts'][k] = visible_art(R, F, k)
         R['arts'][k].save(os.path.join(ROOT, 'game/maps', zi + '.webp'), 'WEBP', quality=82, method=6)
     meta = {}
     for k in ZONES:
