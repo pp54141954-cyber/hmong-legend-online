@@ -28,5 +28,15 @@ jobs:
             const at=s.indexOf(q); console.log('ANCHOR',q,at,at>=0?s.slice(Math.max(0,at-120),at+300).replace(/\n/g,' '):'missing');
           }
           NODE
+      - name: Inspect camera transform and public hooks
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),s=fs.readFileSync('game/index.html','utf8');
+          const arr=['window.HL={','function draw(){','function draw(','function drawFxC','function loop(','ctx.translate(-','ctx.translate(','cam.x','camera.x','const cam=','let cam=','const c=','const cv=','function release(sk)','function cast('];
+          for(const n of arr){
+            let i=s.indexOf(n, n==='function draw('?800000:0);
+            console.log('HOOK',n,i,i<0?'':s.slice(Math.max(0,i-80),i+1800).replace(/\n/g,' '));
+          }
+          NODE
       - name: Syntax-check grand effect renderer
         run: node --check game/skill-vfx-grand.js
