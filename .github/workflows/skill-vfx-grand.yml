@@ -1,0 +1,73 @@
+name: VFX renderer validation (staging only)
+on:
+  push:
+    branches: [feature/skill-vfx-grand-v1]
+  workflow_dispatch:
+jobs:
+  vfx:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install existing server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Install Chromium for staging tests
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-vfx-test playwright@1.56.1
+          node /tmp/hl-vfx-test/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-vfx-test/node_modules" >> "$GITHUB_ENV"
+      - name: Discover actual game canvas and skill render hooks
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),s=fs.readFileSync('game/index.html','utf8');
+          console.log('GAME SIZE:',s.length);
+          for(const q of ['window.HL','HLNET','function draw','drawEffects','drawFx','function release','const fx=','let fx=','<canvas','</head>','<script','requestAnimationFrame']) {
+            const at=s.indexOf(q); console.log('ANCHOR',q,at,at>=0?s.slice(Math.max(0,at-120),at+300).replace(/\n/g,' '):'missing');
+          }
+          NODE
+      - name: Inspect camera transform and public hooks
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),s=fs.readFileSync('game/index.html','utf8');
+          const arr=['window.HL={','function draw(){','function draw(','function drawFxC','function loop(','ctx.translate(-','ctx.translate(','cam.x','camera.x','const cam=','let cam=','const c=','const cv=','function release(sk)','function cast('];
+          for(const n of arr){
+            let i=s.indexOf(n, n==='function draw('?800000:0);
+            console.log('HOOK',n,i,i<0?'':s.slice(Math.max(0,i-80),i+1800).replace(/\n/g,' '));
+          }
+          NODE
+      - name: Inspect effect render tail and public state exports
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),s=fs.readFileSync('game/index.html','utf8');
+          const base=s.indexOf('window.HL={');
+          console.log('EXPORTS',s.slice(base,base+7000).replace(/\n/g,' '));
+          const d=s.indexOf('function draw(){'),end=s.indexOf('function loop(',d);
+          console.log('DRAW_TAIL',s.slice(end-9000,end).replace(/\n/g,' '));
+          const fx=s.indexOf('const fx=[],nums=[],shots=[]');
+          console.log('FX_ARRAY',fx,s.slice(fx-160,fx+250).replace(/\n/g,' '));
+          NODE
+      - name: Syntax-check grand effect renderer
+        run: |
+          node --check game/skill-vfx-grand.js
+          node --check game/skill-vfx-bridge.js
+          node --check server/server.js
+          node --check tools/skill-vfx-grand-test.js
+      - name: Pixel 7 Chromium original game + VFX regression
+        run: node tools/skill-vfx-grand-test.js
+        env:
+          VFX_BROWSER: chromium
+      - name: iPhone Safari WebKit original game + VFX regression
+        if: ${{ always() }}
+        run: node tools/skill-vfx-grand-test.js
+        env:
+          VFX_BROWSER: webkit
+      - name: Upload grand VFX gameplay screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: grand-vfx-mobile-previews
+          path: tools/test-artifacts/grand-vfx-*.png
+          if-no-files-found: ignore
