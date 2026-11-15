@@ -177,6 +177,7 @@ window.HLGrandStage={
   get fighterTigerReady(){return !!fighterReal&&fighterReal.tigerReady},
   get fighterApprovedAtlasReady(){return !!fighterReal&&fighterReal.approvedSideReady},
   get fighterDirectionalAtlasReady(){return !!fighterReal&&fighterReal.approvedDownUpReady},
+  get fighterDirectionalRecolorReady(){return !!fighterReal&&fighterReal.directionalColorReady},
   get fighterAtlasFrames(){return fighterReal?fighterReal.drawsFromAtlas:0},
   get fighterLastFrame(){return fighterReal?fighterReal.lastFrame:null},
   get martialEvents(){return martialEvents.slice()},
