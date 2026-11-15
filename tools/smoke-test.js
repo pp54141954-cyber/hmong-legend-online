@@ -435,7 +435,8 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     rec('ภาพตัวอย่างวาดตัวละครจริง (มีพิกเซล)', await cp.evaluate(() => { const d = document.getElementById('lkcv').getContext('2d').getImageData(0, 0, 120, 156).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++; return n > 1500 }));
     await cp.click('#cstart button[aria-label="อาชีพ ผู้ใช้มนตรา"]');
     await cp.screenshot({ path: 'tools/last-cstart.png' });
-    await cp.click('#csgo');
+    await cp.click('#csgo'); await cp.waitForSelector('#atgo'); await cp.click('#atgo'); // V2-R70: แผนที่โลก → เข้าโลก (การ์ดโหลด)
+    await cp.waitForSelector('#cstart', { state: 'hidden', timeout: 8000 });
     const r = await cp.evaluate(() => ({ hid: document.getElementById('cstart').hidden, cls: HL.curCls(), saved: localStorage.getItem('hl_cls_off'), bar: document.querySelector('#skills .sk').getAttribute('aria-label'), exp: HL.skName(HL.SLOTS[0]), mage: HL.CLS_ACTIVE['ผู้ใช้มนตรา'] }));
     rec('เริ่มเกมแล้วจำชื่อที่ตั้งไว้ในเครื่อง', await cp.evaluate(() => localStorage.getItem('hl_name_off') === 'ทดสอบ ชื่อ'), '');
     rec('เลือก "ผู้ใช้มนตรา" → เริ่มเกมเป็นอาชีพนั้น ปุ่มสกิลเปลี่ยนตาม', r.hid && r.cls === 'ผู้ใช้มนตรา' && r.saved === 'ผู้ใช้มนตรา' && r.bar === r.exp && r.mage.includes(r.bar), JSON.stringify(r));
@@ -482,6 +483,7 @@ const rec = (name, pass, detail) => { results.push({ name, pass, detail }); cons
     const chips = await lp.evaluate(() => ({ hs: [...document.querySelectorAll('#cstart [data-hs]')].map(b => b.textContent), of: [...document.querySelectorAll('#cstart [data-of]')].map(b => b.textContent) }));
     rec('มีหลายแบบ → แสดงปุ่ม "ทรงผม" และ "แบบชุด" พร้อมชื่อ', chips.hs.length === 2 && chips.of.length === 2 && chips.hs[0] === 'สั้นผ้าคาดหัว' && chips.of[0] === 'ชุดม้งดั้งเดิม', JSON.stringify(chips));
     await lp.click('#cstart [data-hs="1"]'); await lp.click('#cstart [data-of="1"]'); await lp.click('#csgo');
+    await lp.waitForSelector('#atgo'); await lp.click('#atgo'); await lp.waitForSelector('#cstart', { state: 'hidden', timeout: 8000 });
     rec('เลือกทรงผม/ชุดแล้วเริ่มเกม → ใช้ในตัวละคร', await lp.evaluate(() => HL.PS.look.hs === 1 && HL.PS.look.of === 1 && HL.PS.look.g === 'm'));
     await lp.evaluate(() => { localStorage.removeItem('hl_look_off'); localStorage.removeItem('hl_name_off'); }); await lp.close(); }
   // ===== V2-R53: ท่าโจมตี 4 ทิศที่วาดจริง (นักดาบชาย) =====

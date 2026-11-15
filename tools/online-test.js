@@ -60,6 +60,7 @@ const until = async (fn, ms = 4000) => { const t = Date.now(); while (Date.now()
     await A.page.click('#cstart button[aria-label="อาชีพ นักดาบ"]'); // นักดาบ: อาชีพที่ยังเลือกสีผม/ชุดได้
     await A.page.click('#cstart [data-g="f"]'); await A.page.click('#cstart [data-h="3"]'); await A.page.click('#cstart [data-o="3"]');
     await A.page.click('#cstart button[aria-label="อาชีพ นักดาบ"]'); await A.page.click('#csgo'); await B.page.click('#csgo');
+    for (const pg of [A.page, B.page]) { await pg.waitForSelector('#atgo', { timeout: 5000 }); await pg.click('#atgo'); } // V2-R70: แผนที่โลก → เข้าโลก
     const SAx = () => [...srv.online.values()].find(p => p.c.name === 'Tester_A');
     const ok = await until(async () => !(await A.page.isVisible('#cstart')) && !(await B.page.isVisible('#cstart')) && SAx().c.clsset === 1);
     rec('กดเริ่ม → เซิร์ฟเวอร์บันทึกอาชีพ หน้าเลือกปิด เริ่มเล่นได้', ok, SAx().c.cls);
