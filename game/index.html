@@ -914,11 +914,21 @@ function updShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i],d=s.sk
 const keys={};
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');let joy=null;
 /* จอย V2-R23: ฐานคงที่มุมซ้ายล่าง (แตะครึ่งซ้ายของจอที่ไหนก็ได้ จอยย้ายไปใต้นิ้ว), เดิน 8 ทิศแบบอนาล็อก */
-const JOY={r:52,dead:8};const joyHome=()=>({x:Math.max(86,cw*.17),y:ch-Math.max(130,ch*.16)});
-cv.addEventListener('pointerdown',e=>{if(joy)return;if(e.clientX>cw*.55)return;const h=joyHome(),near=Math.hypot(e.clientX-h.x,e.clientY-h.y)<JOY.r*1.6;
-  joy={ox:near?h.x:e.clientX,oy:near?h.y:e.clientY,x:e.clientX,y:e.clientY,id:e.pointerId};cv.setPointerCapture(e.pointerId)});
-cv.addEventListener('pointermove',e=>{if(joy&&e.pointerId===joy.id){joy.x=e.clientX;joy.y=e.clientY}});
-['pointerup','pointercancel'].forEach(n=>cv.addEventListener(n,e=>{if(joy&&e.pointerId===joy.id)joy=null}));cv.addEventListener('contextmenu',e=>e.preventDefault());
+/* R85: single-owner floating joystick, safe cancellation and resize-aware coordinates. */
+const JOY={r:52,dead:8};const joyHome=()=>({x:Math.max(72,Math.min(cw-72,cw*.17)),y:Math.max(78,ch-Math.max(130,ch*.16))});
+const joyXY=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+function releaseJoy(id){if(joy&&(id===undefined||joy.id===id)){const held=joy.id;joy=null;try{if(cv.hasPointerCapture(held))cv.releasePointerCapture(held)}catch(e){}}}
+cv.addEventListener('pointerdown',e=>{if(joy||e.pointerType==='mouse'&&e.button!==0)return;
+  const p=joyXY(e);if(p.x>cw*.55||p.x<0||p.y<0||p.y>ch)return;
+  const h=joyHome(),near=Math.hypot(p.x-h.x,p.y-h.y)<JOY.r*1.6;
+  joy={ox:near?h.x:p.x,oy:near?h.y:p.y,x:p.x,y:p.y,id:e.pointerId};
+  try{cv.setPointerCapture(e.pointerId)}catch(err){releaseJoy(e.pointerId)}
+  e.preventDefault()});
+cv.addEventListener('pointermove',e=>{if(joy&&e.pointerId===joy.id){const p=joyXY(e);joy.x=p.x;joy.y=p.y}});
+['pointerup','pointercancel','lostpointercapture'].forEach(n=>cv.addEventListener(n,e=>releaseJoy(e.pointerId)));
+addEventListener('blur',()=>{releaseJoy();atkHeld=false;keys={}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseJoy();atkHeld=false;keys={}}});
+cv.addEventListener('contextmenu',e=>e.preventDefault());
 function inputDir(){let dx=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0),dy=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0);
   if(!dx&&!dy&&joy){const jx=joy.x-joy.ox,jy=joy.y-joy.oy,d=Math.hypot(jx,jy);if(d>JOY.dead){const m=Math.min(1,(d-JOY.dead)/(JOY.r-JOY.dead)*1.4);dx=jx/d*m;dy=jy/d*m}}
   const L=Math.hypot(dx,dy);if(L>1){dx/=L;dy/=L}return[dx,dy]}
@@ -929,8 +939,8 @@ $('zi').onclick=()=>{fitAll=false;bza.setAttribute('aria-pressed',false);zoomMul
 $('zo').onclick=()=>{fitAll=false;bza.setAttribute('aria-pressed',false);zoomMul=Math.max(.2,zoomMul/1.25)};
 bza.onclick=()=>{fitAll=!fitAll;bza.setAttribute('aria-pressed',fitAll)};
 let atkHeld=false;
-$('atk').addEventListener('pointerdown',e=>{e.preventDefault();atkHeld=true;attack()});
-['pointerup','pointercancel','pointerleave'].forEach(n=>$('atk').addEventListener(n,()=>{atkHeld=false}));
+$('atk').addEventListener('pointerdown',e=>{e.preventDefault();atkHeld=true;try{$('atk').setPointerCapture(e.pointerId)}catch(err){}attack()});
+['pointerup','pointercancel','pointerleave','lostpointercapture'].forEach(n=>$('atk').addEventListener(n,()=>{atkHeld=false}));
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=1;if(e.key.startsWith('Arrow'))e.preventDefault();
   if(e.key==='+'||e.key==='=')zoomMul=Math.min(4,zoomMul*1.25);if(e.key==='-')zoomMul=Math.max(.2,zoomMul/1.25);
   if(e.key===' '||k==='j'){atkHeld=true;e.preventDefault()}const n=+e.key;if(n>=1&&n<=9){const r=useSkill(n);if(r==='locked')say(PS.job<CFG.skills[n-1].job?CFG.skills[n-1].name+' ปลดล็อกที่ Job '+CFG.skills[n-1].job:CFG.skills[n-1].name+' ต้องอัปสกิลก่อน (📜)')}});
