@@ -13,7 +13,7 @@ const { ZONES, CFG } = require('../shared/world.js');
 (async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'hl-equip-ui-'));
   const server = createServer({ dbFile: path.join(tmp, 'game.db'), quiet: true, startZone: 'village2' });
-  let browser, page;
+  let browser, page, errors = [], consoleErrors = [], failedRequests = [];
   try {
     const point = ZONES.village2.start;
     const registration = server.db.register('EquipUiTester', 'secret123', { zone: 'village2', x: point[0], y: point[1] });
@@ -29,8 +29,9 @@ const { ZONES, CFG } = require('../shared/world.js');
     const port = await server.listen(0);
     browser = await engine.launch();
     page = await browser.newPage({ ...devices[deviceName] });
-    const errors = [];
     page.on('pageerror', e => errors.push(e.message));
+    page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
+    page.on('requestfailed', req => failedRequests.push(req.url() + ': ' + req.failure()?.errorText));
     await page.goto('http://127.0.0.1:' + port + '/?splash=0');
     await page.waitForSelector('#net:not([hidden])', { timeout: 10000 });
     await page.fill('#netn', 'EquipUiTester');
@@ -74,13 +75,25 @@ const { ZONES, CFG } = require('../shared/world.js');
   } catch (e) {
     if (page) {
       const state = await page.evaluate(() => ({
+        ready: document.readyState, url: location.href,
+        webdriver: navigator.webdriver, gameLoaded: !!window.HL,
+        netState: window.HLNET?.state,
         started: window.HLNET?.joined, auth: window.HLNET?.auth,
+        loginHidden: document.getElementById('net')?.hidden,
+        splashHidden: document.getElementById('splash')?.hidden,
+        splashState: window.SND?.splash,
+        splashButtonHidden: document.getElementById('splgo')?.hidden,
         cstartHidden: document.getElementById('cstart')?.hidden,
         cstartText: document.getElementById('cstart')?.innerText?.slice(0, 180),
         bagHidden: document.getElementById('bag')?.hidden,
         netStatus: document.getElementById('netst')?.textContent?.slice(0, 180)
       })).catch(() => null);
-      console.error('UI diagnostics:', JSON.stringify(state));
+      console.error('UI diagnostics:', JSON.stringify({state, errors, consoleErrors: consoleErrors.slice(-8), failedRequests: failedRequests.slice(-8)}));
+      try {
+        const dir = path.join(__dirname, 'test-artifacts');
+        fs.mkdirSync(dir, { recursive: true });
+        await page.screenshot({ path: path.join(dir, safariMode ? 'iphone-webkit-failure.png' : 'android-chromium-failure.png'), fullPage: true });
+      } catch (_) {}
     }
     throw e;
   } finally {
