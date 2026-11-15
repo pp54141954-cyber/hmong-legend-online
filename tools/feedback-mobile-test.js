@@ -84,6 +84,17 @@ const ok = (name, cond) => {
     ok('กระเป๋า: ยาไม่ถูกใช้เมื่อ HP เต็ม', online().c.bag[0].n === 2);
     await page.click('#bagb'); // ปิดกระเป๋าเพื่อให้ปุ่มร้านค้าไม่ถูกบัง
 
+    // 2b) คูลดาวน์ยา — ใช้ยาสองครั้งติดกันหลังบาดเจ็บ ข้อความบนหน้าจอต้องบอกเวลาที่เหลือ
+    online().hp = online().maxHp - 60;
+    await page.click('#bagb');
+    await page.waitForSelector('#bag:not([hidden])', { timeout: 8000 });
+    await page.click('#bag button[aria-label^="ใช้ ยาสมุนไพรเล็ก"]');
+    for (let i = 0; i < 60 && online().c.bag[0].n !== 1; i++) await new Promise(r => setTimeout(r, 50));
+    await page.click('#bag button[aria-label^="ใช้ ยาสมุนไพรเล็ก"]');
+    ok('กระเป๋า: คูลดาวน์ยาแสดงเวลาที่เหลือบนหน้าจอ', await waitMsg('ใช้ได้อีกใน'));
+    ok('กระเป๋า: คูลดาวน์ยาไม่ตัดยาเพิ่ม', online().c.bag[0].n === 1);
+    await page.click('#bagb');
+
     // 3) กระเป๋าเต็ม — ซื้อสินค้า (มีเงินพอ)
     online().c.gold = 1000;
     online().c.bag = Array.from({ length: CFG.bag.slots }, () => ({ id: 'hide', n: 99 }));

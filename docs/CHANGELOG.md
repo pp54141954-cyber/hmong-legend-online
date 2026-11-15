@@ -7,7 +7,8 @@
 - การเชื่อมต่อขาด: คำสั่งกระเป๋าและร้านค้าที่กดตอนขาดการเชื่อมต่อแจ้งว่ายังไม่ได้ทำรายการ (เดิมเงียบ)
 - เซิร์ฟเวอร์: ไม่เปลี่ยนเหตุผลที่ส่งกลับ `/healthz` เป็น `V2-R83`
 - CI ใหม่: `.github/workflows/bag-feedback-r83.yml` (Android Chromium และ iPhone WebKit จำลอง)
-- ทดสอบ: `feedback-contract-test` 16/16 · `feedback-ws-test` 23/23 · `feedback-mobile-test` Chromium 18/18 · `bag-integrity` 40/40 · `equipment-gameplay` 12/12 · WebKit รอผล CI
+- คูลดาวน์ยาแสดงเวลาที่เหลือ (ทศนิยมหนึ่งตำแหน่ง) จากเซิร์ฟเวอร์ ข้อความบนหน้าจอบอกว่าใช้ได้อีกใน N วินาที
+- ทดสอบ: `feedback-contract-test` 18/18 · `feedback-ws-test` 25/25 · `feedback-mobile-test` Chromium 20/20 · `bag-integrity` 40/40 · `equipment-gameplay` 12/12 · WebKit ดูผล CI ของ commit ล่าสุดใน PR
 - ยังไม่ได้ทดสอบบนโทรศัพท์จริง และยังไม่ได้ deploy ขึ้น Render
 
 ## V2-R80 — 2026-11-15 (เพดาน 55,000 เริ่มตั้งแต่ระดับ +12 ขึ้นไป: แก้ขอบเขตจาก V2-R79)

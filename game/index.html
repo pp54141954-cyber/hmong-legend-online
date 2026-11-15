@@ -1899,7 +1899,7 @@ const FB={shop:{far:'ต้องอยู่ใกล้ป้าขายข�
  use:{'hp-full':'HP เต็มแล้ว · ยังไม่ต้องใช้ยา (ยาไม่ถูกใช้)',cooldown:'ยานี้ยังอยู่ในช่วงรอ · ใช้ได้อีกครั้งเมื่อครบเวลา','not-usable':'ของนี้ใช้ไม่ได้',empty:'ช่องนี้ว่าง ไม่มีของให้ใช้',invalid:'ใช้ของนี้ไม่ได้',dead:'ตายอยู่ ใช้ของไม่ได้'},
  equip:{'not-equip':'ของนี้สวมใส่ไม่ได้ · สวมได้เฉพาะอุปกรณ์','wrong-class':'อาชีพนี้สวมชิ้นนี้ไม่ได้',empty:'ช่องนี้ว่าง ไม่มีของให้สวม',invalid:'สวมของนี้ไม่ได้',dead:'ตายอยู่ สวมใส่ไม่ได้'},
  unequip:{'bag-full':'ถอดไม่ได้ · กระเป๋าไม่มีช่องว่าง จัดกระเป๋าก่อน',empty:'ช่องอุปกรณ์นี้ว่าง ไม่มีของให้ถอด',invalid:'ถอดของนี้ไม่ได้',dead:'ตายอยู่ ถอดไม่ได้'}};
-const fbText=(k,r,op)=>r==='save-error'?FB_SAVE:((k==='shop'?FB.shop:FB[op]||{})[r]||'ทำรายการไม่สำเร็จ');
+const fbText=(k,r,op,w)=>r==='save-error'?FB_SAVE:(r==='cooldown'&&op==='use'&&w!=null?'ยานี้ยังอยู่ในช่วงรอ · ใช้ได้อีกใน '+w+' วินาที':((k==='shop'?FB.shop:FB[op]||{})[r]||'ทำรายการไม่สำเร็จ'));
 function npcNear(){const Cf=HL.CFG,TS=HL.T||32,Zc=HL.Z,pl=HL.player;let best=null,bd=1e9;for(const n of Cf.npcs){if(!Zc||n.zone!==Zc.id)continue;const d=Math.hypot(pl.x-n.tx*TS,pl.y-n.ty*TS);if(d<bd){bd=d;best=n}}return bd<=Cf.economy.shopRange*TS?best:null}
 function shopTick(){const n=npcNear();shopNpc=n;shb.hidden=!n;const role=n?(n.role||'shop'):'';
   if(n&&shb.dataset.role!==role){shb.innerHTML=role==='smith'?'🔨<span>ช่างตีเหล็ก</span>':'🛒<span>ร้านค้า</span>';shb.dataset.role=role}
@@ -2018,7 +2018,7 @@ function connect(){if(!token)return;stopped=false;NET.state='connecting';status(
       for(const r of m.ps||[]){const id=r[0];seen.add(id);let o=byId.get(id);if(!o){o={id,x:r[1],y:r[2],anim:0};byId.set(id,o)}Object.assign(o,{look:(NET.plooks||{})[id],tx:r[1],ty:r[2],dir:'NSEW'[r[3]],moving:!!r[4],name:(NET.pnames||{})[id]||'?',lv:r[5]})}
       for(const id of [...byId.keys()])if(!seen.has(id))byId.delete(id);NET.others=[...byId.values()];status('ออนไลน์ · '+NET.name+' · เห็น '+NET.others.length+' คน');
       if(NET.auth)applyWorld(m)}
-    else if(m.t==='deny'&&m.k==='enh'){NET.stats.denied++;enhBusy=false;renderEnh();HL.say(ENH_MSG[m.r]||'ตีบวกไม่ได้')}else if(m.t==='deny'&&m.k==='shop'){NET.stats.denied++;HL.say(fbText('shop',m.r),4)}else if(m.t==='deny'){NET.stats.denied++;if(m.r==='debug-off')HL.say('ปุ่มทดสอบปิดอยู่บนเซิร์ฟเวอร์นี้');else if(m.k==='inv')HL.say(fbText('inv',m.r,m.op),4);else if(m.k==='skill')HL.say(DENY_SK[m.r]||'อัปสกิลไม่ได้');else if(m.k==='party')HL.say(DENY_PT[m.r]||'ทำไม่ได้')}
+    else if(m.t==='deny'&&m.k==='enh'){NET.stats.denied++;enhBusy=false;renderEnh();HL.say(ENH_MSG[m.r]||'ตีบวกไม่ได้')}else if(m.t==='deny'&&m.k==='shop'){NET.stats.denied++;HL.say(fbText('shop',m.r),4)}else if(m.t==='deny'){NET.stats.denied++;if(m.r==='debug-off')HL.say('ปุ่มทดสอบปิดอยู่บนเซิร์ฟเวอร์นี้');else if(m.k==='inv')HL.say(fbText('inv',m.r,m.op,m.wait),4);else if(m.k==='skill')HL.say(DENY_SK[m.r]||'อัปสกิลไม่ได้');else if(m.k==='party')HL.say(DENY_PT[m.r]||'ทำไม่ได้')}
     else if(m.t==='adm'){if('god' in m){adGod=m.god}HL.say('แอดมิน '+m.op+': '+(ADM_MSG[m.r]||m.r));renderAdmin()}
     else if(m.t==='deny'&&m.k==='cls'){HL.say(m.r==='not-safe'?'เปลี่ยนอาชีพได้เฉพาะในหมู่บ้าน':'เปลี่ยนอาชีพไม่ได้ ('+m.r+')')}
     else if(m.t==='warp'){HL.enterZone(m.zone,m.x,m.y);lastSent='';HL.say('วาร์ปไป '+(HL.ZONES[m.zone]||{}).name)}

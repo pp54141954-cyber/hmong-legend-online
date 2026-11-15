@@ -147,6 +147,17 @@ const denies = s => s.events.filter(m => m.t === 'deny');
     a.session.ws.send(JSON.stringify({ t: 'inv', op: 'use', slot: 0 }));
     check('กระเป๋า: ใช้ยาตอนบาดเจ็บสำเร็จ และลดจำนวนหนึ่งครั้ง', await waitFor('use-ok', () => a.pl.c.bag[0] && a.pl.c.bag[0].n === 1) && denies(a.session).length === 0);
 
+    // ใช้ยาสองครั้งติดกันผ่าน WebSocket: ครั้งที่สองต้องได้ cooldown พร้อมเวลาที่เหลือ
+    a = await player({ at: NEAR, bag: [{ id: 'potion_s', n: 2 }] });
+    a.pl.hp = a.pl.maxHp - 60;
+    a.session.ws.send(JSON.stringify({ t: 'inv', op: 'use', slot: 0 }));
+    await waitFor('first potion used', () => a.pl.c.bag[0] && a.pl.c.bag[0].n === 1);
+    a.session.ws.send(JSON.stringify({ t: 'inv', op: 'use', slot: 0 }));
+    await waitFor('cooldown deny', () => denies(a.session).some(m => m.k === 'inv' && m.r === 'cooldown'));
+    const cdDeny = denies(a.session).find(m => m.k === 'inv' && m.r === 'cooldown');
+    check('คูลดาวน์ยา: ส่ง deny cooldown พร้อมเวลาที่เหลือ 0.1–1.0 วินาที', !!cdDeny && typeof cdDeny.wait === 'number' && cdDeny.wait >= 0.1 && cdDeny.wait <= 1);
+    check('คูลดาวน์ยา: การใช้ซ้ำไม่ตัดยาเพิ่มผ่าน WebSocket', a.pl.c.bag[0].n === 1);
+
     // คูลดาวน์ยาตรวจที่ตัวจำลองเดียวกับเซิร์ฟเวอร์ (ไม่ผ่านเครือข่าย)
     const sim = createSim({ rand: () => 0.5 });
     const p = { id: 1, c: { account_id: 1, name: 'CdTest', zone: 'village', x: 0, y: 0, dir: 'S', lv: 20, exp: 0, job: 10, jexp: 0, cls: 'นักดาบ', clsset: 1, starter: 1, gold: 0, bag: [{ id: 'potion_s', n: 2 }], eq: { ...EQ }, enh: {}, sk: {}, st: {}, look: {} }, personal: [], dirty: false, bagDirty: false };

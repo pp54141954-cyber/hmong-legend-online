@@ -195,7 +195,7 @@ function createServer(opts = {}) {
       }
       if (m.t === 'inv') {
         const r = commitInventory(p, () => sim.inv(p, String(m.op), m.op === 'unequip' ? String(m.slot) : m.slot, now / 1000));
-        if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'inv', op: m.op, r }); }
+        if (r !== 'ok') { p.denied = (p.denied || 0) + 1; send(ws, { t: 'deny', k: 'inv', op: m.op, r, ...(r === 'cooldown' ? { wait: p.potionWait } : {}) }); }
         return;
       }
       if (m.t === 'enh') { // ตีบวกอาวุธ (V2-R78): เซิร์ฟเวอร์สุ่มและหักเงิน/หินป้องกันเอง บันทึกประวัติ และบันทึกลงฐานข้อมูลทันที
