@@ -17,7 +17,9 @@ jobs:
       - name: Install browser test runner without modifying game dependencies
         run: npm install --no-save --no-package-lock --prefix /tmp/hl-browser-test playwright@1.56.1
       - name: Install Chromium
-        run: /tmp/hl-browser-test/node_modules/.bin/playwright install --with-deps chromium
+        run: |
+          ls -la /tmp/hl-browser-test/node_modules/playwright/cli.js
+          node /tmp/hl-browser-test/node_modules/playwright/cli.js install --with-deps chromium
       - name: Make Playwright available to tests
         run: echo "NODE_PATH=/tmp/hl-browser-test/node_modules" >> "$GITHUB_ENV"
       - name: Guardian equipment logic
