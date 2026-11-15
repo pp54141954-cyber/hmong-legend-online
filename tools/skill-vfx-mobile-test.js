@@ -32,7 +32,7 @@ async function run(){
     const page=await context.newPage();
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto('http://127.0.0.1:'+port+'/?splash=0',{waitUntil:'domcontentloaded'});
-    await page.waitForSelector('#net:not([hidden])',{timeout:12000});
+    await page.waitForSelector('#net:not([hidden])',{timeout:30000}).catch(async e=>{console.error('LOGIN DEBUG '+item.device+' '+JSON.stringify(await page.evaluate(()=>({ready:document.readyState,netHidden:document.getElementById('net')?.hidden,hasHL:!!window.HL,hasNET:!!window.HLNET})).catch(()=>({})))+' JS errors='+errors.join(' / '));throw e});
     await page.fill('#netn',item.name);await page.fill('#netp','testpass123');await page.click('#netlogin');
     await page.waitForFunction(()=>window.HLNET?.auth&&window.HLNET?.joined&&window.HL?.useSkill,null,{timeout:18000});
     await page.waitForFunction(()=>window.HLNET?.sk?.[window.HL?.skName(3)]>=1,null,{timeout:10000});
@@ -42,12 +42,13 @@ async function run(){
      check(item.device+' activates skill '+slot,activation.result==='ok');
      check(item.device+' keeps approved sprite chart '+slot,activation.shapes.some(k=>/^cchart/.test(k)));
      check(item.device+' has charge halo '+slot,activation.shapes.includes('cgrand'));
-     await page.waitForTimeout(700);
-     console.log('VFX DEBUG '+item.device+' '+slot+' '+JSON.stringify(await page.evaluate(()=>({
-      now:HL.tNow,cast:HL.PS.cast&&{t:HL.PS.cast.t,poseT:HL.PS.cast.sk.poseT,done:HL.PS.cast.done},
-      effects:HL.fxList.map(f=>({k:f.k,phase:f.phase,t:f.t,q:f.q})).slice(0,8)
-     })))+' errors='+errors.join(' / '));
-     await page.waitForFunction(()=>window.HL?.fxList?.some(f=>f.k==='cgrand'&&f.phase==='release'),null,{timeout:2500});
+     // Emulated mobile canvases can render at <5fps in CI. Step the isolated client clock
+     // deterministically instead of tying cast-phase assertions to wall-clock/frame rate.
+     const timing=await page.evaluate(()=>{for(let n=0;n<12;n++)HL.update(0.05);return {
+       current:HL.tNow,phases:HL.fxList.filter(f=>f.k==='cgrand').map(f=>({phase:f.phase,q:f.q,r:f.r})),
+       cast:HL.PS.cast&&{done:HL.PS.cast.done,t:HL.PS.cast.t}
+     }});
+     console.log('VFX PHASE '+item.device+' skill '+slot+' '+JSON.stringify(timing)+' errors='+errors.join(' / '));
      const render=await page.evaluate(()=>({newEffects:HL.fxList.filter(f=>f.k==='cgrand').map(f=>({phase:f.phase,r:f.r,q:f.q})),
       original:HL.fxList.some(f=>/^cchart/.test(f.k))}));
      check(item.device+' cinematic release phase '+slot,render.newEffects.some(f=>f.phase==='release'&&f.r>=98));
@@ -56,7 +57,7 @@ async function run(){
       const dir=path.join(__dirname,'test-artifacts');fs.mkdirSync(dir,{recursive:true});
       await page.screenshot({path:path.join(dir,item.output),animations:'disabled'});
      }
-     await page.waitForTimeout(1250); // allow cast to end before next skill
+     await page.evaluate(()=>{for(let n=0;n<22;n++)HL.update(0.05)}); // finish local cast without relying on software canvas FPS
     }
     check(item.device+' has no JavaScript exceptions',errors.length===0);
     await context.close();
