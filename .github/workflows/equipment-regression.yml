@@ -19,13 +19,27 @@ jobs:
       - name: Install Chromium
         run: |
           ls -la /tmp/hl-browser-test/node_modules/playwright/cli.js
-          node /tmp/hl-browser-test/node_modules/playwright/cli.js install --with-deps chromium
+          node /tmp/hl-browser-test/node_modules/playwright/cli.js install --with-deps chromium webkit
       - name: Make Playwright available to tests
         run: echo "NODE_PATH=/tmp/hl-browser-test/node_modules" >> "$GITHUB_ENV"
       - name: Guardian equipment logic
         run: node tools/equipment-slots-test.js
       - name: Existing class weapon logic regression (server)
         run: node tools/equipment-class-logic-test.js
-      - name: Mobile bag sizing and rendering
+      - name: Android Chrome mobile bag sizing and rendering
         if: ${{ always() }}
         run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: iPhone Safari WebKit mobile bag sizing and rendering
+        if: ${{ always() }}
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Upload mobile inventory screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: inventory-mobile-browser-previews
+          path: tools/test-artifacts/*.png
+          if-no-files-found: ignore
