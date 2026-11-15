@@ -42,6 +42,11 @@ async function run(){
      check(item.device+' activates skill '+slot,activation.result==='ok');
      check(item.device+' keeps approved sprite chart '+slot,activation.shapes.some(k=>/^cchart/.test(k)));
      check(item.device+' has charge halo '+slot,activation.shapes.includes('cgrand'));
+     await page.waitForTimeout(700);
+     console.log('VFX DEBUG '+item.device+' '+slot+' '+JSON.stringify(await page.evaluate(()=>({
+      now:HL.tNow,cast:HL.PS.cast&&{t:HL.PS.cast.t,poseT:HL.PS.cast.sk.poseT,done:HL.PS.cast.done},
+      effects:HL.fxList.map(f=>({k:f.k,phase:f.phase,t:f.t,q:f.q})).slice(0,8)
+     })))+' errors='+errors.join(' / '));
      await page.waitForFunction(()=>window.HL?.fxList?.some(f=>f.k==='cgrand'&&f.phase==='release'),null,{timeout:2500});
      const render=await page.evaluate(()=>({newEffects:HL.fxList.filter(f=>f.k==='cgrand').map(f=>({phase:f.phase,r:f.r,q:f.q})),
       original:HL.fxList.some(f=>/^cchart/.test(f.k))}));
