@@ -44,7 +44,7 @@ const hide = p.c.bag.find(s => s.id === 'hide');
 assert(weapon && weapon.enh === 1, 'enhancement stays on selected sword after index shift');
 assert(hide && hide.n === 2 && !hide.enh, 'material behind shifted sword must not be enhanced');
 assert.equal(p.c.bag.reduce((n, s) => n + (s.id === stone ? s.n : 0), 0), 0, 'stone consumed exactly once');
-assert.equal(sim.enhance(p, { src: 'bag', i: 1, rid: 'bag-weapon-after-stone' }, 1002), 'dup', 'duplicate request rejected');
+assert.equal(sim.enhance(p, { src: 'bag', i: 1, rid: 'bag-weapon-after-stone' }, 100000), 'dup', 'duplicate request rejected');
 assert.equal(beforeGold - p.c.gold, cost.gold, 'duplicate request never consumes resources again');
 
 // Equip/unequip transfers the same enhanced item with no copy or lost +level.
