@@ -41,6 +41,54 @@ function create(options={}){
  const max=low?8:16;
  const items=[], active=new WeakSet();let timer=0;
  let tiger=null,tigerReady=false,tigerPink=null;
+ // Approved FIGHTER source atlas: 9 rows x 5 poses, transparent EFFECTS ONLY.
+ // Keep existing player sprites pca/pcl_fighter unmodified.
+ let approvedSide=null,approvedDownUp=null,sideReady=false,downUpReady=false;
+ let lastFrame=null,drawsFromAtlas=0;
+ function prepareAtlas(sideUrl,downUpUrl){
+  if(typeof Image==='undefined')return;
+  if(sideUrl&&!approvedSide){
+   approvedSide=new Image();approvedSide.decoding='async';
+   approvedSide.onload=()=>{sideReady=approvedSide.naturalWidth===1600&&approvedSide.naturalHeight===1800};
+   approvedSide.onerror=()=>{sideReady=false};
+   approvedSide.src=sideUrl;
+  }
+  if(downUpUrl&&!approvedDownUp){
+   approvedDownUp=new Image();approvedDownUp.decoding='async';
+   approvedDownUp.onload=()=>{downUpReady=approvedDownUp.naturalWidth===1500&&approvedDownUp.naturalHeight===5400};
+   approvedDownUp.onerror=()=>{downUpReady=false};
+   approvedDownUp.src=downUpUrl;
+  }
+ }
+ function follow(cast,x,y){
+  if(!cast||!finite(x)||!finite(y))return;
+  const e=items.find(v=>v.cast===cast);
+  if(e){e.x=x;e.y=y}
+ }
+ function drawApproved(ctx,e,frame,age){
+  const vertical=e.dir==='N'||e.dir==='S';
+  const im=vertical?(downUpReady?approvedDownUp:null):(sideReady?approvedSide:null);
+  if(!im)return false;
+  const row=e.spec.slot-3+(vertical&&e.dir==='N'?9:0);
+  const cw=vertical?300:320,ch=vertical?300:200;
+  const anchorX=vertical?150:70,anchorY=vertical?200:172;
+  // Match the exact FIGHTER storyboard pose row, not invented circles.
+  // Side-view FIGHTER chart is reused without cropping source files.
+  const scale=vertical?.78:.98;
+  ctx.save();
+  ctx.translate(e.x,e.y+16);
+  ctx.globalCompositeOperation='lighter';
+  ctx.globalAlpha*=frame===4?Math.max(.12,1-age*.55):frame===0?.68:1;
+  ctx.imageSmoothingEnabled=true;
+  if(vertical&&e.spec.hue==='blue')ctx.filter='hue-rotate(160deg) saturate(1.6)';
+  else if(vertical&&e.spec.hue==='pink')ctx.filter='hue-rotate(290deg) saturate(1.6)';
+  ctx.scale(e.dir==='W'?-scale:scale,scale);
+  ctx.drawImage(im,frame*cw,row*ch,cw,ch,-anchorX,-anchorY,cw,ch);
+  ctx.restore();
+  drawsFromAtlas++;
+  lastFrame={slot:e.spec.slot,frame,dir:e.dir,source:vertical?'approved-updown':'approved-side'};
+  return true;
+ }
  function prepare(absoluteUrl){
   if(typeof Image==='undefined'||!absoluteUrl||tiger)return;
   tiger=new Image();tiger.decoding='async';
@@ -241,13 +289,19 @@ function create(options={}){
    const life=e.releaseAt<0?0:e.age-e.releaseAt;
    if(life>1.05){items.splice(k,1);continue;}
    const t=e.releaseAt<0?Math.max(0,p*.45):clamp(life/.9,0,1);
-   ctx.save();ctx.globalAlpha=e.releaseAt<0?.56:1;
-   render(ctx,e,phase,t);
+   // 00 READY 01 WIND-UP 02 ACTION 03 RELEASE 04 RECOVER
+   // Show the approved source image frame only once and avoid invented
+   // giant rings that previously obscured the character and HUD.
+   const frame=e.releaseAt<0?(p<.18?0:p<.39?1:2):(life<.49?3:4);
+   ctx.save();ctx.globalAlpha=e.releaseAt<0?.82:1;
+   if(!drawApproved(ctx,e,frame,life))render(ctx,e,phase,t);
    ctx.restore();
   }
  }
- return {start,prepare,draw,clear(){items.length=0;},get count(){return items.length},
-   get max(){return max;},get specs(){return SKILLS.slice();},get tigerReady(){return tigerReady}};
+ return {start,prepare,prepareAtlas,follow,draw,clear(){items.length=0;},get count(){return items.length},
+   get max(){return max;},get specs(){return SKILLS.slice();},get tigerReady(){return tigerReady},
+   get approvedSideReady(){return sideReady},get approvedDownUpReady(){return downUpReady},
+   get drawsFromAtlas(){return drawsFromAtlas},get lastFrame(){return lastFrame&&{...lastFrame}}};
 }
 return {create,SKILLS,COLOR};
 });
