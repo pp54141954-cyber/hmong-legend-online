@@ -54,6 +54,17 @@ async function run(){
      check(item.device+' cinematic release phase '+slot,render.newEffects.some(f=>f.phase==='release'&&f.r>=98));
      check(item.device+' cinematic layer not hidden '+slot,render.newEffects.some(f=>f.phase==='release'&&f.q!==true));
      if(slot===9){
+      // Freeze the in-flight VFX at the intended ACTION frame *in the isolated test fixture*.
+      // Slow CI software renderers otherwise advance the effect to the blank recovery frame
+      // before page.screenshot() can capture it. This does not change game code or timing.
+      const frozen=await page.evaluate(()=>{
+       const active=HL.fxList.filter(f=>f.k==='cgrand'||/^cchart/.test(f.k));
+       for(const f of active){f.T=15;f.t=f.k==='cgrand'?9:10;f.q=false}
+       return {effects:active.length,stages:active.map(f=>f.k)};
+      });
+      check(item.device+' has cinematic effects frozen for visual inspection',frozen.effects>=2);
+      console.log('VFX SCREENSHOT FRAME '+item.device+' '+JSON.stringify(frozen));
+      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>resolve()));
       const dir=path.join(__dirname,'test-artifacts');fs.mkdirSync(dir,{recursive:true});
       await page.screenshot({path:path.join(dir,item.output),animations:'disabled'});
      }
