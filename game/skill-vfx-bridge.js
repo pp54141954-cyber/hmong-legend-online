@@ -19,14 +19,18 @@ const motion=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion
 const renderer=window.HLGrandVFX.create({quality:'auto',reducedMotion:motion});
 const nativeSetTransform=gameCtx.setTransform;
 let worldMatrix=null,seen=new WeakSet(),last=0,lastKey='',lastEvent=0;
+let captureWorld=true,sawFrameReset=false;
 gameCtx.setTransform=function(...args){
-  if(args.length>=6 && args.slice(0,6).every(v=>typeof v==='number'&&Number.isFinite(v))) {
+  if(captureWorld&&args.length>=6&&args.slice(0,6).every(v=>typeof v==='number'&&Number.isFinite(v))) {
     const [a,b,c,d,e,f]=args;
-    // Main draw() sets the true world transform every frame after resetting
-    // to identity; skip the reset and copy the world matrix for the overlay.
-    if(a>0&&d>0&&Math.abs(a-d)<.00001&&b===0&&c===0&&
-      (Math.abs(a-1)>.00001||Math.abs(e)>.00001||Math.abs(f)>.00001))
+    // Game draw(): reset to identity, clear the screen, then apply the world
+    // camera transform. Capture only that FIRST matrix per render frame.
+    // Later HUD matrices (often device-pixel-ratio scale) must not replace it.
+    if(a===1&&b===0&&c===0&&d===1&&e===0&&f===0)sawFrameReset=true;
+    else if(sawFrameReset&&a>0&&d>0&&Math.abs(a-d)<.00001&&b===0&&c===0){
       worldMatrix=[a,b,c,d,e,f];
+      captureWorld=false;
+    }
   }
   return nativeSetTransform.apply(this,args);
 };
@@ -91,6 +95,7 @@ function frame(time){
   // World coordinates already include 3/4 projection in the main canvas.
   if(worldMatrix)ctx.setTransform(...worldMatrix);
   renderer.draw(ctx,dt);
+  captureWorld=true;sawFrameReset=false;
 }
 requestAnimationFrame(frame);
 window.HLGrandStage={
