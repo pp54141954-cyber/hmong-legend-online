@@ -199,9 +199,9 @@ function createSim({ rand = Math.random } = {}) {
   const B = CFG.bag;
   // ใส่ของเข้ากระเป๋า: ของใช้/วัตถุดิบซ้อนได้ถึง B.stack, อุปกรณ์ช่องละชิ้น — คืนจำนวนที่ใส่ได้จริง
   function addItem(p, id, n) {
-    const it = CFG.items[id]; if (!it || n <= 0) return 0;
+    const it = CFG.items[id]; if (!it || !Number.isSafeInteger(n) || n <= 0) return 0;
     const bag = p.c.bag; let left = n;
-    if (it.type !== 'eq') for (const s of bag) { if (s.id !== id || left <= 0) continue; const k = Math.min(left, B.stack - s.n); s.n += k; left -= k; }
+    if (it.type !== 'eq') for (const s of bag) { if (s.id !== id || left <= 0) continue; const room = Math.max(0, B.stack - s.n); const k = Math.min(left, room); if (k <= 0) continue; s.n += k; left -= k; }
     while (left > 0 && bag.length < B.slots) { const k = it.type === 'eq' ? 1 : Math.min(left, B.stack); bag.push({ id, n: k }); left -= k; }
     if (left < n) { p.bagDirty = true; p.dirty = true; }
     if (left > 0) p.personal.push({ k: 'bagfull', id, lost: left });
@@ -220,7 +220,9 @@ function createSim({ rand = Math.random } = {}) {
     if (p.dead) return 'dead';
     const bag = p.c.bag;
     if (op === 'use' || op === 'equip') {
-      const i = Math.floor(+arg), s = bag[i]; if (!Number.isInteger(i) || !s) return 'empty';
+      // รับเฉพาะเลขช่องที่เป็นจำนวนเต็ม เพื่อไม่ให้ null/ทศนิยมถูกแปลงเป็นช่อง 0 โดยไม่ตั้งใจ
+      const i = Number.isSafeInteger(arg) ? arg : (typeof arg === 'string' && /^(0|[1-9]\d*)$/.test(arg) ? Number(arg) : -1);
+      const s = bag[i]; if (!Number.isSafeInteger(i) || i < 0 || !s) return 'empty';
       const it = CFG.items[s.id]; if (!it) return 'invalid';
       if (op === 'use') {
         if (it.type !== 'use') return 'not-usable';
@@ -247,8 +249,9 @@ function createSim({ rand = Math.random } = {}) {
   }
   // ร้านค้า NPC (V2-R73): ซื้อได้เมื่ออยู่ใกล้ NPC ในโซนเดียวกัน เงินพอ และกระเป๋ามีที่ทั้งหมด — ราคาคิดที่เซิร์ฟเวอร์เท่านั้น
   function fits(p, id, n) {
-    const it = CFG.items[id]; let left = n;
-    if (it.type !== 'eq') for (const s of p.c.bag) { if (s.id !== id || left <= 0) continue; left -= Math.min(left, B.stack - s.n); }
+    const it = CFG.items[id]; if (!it || !Number.isSafeInteger(n) || n <= 0) return false;
+    let left = n;
+    if (it.type !== 'eq') for (const s of p.c.bag) { if (s.id !== id || left <= 0) continue; left -= Math.min(left, Math.max(0, B.stack - s.n)); }
     if (left <= 0) return true;
     const per = it.type === 'eq' ? 1 : B.stack;
     return Math.ceil(left / per) <= B.slots - p.c.bag.length;
@@ -260,7 +263,8 @@ function createSim({ rand = Math.random } = {}) {
     if (Math.hypot(p.c.x - N.tx * W.T, p.c.y - N.ty * W.T) > CFG.economy.shopRange * W.T) return 'far';
     const row = N.shop.find(r => r[0] === id); if (!row) return 'invalid';
     if (CFG.items[id].cls && CFG.items[id].cls !== clsOf(p) && !(clsOf(p) === 'ผู้พิทักษ์' && CFG.items[id].slot === 'weapon' && CFG.items[id].cls === 'นักดาบ')) return 'wrong-class';
-    const cnt = Math.floor(+n); if (!(cnt >= 1 && cnt <= 99)) return 'invalid';
+    const cnt = typeof n === 'number' ? n : (typeof n === 'string' && /^[1-9]\d*$/.test(n) ? Number(n) : NaN);
+    if (!Number.isSafeInteger(cnt) || cnt < 1 || cnt > 99) return 'invalid';
     const total = row[1] * cnt;
     if ((p.c.gold || 0) < total) return 'no-gold';
     if (!fits(p, id, cnt)) return 'bag-full';
