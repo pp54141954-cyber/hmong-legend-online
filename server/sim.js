@@ -220,7 +220,7 @@ function createSim({ rand = Math.random } = {}) {
     if (p.dead) return 'dead';
     const bag = p.c.bag;
     if (op === 'use' || op === 'equip') {
-      const i = Math.floor(+arg), s = bag[i]; if (!Number.isInteger(i) || !s) return 'empty';
+      const i = typeof arg === 'number' && Number.isSafeInteger(arg) ? arg : -1, s = bag[i]; if (!s) return 'empty';
       const it = CFG.items[s.id]; if (!it) return 'invalid';
       if (op === 'use') {
         if (it.type !== 'use') return 'not-usable';
@@ -238,7 +238,7 @@ function createSim({ rand = Math.random } = {}) {
         stats(p);
       }
     } else if (op === 'unequip') {
-      if (!Object.prototype.hasOwnProperty.call(p.c.eq, arg) || !p.c.eq[arg]) return 'empty';
+      if (!['weapon', 'offhand', 'armor', 'acc'].includes(arg) || !p.c.eq[arg]) return 'empty';
       if (bag.length >= B.slots) return 'bag-full';
       bag.push(entry(p.c.eq[arg], eqEnh(p, arg))); p.c.eq[arg] = null; setEnh(p, arg, 0); stats(p);
     } else return 'invalid';
@@ -303,9 +303,9 @@ function createSim({ rand = Math.random } = {}) {
     p.enhRids = p.enhRids || [];
     if (p.enhRids.includes(rid)) return 'dup';
     p.enhRids.push(rid); if (p.enhRids.length > 30) p.enhRids.shift();
-    let id, lv, idx = -1;
+    let id, lv, idx = -1, bagWeapon = null;
     if (m.src === 'eq') { id = c.eq.weapon; if (!id) return 'empty'; lv = eqEnh(p, 'weapon'); }
-    else if (m.src === 'bag') { idx = Math.floor(+m.i); const s = Number.isInteger(idx) ? c.bag[idx] : null; if (!s) return 'empty'; id = s.id; lv = s.enh | 0; }
+    else if (m.src === 'bag') { idx = typeof m.i === 'number' && Number.isSafeInteger(m.i) ? m.i : -1; const s = c.bag[idx]; if (!s) return 'empty'; bagWeapon = s; id = s.id; lv = s.enh | 0; }
     else return 'invalid';
     const it = CFG.items[id]; if (!it || it.type !== 'eq' || it.slot !== 'weapon') return 'not-weapon';
     if (lv >= EH.cap) return 'max';
@@ -315,7 +315,7 @@ function createSim({ rand = Math.random } = {}) {
     if (countItem(p, EH.stone) < st.stone) return 'no-stone';
     c.gold -= gold; takeItem(p, EH.stone, st.stone); // หักก่อนสุ่มเสมอ (ล้มเหลวก็หัก)
     const ok = rand() < st.rate;
-    if (ok) { if (m.src === 'eq') setEnh(p, 'weapon', lv + 1); else c.bag[idx].enh = lv + 1; stats(p); }
+    if (ok) { if (m.src === 'eq') setEnh(p, 'weapon', lv + 1); else bagWeapon.enh = lv + 1; stats(p); }
     p.enhAt = now; p.bagDirty = true; p.dirty = true;
     const r = { ok, from: lv, to: ok ? lv + 1 : lv, item: id, gold, stone: st.stone, goldLeft: c.gold };
     p.personal.push({ k: 'enh', ok, from: r.from, to: r.to, item: id });
