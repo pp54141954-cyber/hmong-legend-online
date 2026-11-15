@@ -69,6 +69,7 @@ jobs:
         env:
           VFX_BROWSER: webkit
       - name: Nine real martial skills — Pixel 7 Chromium
+        if: ${{ always() }}
         run: node tools/martial-nine-skill-test.js
         env:
           VFX_BROWSER: chromium
