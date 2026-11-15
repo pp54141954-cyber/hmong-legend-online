@@ -27,7 +27,7 @@ const PALETTES={
 const CLASSES={
  'นักดาบ':'sword','นักธนู':'arrow','ผู้ใช้มนตรา':'arcane',
  'ผู้พิทักษ์':'shield','ผู้สืบวิญญาณ':'spirit','ผู้รักษา':'spirit',
- 'นักฆ่า':'assassin','มือสังหาร':'assassin','นักรบ':'sword'
+ 'นักฆ่า':'assassin','นักสู้':'fire','มือสังหาร':'assassin','นักรบ':'sword'
 };
 const DIR={E:0,S:PI/2,W:PI,N:-PI/2};
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
