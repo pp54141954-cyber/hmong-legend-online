@@ -121,3 +121,6 @@
 - นักธนูแบบใหม่ (V2-R57, ผมดำ ชุดดำลายแดง): ภาพเดิน `assets/sprites_src/classbody/archer_{m,f}2.png`, ท่ายิง `archer_{m,f}2_attack.png` → `pcl_archer_*.webp`, `pca_archer_*.webp` · แบบเดิม (ผมน้ำตาล) เก็บไว้ ไม่ได้ใช้แล้ว
 - `game/maps/mine_{camp,tunnel,plaza,river,station,cliff}.webp` — ภาพโซนถ้ำ 6 โซน (V2-R58) ขยายจาก `assets/maps_src/mine.png` ตามวงใน `assets/maps_src/mine_regions.png` (ค่า 1–6 ทำจากวงที่เจ้าของวงไว้) สร้างโดย `tools/build_mine_split.py`; ผังช่อง `assets/maps/mine_*.mask.txt`
 - `game/maps/mine.webp` ถูกลบแล้ว (ไม่ได้ใช้; ยังอยู่ในประวัติ git)
+- `docs/prompts/ref/mine_sheet_clean.jpg` และ `zone_mine_<โซน>_crop.jpg`, `zone_mine_<โซน>_now.jpg` — ภาพอ้างอิงของชุดคำสั่งทำโซนถ้ำ (V2-R60) สร้างโดย `tools/make_zone_prompt_refs.py`
+- `assets/sprites_src/classbody/fighter_m_walk.png`, `fighter_m_attack.png` — นักสู้ชาย (V2-R60) → `pcl_fighter_m.webp`, `pca_fighter_m.webp`
+- `assets/sprites_src/incoming/` — ภาพมีดสั้น 3 ชุดที่ยังไม่ได้ใช้ (`female_daggers_walk_{a,b}.png`, `male_daggers_walk.png`) รอยืนยันอาชีพ
