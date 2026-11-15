@@ -24,8 +24,8 @@ jobs:
         run: echo "NODE_PATH=/tmp/hl-browser-test/node_modules" >> "$GITHUB_ENV"
       - name: Guardian equipment logic
         run: node tools/equipment-slots-test.js
-      - name: Existing class weapon regression
-        run: node tools/class-weapon-test.js
+      - name: Existing class weapon logic regression (server)
+        run: node tools/equipment-class-logic-test.js
       - name: Mobile bag sizing and rendering
         if: ${{ always() }}
         run: node tools/equipment-mobile-test.js
