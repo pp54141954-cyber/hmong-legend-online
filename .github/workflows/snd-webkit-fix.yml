@@ -1,0 +1,77 @@
+name: Apply SND WebKit login race fix to isolated VFX branch
+on:
+  push:
+    branches: [feature/skill-vfx-grand-v1]
+    paths: [.github/workflows/snd-webkit-fix.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch-test-commit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/skill-vfx-grand-v1
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Patch the single existing SND login callback
+        run: node tools/fix-snd-webkit-login.js --write
+      - name: Verify exactly one approved game file changed
+        run: |
+          git diff --check
+          node - <<'NODE'
+          const cp=require('node:child_process');
+          const paths=cp.execFileSync('git',['diff','--name-only'],{encoding:'utf8'}).trim().split(/\r?\n/);
+          if(paths.length!==1||paths[0]!=='game/index.html')throw Error('Refusing unrelated changes: '+paths);
+          const changes=cp.execFileSync('git',['diff','--numstat','--','game/index.html'],{encoding:'utf8'}).trim().split(/\s+/);
+          if(changes[0]!=='1'||changes[1]!=='1')throw Error('Refusing unexpected HTML diff: '+changes);
+          console.log('PASS: only one HTML script line changed');
+          NODE
+      - name: Five deterministic race regression cases
+        run: |
+          node --check server/server.js
+          node --check tools/fix-snd-webkit-login.js
+          node --check tools/snd-race-regression.js
+          node tools/snd-race-regression.js
+      - name: Install isolated server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Install mobile browser test environments
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-snd-test playwright@1.56.1
+          node /tmp/hl-snd-test/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-snd-test/node_modules" >> "$GITHUB_ENV"
+      - name: Repeated WebKit Login + grand effect regressions
+        env:
+          VFX_BROWSER: webkit
+        run: |
+          node tools/skill-vfx-grand-test.js
+          node tools/skill-vfx-grand-test.js
+      - name: WebKit nine existing martial-artist skills
+        env:
+          VFX_BROWSER: webkit
+        run: node tools/martial-nine-skill-test.js
+      - name: Chromium Login + effects sanity
+        env:
+          VFX_BROWSER: chromium
+        run: node tools/skill-vfx-grand-test.js
+      - name: Commit only verified game HTML change to staging branch
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- game/index.html
+          git commit -m "fix(webkit): defer online Login until audio splash script initializes"
+          git push origin HEAD:feature/skill-vfx-grand-v1
+      - name: Upload isolated screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snd-webkit-fix-evidence
+          path: |
+            tools/test-artifacts/grand-vfx-*.png
+            tools/test-artifacts/martial-*.png
+          if-no-files-found: ignore
