@@ -1,0 +1,44 @@
+name: R78 equipment integration (isolated)
+on:
+  push:
+    branches: [integration/equipment-r78-safe]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Install isolated browser test tools
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-browser-test playwright@1.56.1
+          node /tmp/hl-browser-test/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-browser-test/node_modules" >> "$GITHUB_ENV"
+      - name: Guardian equipment +15 migration regression
+        run: node tools/equipment-r78-test.js
+      - name: Existing enhancement system R78 regression
+        run: node tools/enh-test.js
+      - name: Android bag and legacy +15 shield
+        if: ${{ always() }}
+        run: node tools/equipment-r78-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: iPhone Safari WebKit bag and legacy +15 shield
+        if: ${{ always() }}
+        run: node tools/equipment-r78-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Upload browser screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: inventory-r78-previews
+          path: tools/test-artifacts/*.png
+          if-no-files-found: ignore
