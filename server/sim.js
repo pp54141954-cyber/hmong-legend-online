@@ -199,7 +199,7 @@ function createSim({ rand = Math.random } = {}) {
     const bag = p.c.bag;
     if (op === 'use' || op === 'equip') {
       const i = Math.floor(+arg), s = bag[i]; if (!Number.isInteger(i) || !s) return 'empty';
-      const it = CFG.items[s.id];
+      const it = CFG.items[s.id]; if (!it) return 'invalid';
       if (op === 'use') {
         if (it.type !== 'use') return 'not-usable';
         if (now < p.potionAt) return 'cooldown';
@@ -208,7 +208,8 @@ function createSim({ rand = Math.random } = {}) {
         if (--s.n <= 0) bag.splice(i, 1);
       } else {
         if (it.type !== 'eq') return 'not-equip';
-        if (it.cls && it.cls !== clsOf(p)) return 'wrong-class';
+        if (it.cls && it.cls !== clsOf(p) && !(clsOf(p) === 'ผู้พิทักษ์' && it.slot === 'weapon' && it.cls === 'นักดาบ')) return 'wrong-class';
+        if (it.slot === 'offhand' && clsOf(p) !== 'ผู้พิทักษ์') return 'wrong-class';
         const old = p.c.eq[it.slot];
         p.c.eq[it.slot] = s.id;
         if (old) bag[i] = { id: old, n: 1 }; else bag.splice(i, 1);
