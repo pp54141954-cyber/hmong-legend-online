@@ -101,6 +101,18 @@ async function main() {
     await until('attack reduces monster HP', () => m.hp < beforeHp || m.state === 'dead', 5000);
     check('WebSocket basic attack causes actual monster damage', m.hp < beforeHp, beforeHp + ' -> ' + m.hp);
     check('server records damage or kill outcome', m.hp < beforeHp && (m.state === 'dead' || m.state === 'chase' || m.hp > 0));
+    const goldBeforeKill = p.c.gold, expBeforeKill = p.c.exp, jobBeforeKill = p.c.jexp;
+    // The first basic attack may not defeat this monster: continue until it is dead.
+    for (let k = 0; k < 6 && m.state !== 'dead'; k++) {
+      await sleep(550); // basic cooldown is 0.45 seconds
+      a.ws.send(JSON.stringify({ t: 'act', k: 'b', dir }));
+      await sleep(220); // let server-side cast resolve
+    }
+    await until('monster is defeated', () => m.state === 'dead', 5000);
+    check('monster defeated after real WebSocket attacks', m.state === 'dead');
+    check('monster defeat rewards EXP or Job EXP',
+      p.c.exp > expBeforeKill || p.c.jexp > jobBeforeKill || p.c.lv > 20 || p.c.job > 1);
+    check('monster defeat credits in-game gold', p.c.gold > goldBeforeKill);
 
     const steps = [[8, 0, 'E'], [-8, 0, 'W'], [0, 8, 'S'], [0, -8, 'N']];
     const step = steps.find(([dx, dy]) => s1.sim.pathClear(p.c.zone, p.c.x, p.c.y, p.c.x + dx, p.c.y + dy));
