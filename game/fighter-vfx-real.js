@@ -136,7 +136,7 @@ function create(options={}){
       if(t){
         t.imageSmoothingEnabled=false;t.drawImage(tiger,0,0);
         t.globalCompositeOperation='source-atop';
-        t.fillStyle='rgba(255,65,168,.79)';
+        t.fillStyle='rgba(255,65,168,.53)';
         t.fillRect(0,0,tinted.width,tinted.height);
         tigerPink=tinted;
       }
@@ -327,7 +327,7 @@ function create(options={}){
    // giant rings that previously obscured the character and HUD.
    const frame=e.releaseAt<0?(p<.18?0:p<.39?1:2):(life<.49?3:4);
    ctx.save();ctx.globalAlpha=e.releaseAt<0?.82:1;
-   if(!drawApproved(ctx,e,frame,life))render(ctx,e,phase,t);
+   drawApproved(ctx,e,frame,life); // Native chart handles loading fallback.
    ctx.restore();
   }
  }
