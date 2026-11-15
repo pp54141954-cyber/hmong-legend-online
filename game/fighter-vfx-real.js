@@ -40,11 +40,27 @@ function create(options={}){
  const low=quality==='low'||(quality==='auto'&&mobile);
  const max=low?8:16;
  const items=[], active=new WeakSet();let timer=0;
- let tiger=null,tigerReady=false;
+ let tiger=null,tigerReady=false,tigerPink=null;
  function prepare(absoluteUrl){
   if(typeof Image==='undefined'||!absoluteUrl||tiger)return;
   tiger=new Image();tiger.decoding='async';
-  tiger.onload=()=>{tigerReady=tiger.naturalWidth>0};
+  tiger.onload=()=>{
+    tigerReady=tiger.naturalWidth>0;
+    if(tigerReady&&typeof document!=='undefined'){
+      // Make a NON-DESTRUCTIVE pink spiritual projection of the actual approved
+      // tiger monster sprite. Keep the original WebP unchanged on disk.
+      const tinted=document.createElement('canvas');
+      tinted.width=tiger.naturalWidth;tinted.height=tiger.naturalHeight;
+      const t=tinted.getContext('2d',{alpha:true});
+      if(t){
+        t.imageSmoothingEnabled=false;t.drawImage(tiger,0,0);
+        t.globalCompositeOperation='source-atop';
+        t.fillStyle='rgba(255,65,168,.79)';
+        t.fillRect(0,0,tinted.width,tinted.height);
+        tigerPink=tinted;
+      }
+    }
+  };
   tiger.onerror=()=>{tigerReady=false};
   tiger.src=absoluteUrl;
  }
@@ -169,7 +185,7 @@ function create(options={}){
   const dw=150*scale,dh=150*scale;
   ctx.save();ctx.globalAlpha*=.64;
   ctx.shadowBlur=12;ctx.shadowColor=c[2];
-  ctx.drawImage(tiger,fr*w,row*h,w,h,-dw/2,-dh+22,dw,dh);
+  ctx.drawImage(tigerPink||tiger,fr*w,row*h,w,h,-dw/2,-dh+22,dw,dh);
   // Pink spirit aura emphasizes transformation without altering source sprites.
   ctx.globalCompositeOperation='lighter';circle(ctx,0,-dh*.48,dw*.44,dh*.34,c[2],6);
   ctx.restore();
