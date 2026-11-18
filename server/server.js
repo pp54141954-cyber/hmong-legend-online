@@ -79,6 +79,13 @@ function createServer(opts = {}) {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
         return fs.createReadStream(conf.gameFile).pipe(res);
       }
+      // R85: serve only the approved Calm control stylesheet; no arbitrary static paths.
+      if (req.method === 'GET' && url.pathname === '/r85-calm-controls.css') {
+        const sheet = path.join(path.dirname(conf.gameFile), 'r85-calm-controls.css');
+        if (!fs.existsSync(sheet)) return json(res, 404, { error: 'not found' });
+        res.writeHead(200, { 'content-type': 'text/css; charset=utf-8', 'cache-control': 'no-cache' });
+        return fs.createReadStream(sheet).pipe(res);
+      }
       // ภาพแผนที่แยกไฟล์ (V2-R14): /maps/<ชื่อ>.webp เท่านั้น
       const mm = /^\/(maps|sprites)\/([a-z0-9_]+)\.(webp)$/.exec(url.pathname) || /^\/(icons)\/([a-z0-9_]+)\.(png)$/.exec(url.pathname); // ภาพแผนที่/มอนสเตอร์/ไอคอนสกิล (รับเฉพาะชื่อ a-z0-9_)
       if (req.method === 'GET' && mm) {
