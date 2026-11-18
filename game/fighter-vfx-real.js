@@ -43,28 +43,30 @@ function create(options={}){
  let tiger=null,tigerReady=false,tigerPink=null;
  // Approved FIGHTER source atlas: 9 rows x 5 poses, transparent EFFECTS ONLY.
  // Keep existing player sprites pca/pcl_fighter unmodified.
- let approvedSide=null,approvedDownUp=null,tintedDownUp=null,sideReady=false,downUpReady=false;
- function recolorDirectionalAtlas(im){
-  if(typeof document==='undefined')return null;
-  const canvas=document.createElement('canvas');
-  canvas.width=im.naturalWidth;canvas.height=im.naturalHeight;
-  const c=canvas.getContext('2d',{alpha:true});
-  if(!c)return null;
-  c.drawImage(im,0,0);
-  // Only recolor existing transparent effect pixels; geometry is unchanged.
-  // The 9-row board is doubled for facing DOWN and UP.
-  c.globalCompositeOperation='source-atop';
-  for(const offset of [0,9]){
-   for(let row=3;row<=5;row++){
-    c.fillStyle='rgba(86,172,255,.86)';
-    c.fillRect(0,(row+offset)*300,canvas.width,300);
-   }
-   for(let row=6;row<=8;row++){
-    c.fillStyle='rgba(246,67,164,.92)';
-    c.fillRect(0,(row+offset)*300,canvas.width,300);
-   }
+ let approvedSide=null,approvedDownUp=null,sideReady=false,downUpReady=false;
+ // Cache only the few 300x300 recolored frames visible in the current fight.
+ // Prior approach copied the entire 1500x5400 atlas (~31 MiB RGBA) permanently.
+ // The approved source image itself remains entirely unchanged.
+ const tintCache=new Map(),tintCacheLimit=low?6:12;
+ let tintReady=false,tintedFrameCount=0;
+ function tintedDirectionalFrame(im,row,frame,hue){
+  if(hue==='orange'||!tintReady)return null;
+  const key=hue+':'+row+':'+frame;
+  if(tintCache.has(key)){
+    const cached=tintCache.get(key);tintCache.delete(key);tintCache.set(key,cached);
+    return cached;
   }
+  const canvas=document.createElement('canvas');canvas.width=300;canvas.height=300;
+  const c=canvas.getContext('2d',{alpha:true});if(!c)return null;
+  c.clearRect(0,0,300,300);
+  c.drawImage(im,frame*300,row*300,300,300,0,0,300,300);
+  c.globalCompositeOperation='source-atop';
+  c.fillStyle=hue==='pink'?'rgba(246,67,164,.92)':'rgba(86,172,255,.86)';
+  c.fillRect(0,0,300,300);
   c.globalCompositeOperation='source-over';
+  if(tintCache.size>=tintCacheLimit)tintCache.delete(tintCache.keys().next().value);
+  tintCache.set(key,canvas);
+  tintedFrameCount++;
   return canvas;
  }
  let lastFrame=null,drawsFromAtlas=0;
@@ -80,7 +82,9 @@ function create(options={}){
    approvedDownUp=new Image();approvedDownUp.decoding='async';
    approvedDownUp.onload=()=>{
     downUpReady=approvedDownUp.naturalWidth===1500&&approvedDownUp.naturalHeight===5400;
-    if(downUpReady)tintedDownUp=recolorDirectionalAtlas(approvedDownUp);
+    tintReady=downUpReady&&typeof document!=='undefined'&&
+      !!document.createElement('canvas').getContext('2d');
+    tintCache.clear();
    };
    approvedDownUp.onerror=()=>{downUpReady=false};
    approvedDownUp.src=downUpUrl;
@@ -93,7 +97,7 @@ function create(options={}){
  }
  function drawApproved(ctx,e,frame,age){
   const vertical=e.dir==='N'||e.dir==='S';
-  const im=vertical?(downUpReady?(tintedDownUp||approvedDownUp):null):(sideReady?approvedSide:null);
+  const im=vertical?(downUpReady?approvedDownUp:null):(sideReady?approvedSide:null);
   if(!im)return false;
   const row=e.spec.slot-3+(vertical&&e.dir==='N'?9:0);
   const cw=vertical?300:320,ch=vertical?300:200;
@@ -107,7 +111,10 @@ function create(options={}){
   ctx.globalAlpha*=frame===4?Math.max(.12,1-age*.55):frame===0?.68:1;
   ctx.imageSmoothingEnabled=true;
   ctx.scale(e.dir==='W'?-scale:scale,scale);
-  ctx.drawImage(im,frame*cw,row*ch,cw,ch,-anchorX,-anchorY,cw,ch);
+  // Recolor only this approved directional cell, never a full-sized atlas.
+  const tinted=vertical?tintedDirectionalFrame(im,row,frame,e.spec.hue):null;
+  if(tinted)ctx.drawImage(tinted,0,0,cw,ch,-anchorX,-anchorY,cw,ch);
+  else ctx.drawImage(im,frame*cw,row*ch,cw,ch,-anchorX,-anchorY,cw,ch);
   ctx.restore();
   // The reference FIGHTER board has a side-view pink tiger. For N/S gameplay
   // use the game's approved 4-direction tiger walk silhouette instead of
@@ -333,7 +340,9 @@ function create(options={}){
  }
  return {start,prepare,prepareAtlas,follow,draw,clear(){items.length=0;},get count(){return items.length},
    get max(){return max;},get specs(){return SKILLS.slice();},get tigerReady(){return tigerReady},
-   get approvedSideReady(){return sideReady},get approvedDownUpReady(){return downUpReady},get directionalColorReady(){return !!tintedDownUp},
+   get approvedSideReady(){return sideReady},get approvedDownUpReady(){return downUpReady},get directionalColorReady(){return tintReady},
+   get directionalTintCacheCount(){return tintCache.size},get directionalTintCacheLimit(){return tintCacheLimit},
+   get directionalTintFramePixels(){return 300*300},get tintedFrameCount(){return tintedFrameCount},
    get drawsFromAtlas(){return drawsFromAtlas},get lastFrame(){return lastFrame&&{...lastFrame}}};
 }
 return {create,SKILLS,COLOR};
