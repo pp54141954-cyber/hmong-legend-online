@@ -96,7 +96,53 @@ const check=(name,condition)=>{assert.ok(condition,name);console.log('PASS '+nam
     await page.screenshot({path:path.join(out,'real-fighter-'+browserType+'-'+String(spec.slot).padStart(2,'0')+'.png')});
     // Never force cooldowns; nine different authentic skill slots are used once each.
   }
-  check('no JavaScript exceptions while using nine active skills',errors.length===0);
+  // Extra art-only test matrix: 9 approved skills x 4 directions x five
+  // storyboard phases. Does not send any extra combat or cooldown commands.
+  const matrix=await page.evaluate(async()=>{
+    const H=window.HL,F=window.HLFighterRealVFX;
+    const fx=F.create({quality:'low',mobile:true});
+    fx.prepareAtlas(H.sprUrl('skfx_fighter.webp'),H.sprUrl('skfxud_fighter.webp'));
+    await new Promise((resolve,reject)=>{
+      const start=Date.now();
+      const poll=()=>{
+        if(fx.approvedSideReady&&fx.approvedDownUpReady&&fx.directionalColorReady)return resolve();
+        if(Date.now()-start>12000)return reject(new Error('approved Fighter atlas image load timeout'));
+        setTimeout(poll,50);
+      };
+      poll();
+    });
+    const canvas=document.createElement('canvas');canvas.width=520;canvas.height=520;
+    const ctx=canvas.getContext('2d',{alpha:true});
+    const failures=[];let checked=0,stages=0;
+    for(const dir of ['S','N','W','E'])for(const s of F.SKILLS){
+      const cast={t:.02,done:false},expected=dir==='N'||dir==='S'?'approved-updown':'approved-side';
+      fx.start({slot:s.slot,cast,x:220,y:270,dir,poseT:.6});
+      for(const [t,done,expectedFrame,repeat] of [
+        [.03,false,0,1],[.18,false,1,1],[.42,false,2,1],
+        [.43,true,3,1],[.43,true,4,8]
+      ]){
+        cast.t=t;cast.done=done;
+        for(let i=0;i<repeat;i++)fx.draw(ctx,.07);
+        const frame=fx.lastFrame;
+        if(frame?.slot!==s.slot||frame?.dir!==dir||frame?.source!==expected||frame?.frame!==expectedFrame)
+          failures.push(s.slot+':'+dir+':expected'+expectedFrame+':actual'+JSON.stringify(frame));
+        stages++;
+      }
+      checked++;fx.clear();
+    }
+    return {checked,stages,failures,cache:fx.directionalTintCacheCount,
+      cacheLimit:fx.directionalTintCacheLimit,tintedFrames:fx.tintedFrameCount,
+      pixelsPerTintedCell:fx.directionalTintFramePixels};
+  });
+  check('36 Fighter skill-direction combinations render approved storyboard frames',
+    matrix.checked===36&&matrix.stages===180&&matrix.failures.length===0);
+  if(matrix.failures.length)console.error('FRAME_MATRIX_ERRORS',matrix.failures.slice(0,15));
+  check('mobile recolor cache stays bounded to small 300x300 cells',
+    matrix.cache<=6&&matrix.cacheLimit===6&&matrix.pixelsPerTintedCell===90000&&matrix.tintedFrames>0);
+  check('real game preview uses bounded directional recolor cache',
+    await page.evaluate(()=>window.HLGrandStage.fighterTintCacheCount<=
+      window.HLGrandStage.fighterTintCacheLimit));
+    check('no JavaScript exceptions while using nine active skills',errors.length===0);
   await context.close();
   console.log('RESULT: all 9 martial effects on existing approved fighter body triggered by real releases ('+browserType+', isolated)');
  }finally{
