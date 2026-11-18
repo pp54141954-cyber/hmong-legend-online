@@ -962,7 +962,8 @@ cv.style.touchAction='none';
 const TAPNAV={dest:null,path:[],zone:null,stuck:0,px:0,py:0};
 /* จอย V2-R23: ฐานคงที่มุมซ้ายล่าง (แตะครึ่งซ้ายของจอที่ไหนก็ได้ จอยย้ายไปใต้นิ้ว), เดิน 8 ทิศแบบอนาล็อก */
 /* R85: single-owner floating joystick, safe cancellation and resize-aware coordinates. */
-const JOY={r:52,dead:8};const joyHome=()=>({x:Math.max(72,Math.min(cw-72,cw*.17)),y:Math.max(78,ch-Math.max(130,ch*.16))});
+/* R85 owner area 1: entire left half is a floating-joystick activation zone. */
+const JOY={r:52,dead:8,zone:.50};
 const joyXY=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
 
 /* R85 tap-to-walk: preserve game collision/mask, normal movement speed and server authority.
@@ -1025,15 +1026,15 @@ function releaseJoy(id,kind='cancel'){
 cv.addEventListener('pointerdown',e=>{
   if(e.pointerType==='mouse'&&e.button!==0)return;
   const p=joyXY(e);if(p.x<0||p.y<0||p.x>cw||p.y>ch)return;
-  if(p.x>cw*.55){
+  if(p.x>cw*JOY.zone){
     if(navTap)return;
     navTap={id:e.pointerId,start:p,started:performance.now(),moved:false};
     try{cv.setPointerCapture(e.pointerId)}catch(err){navTap=null;return}
     e.preventDefault();return;
   }
   if(joy)return;
-  const h=joyHome(),near=Math.hypot(p.x-h.x,p.y-h.y)<JOY.r*1.6;
-  joy={ox:near?h.x:p.x,oy:near?h.y:p.y,x:p.x,y:p.y,id:e.pointerId,start:p,started:performance.now(),near,moved:false};
+  // Spawn at this touch, even on the old button location; no fixed-center lock.
+  joy={ox:p.x,oy:p.y,x:p.x,y:p.y,id:e.pointerId,start:p,started:performance.now(),near:false,moved:false};
   try{cv.setPointerCapture(e.pointerId)}catch(err){releaseJoy(e.pointerId);return}
   e.preventDefault();
 });
@@ -1568,9 +1569,9 @@ function draw(){
     ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1;ctx.strokeRect(player.x-HW,player.y-HH,HW*2,HH*2)}
   ctx.setTransform(dpr,0,0,dpr,0,0);
   if(WT.night){ctx.fillStyle=WT.blood?'rgba(120,10,20,.30)':'rgba(10,20,70,.34)';ctx.fillRect(0,0,cw,ch)}
-  {const h=joy?{x:joy.ox,y:joy.oy}:joyHome(),R=JOY.r;let kx=0,ky=0;if(joy){const jx=joy.x-joy.ox,jy=joy.y-joy.oy,d=Math.hypot(jx,jy)||1,c=Math.min(d,R);kx=jx/d*c;ky=jy/d*c}
-    ctx.globalAlpha=joy?.9:.55;ctx.fillStyle='rgba(18,22,18,.45)';ctx.beginPath();ctx.arc(h.x,h.y,R,0,7);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=2.5;ctx.stroke();
-    ctx.fillStyle='rgba(255,207,138,.9)';ctx.beginPath();ctx.arc(h.x+kx,h.y+ky,22,0,7);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=2;ctx.stroke();ctx.globalAlpha=1}
+  if(joy){const h={x:joy.ox,y:joy.oy},R=JOY.r,jx=joy.x-joy.ox,jy=joy.y-joy.oy,d=Math.hypot(jx,jy)||1,c=Math.min(d,R),kx=jx/d*c,ky=jy/d*c;
+    ctx.save();ctx.globalAlpha=.9;ctx.fillStyle='rgba(18,22,18,.45)';ctx.beginPath();ctx.arc(h.x,h.y,R,0,7);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=2.5;ctx.stroke();
+    ctx.fillStyle='rgba(255,207,138,.9)';ctx.beginPath();ctx.arc(h.x+kx,h.y+ky,22,0,7);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=2;ctx.stroke();ctx.restore()}
 }
 /* ---------- HUD ---------- */
 let hudT=0;const skEl=$('skills');
