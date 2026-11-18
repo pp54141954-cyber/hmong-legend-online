@@ -18,6 +18,8 @@ const ctx=overlay.getContext('2d',{alpha:true});
 const motion=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 const renderer=window.HLGrandVFX.create({quality:'auto',reducedMotion:motion});
 const martial=window.HLMartialVFX?window.HLMartialVFX.create({quality:'auto',reducedMotion:motion}):null;
+const fighterReal=window.HLFighterRealVFX?window.HLFighterRealVFX.create({quality:'auto',reducedMotion:motion}):null;
+let fighterTigerQueued=false;
 const martialStarted=new WeakMap(),martialDone=new WeakSet(),martialEvents=[];
 const nativeSetTransform=gameCtx.setTransform;
 let worldMatrix=null,seen=new WeakSet(),last=0,lastKey='',lastEvent=0;
@@ -52,11 +54,37 @@ function detectKind(e,cls){
 function trackMartial(){
   const H=window.HL;
   if(!H||!martial||typeof H.curCls!=='function'||H.curCls()!=='นักสู้')return;
+  // Preload approved FIGHTER effect images as soon as the class is active.
+  // Do not wait for a cast: mobile-network latency could otherwise display
+  // a generic placeholder on the first real skill.
+  if(fighterReal&&!fighterTigerQueued&&H.sprUrl){
+    fighterTigerQueued=true;
+    fighterReal.prepare(H.sprUrl('tiger_walk.webp'));
+    fighterReal.prepareAtlas(H.sprUrl('skfx_fighter.webp'),H.sprUrl('skfxud_fighter.webp'));
+  }
   const cast=H.PS&&H.PS.cast,player=H.player;
   if(!cast||!player||typeof cast!=='object'||!Number.isInteger(cast.key)||cast.key<3||cast.key>11)return;
   const spec=window.HLMartialVFX.profileFor(H,cast.key);
   if(!spec)return; // Fail closed if existing game skill names or mechanics changed.
   if(!martialStarted.has(cast))martialStarted.set(cast,{x:player.x,y:player.y,dir:player.dir});
+  if(fighterReal){
+    const begin=martialStarted.get(cast);
+    // Reuse REAL player sprite drawn by game (classBody / drawClassCast).
+    // This module adds only effects; unlike the reference chart it never
+    // draws a substitute grey mannequin on top of the approved character.
+    fighterReal.start({slot:spec.slot,cast,x:player.x,y:player.y-14,dir:begin.dir,
+      poseT:cast.sk.poseT,targetX:player.x+(H.DV[begin.dir]||[0,1])[0]*(cast.sk.dist||46),
+      targetY:player.y-14+(H.DV[begin.dir]||[0,1])[1]*(cast.sk.dist||46)});
+    // Effect atlas follows the exact same position as the approved fighter
+    // sprite, including dash moves after the real cast release.
+    fighterReal.follow(cast,player.x,player.y-14);
+    if(cast.done&&!martialDone.has(cast)){
+      martialDone.add(cast);
+      martialEvents.push({slot:spec.slot,name:spec.name,path:spec.path,kind:spec.kind,x:player.x,y:player.y-14});
+      if(martialEvents.length>30)martialEvents.shift();
+    }
+    return;
+  }
   if(!cast.done||martialDone.has(cast))return;
   martialDone.add(cast);
   const start=martialStarted.get(cast)||{x:player.x,y:player.y,dir:player.dir};
@@ -84,8 +112,17 @@ function track(){
   const H=window.HL;
   if(!H||!Array.isArray(H.fxList))return;
   const player=H.player,cls=typeof H.curCls==='function'?H.curCls():'';
-  if(cls==='นักสู้')return; // Nine dedicated martial skills supersede generic VFX.
   const arr=H.fxList;
+  if(cls==='นักสู้') {
+    if(fighterReal)for(const effect of arr){
+      // Hide a duplicated native chart only AFTER the corresponding approved
+      // atlas is loaded. Before then, leave the native art in place.
+      const useUD=effect&&effect.k==='cchartud';
+      const ready=useUD?fighterReal.approvedDownUpReady:fighterReal.approvedSideReady;
+      if(ready&&effect&&effect.cls==='นักสู้'&&/^cchart/.test(effect.k||''))effect.q=true;
+    }
+    return;
+  }
   for(let i=0;i<arr.length;i++){
     const e=arr[i];
     if(!e||typeof e!=='object'||seen.has(e))continue;
@@ -131,18 +168,29 @@ function frame(time){
   if(worldMatrix)ctx.setTransform(...worldMatrix);
   renderer.draw(ctx,dt);
   if(martial)martial.draw(ctx,dt);
+  if(fighterReal)fighterReal.draw(ctx,dt);
   captureWorld=true;sawFrameReset=false;
 }
 requestAnimationFrame(frame);
 window.HLGrandStage={
   get enabled(){return true},
   get count(){return renderer.count},
-  get martialCount(){return martial?martial.count:0},
+  get martialCount(){return fighterReal?fighterReal.count:martial?martial.count:0},
+  get realFighterEnabled(){return !!fighterReal},
+  get fighterTigerReady(){return !!fighterReal&&fighterReal.tigerReady},
+  get fighterApprovedAtlasReady(){return !!fighterReal&&fighterReal.approvedSideReady},
+  get fighterDirectionalAtlasReady(){return !!fighterReal&&fighterReal.approvedDownUpReady},
+  get fighterDirectionalRecolorReady(){return !!fighterReal&&fighterReal.directionalColorReady},
+  get fighterTintCacheCount(){return fighterReal?fighterReal.directionalTintCacheCount:0},
+  get fighterTintCacheLimit(){return fighterReal?fighterReal.directionalTintCacheLimit:0},
+  get fighterTintFramesCreated(){return fighterReal?fighterReal.tintedFrameCount:0},
+  get fighterAtlasFrames(){return fighterReal?fighterReal.drawsFromAtlas:0},
+  get fighterLastFrame(){return fighterReal?fighterReal.lastFrame:null},
   get martialEvents(){return martialEvents.slice()},
   get martialSkills(){return window.HLMartialVFX?window.HLMartialVFX.SKILLS:[]},
   get quality(){return renderer.lowQuality?'mobile':'full'},
   emit: e=>renderer.emit(e),
-  clear: ()=>{renderer.clear();if(martial)martial.clear();},
+  clear: ()=>{renderer.clear();if(martial)martial.clear();if(fighterReal)fighterReal.clear();},
   get worldMatrix(){return worldMatrix&&worldMatrix.slice()},
   layer:overlay
 };
