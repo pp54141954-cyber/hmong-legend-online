@@ -1625,6 +1625,78 @@ $('ask').onclick=()=>openAutoCfg();queueMicrotask(()=>setAutoSk(AUTOSK.on));
 $('pg').textContent='AUTO';$('pg').setAttribute('aria-label','ล่าอัตโนมัติ');$('pg').setAttribute('aria-pressed','false');
 function setAuto(on){AUTO.on=on;AUTO.tgt=null;AUTO.path=null;$('pg').setAttribute('aria-pressed',String(AUTO.on));say(AUTO.on?'ล่าอัตโนมัติ: เปิด (ลากจอยเพื่อควบคุมเองชั่วคราว)':'ล่าอัตโนมัติ: ปิด');const b=document.querySelector('#aop .go');if(b)b.textContent=on?'หยุด AUTO':'เริ่ม AUTO'}
 $('pg').onclick=()=>setAuto(!AUTO.on);
+
+/* R85 V3: UI buttons use real game systems, with a local-only bug notebook. */
+$('r85target').addEventListener('click',r85CycleTarget);
+$('r85dash').addEventListener('click',()=>{
+  if(PS.dead||PS.cast){say('Dash ยังไม่พร้อมใช้งาน');return}
+  let movementSkill=0,locked=false;
+  for(let i=1;i<=CFG.skills.length;i++){
+    const sk=CFG.skillFor(curCls(),i);
+    if(!sk||sk.shape!=='move')continue;
+    if(PS.job<sk.job||(netOn()&&!(HLNET.sk[skName(i)]>0))){locked=true;continue}
+    movementSkill=i;break;
+  }
+  if(!movementSkill){say(locked?'สกิลเคลื่อนที่ยังไม่ปลดล็อก':'อาชีพนี้ยังไม่มีสกิลเคลื่อนที่');return}
+  const result=useSkill(movementSkill);
+  if(result==='cooldown')say('Dash กำลังคูลดาวน์');
+  else if(result!=='ok')say('Dash ยังใช้ไม่ได้: '+result);
+});
+const r85BugRecords=[],r85BugPanel=$('r85bugPanel'),r85BugNotes=$('r85bugNote');
+let r85BugRenderAt=-1;
+function r85BugReport(){
+  const target=r85LiveTarget();
+  return [
+    'Hmong Legend R85 — V3 Calm control and bug report',
+    'เวลา: '+new Date().toISOString(),
+    'สถานะ: สาขาทดลอง ไม่รับรองเซิร์ฟเวอร์ออนไลน์',
+    'โซน: '+(Z?.id||'unknown'),
+    'อาชีพ: '+curCls()+' · Level '+PS.lv+' · Job '+PS.job,
+    'ตำแหน่ง: '+Math.round(player.x)+','+Math.round(player.y),
+    'จอย: '+(joy?'active pointer '+joy.id:'idle'),
+    'โจมตีกดค้าง: '+atkHeld+' · สกิลกดค้าง: '+r85HeldSkills.size,
+    'เป้าหมาย: '+(target?target.type:'ไม่มี'),
+    'เดินตามจุด: '+!!TAPNAV.dest+' · AUTO: '+AUTO.on,
+    'ออนไลน์: '+!!netOn(),
+    'บันทึกบั๊ก: '+r85BugRecords.length,
+    ...r85BugRecords.map(e=>e.at+' ['+e.type+'] '+e.info)
+  ].join('\n');
+}
+function r85BugRefresh(){
+  if(r85BugPanel.hidden)return;
+  $('r85bugSummary').textContent='รายการที่บันทึก '+r85BugRecords.length;
+  $('r85bugDetails').textContent=r85BugReport().split('บันทึกบั๊ก:')[0];
+  $('r85bugEvents').textContent=r85BugRecords.length?r85BugRecords.map(e=>'['+e.type+'] '+e.info).join('\n'):'ยังไม่มีบันทึกบั๊ก';
+}
+function r85BugRecord(type,message){
+  r85BugRecords.push({at:new Date().toISOString(),type,info:String(message).slice(0,1200)});
+  if(r85BugRecords.length>40)r85BugRecords.shift();
+  $('r85bugCount').textContent=String(r85BugRecords.length);
+  r85BugRefresh();
+}
+window.addEventListener('error',e=>r85BugRecord('JavaScript',e.message||'unknown error'));
+window.addEventListener('unhandledrejection',e=>r85BugRecord('Promise',String(e.reason||'unhandled rejection')));
+function r85SetBugOpen(open){
+  r85BugPanel.hidden=!open;
+  $('r85bugToggle').setAttribute('aria-expanded',String(open));
+  if(open)r85BugRefresh();
+}
+$('r85bugToggle').addEventListener('click',()=>r85SetBugOpen(r85BugPanel.hidden));
+$('r85bugClose').addEventListener('click',()=>r85SetBugOpen(false));
+$('r85bugAdd').addEventListener('click',()=>{
+  const text=r85BugNotes.value.trim();if(!text)return;
+  r85BugRecord('ผู้เล่น',text);r85BugNotes.value='';
+});
+$('r85bugClear').addEventListener('click',()=>{
+  r85BugRecords.length=0;$('r85bugCount').textContent='0';r85BugRefresh();
+});
+$('r85bugSave').addEventListener('click',()=>{
+  const blob=new Blob([r85BugReport()],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='hmong-legend-r85-bug-report.txt';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+
 /* หน้าตั้งค่า AUTO (V2-R26 ตามภาพตัวอย่างของเจ้าของ) */
 const aop=document.createElement('div');aop.id='aop';aop.className='win';aop.hidden=true;aop.setAttribute('role','dialog');aop.setAttribute('aria-label','ตั้งค่า AUTO');document.getElementById('app').appendChild(aop);
 const swHtml=(id,on,label,sub)=>'<div class="swr"><span>'+label+(sub?'<small>'+sub+'</small>':'')+'</span><button class="sw" id="'+id+'" role="switch" aria-checked="'+on+'" aria-label="'+label+'"><i></i></button></div>';
@@ -1812,6 +1884,7 @@ let wtT=0;function update(dt){tNow+=dt;switchCd=Math.max(0,switchCd-dt);
   for(let i=parts.length-1;i>=0;i--){const q=parts[i];q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=140*dt;q.vx*=.98;q.t-=dt;if(q.t<=0)parts.splice(i,1)}shakeT=Math.max(0,shakeT-dt);
   for(let i=nums.length-1;i>=0;i--){nums[i].t-=dt;nums[i].y-=30*dt;if(nums[i].t<=0)nums.splice(i,1)}
   if(msgT>0){msgT-=dt;if(msgT<=0)msgEl.style.display='none'}
+  if(!r85BugPanel.hidden&&tNow-r85BugRenderAt>.4){r85BugRenderAt=tNow;r85BugRefresh()}
   hud(dt)}
 enterZone(CFG.player.home,ZONES[CFG.player.home].start[0],ZONES[CFG.player.home].start[1]);
 let last=performance.now();
