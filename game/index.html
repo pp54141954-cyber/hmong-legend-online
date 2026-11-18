@@ -1579,9 +1579,46 @@ let SLOTS=(()=>{try{const v=JSON.parse(localStorage.getItem('hl_slots'));if(Arra
 const saveSlots=()=>{try{localStorage.setItem('hl_slots',JSON.stringify(SLOTS))}catch(e){}};
 function setSlot(k,i){const j=SLOTS.indexOf(i);if(j>=0&&j!==k)SLOTS[j]=SLOTS[k];SLOTS[k]=i;saveSlots();buildSkills()}
 const skIcon=i=>'icons/sk_'+i+'.png';
-function buildSkills(){skEl.innerHTML='';for(let s=0;s<6;s++){const i=SLOTS[s],sk=CFG.skills[i-1],b=document.createElement('button');b.className='sk';
-  if(!sk){b.disabled=true;b.style.visibility='hidden';skEl.appendChild(b);continue}b.dataset.i=i;b.setAttribute('aria-label',skName(i));b.addEventListener('animationend',()=>b.classList.remove('ready'));b.innerHTML='<img alt="" draggable="false"><i class="cdn"></i><small></small>';b.querySelector('img').src=skIcon(i);b.querySelector('small').textContent=skName(i);
-  b.addEventListener('pointerdown',e=>{e.preventDefault();const r=useSkill(i);if(r==='locked')say(PS.job<sk.job?skName(i)+' ปลดล็อกที่ Job '+sk.job:sk.name+' ต้องอัปสกิลก่อน (📜)')});skEl.appendChild(b)}hudT=0}
+/* R85 V3: real class skills, six slots, independent pointer holds and cooldown reuse. */
+const r85HeldSkills=new Map();
+addEventListener('blur',()=>r85HeldSkills.clear());
+document.addEventListener('visibilitychange',()=>{if(document.hidden)r85HeldSkills.clear()});
+function r85HeldSkillTick(){
+  if(!r85HeldSkills.size||PS.dead)return;
+  for(const [id,h] of r85HeldSkills){
+    if(!h.button.isConnected){r85HeldSkills.delete(id);continue}
+    if(PS.cast||(PS.cd[h.i]||0)>0||tNow-h.last<.15)continue;
+    const sk=CFG.skillFor(curCls(),h.i);
+    if(!sk||PS.job<sk.job||(netOn()&&!(HLNET.sk[skName(h.i)]>0)))continue;
+    r85FaceTarget();h.last=tNow;useSkill(h.i);
+  }
+}
+function buildSkills(){
+  r85HeldSkills.clear();skEl.innerHTML='';
+  for(let s=0;s<6;s++){
+    const i=SLOTS[s],sk=CFG.skills[i-1],b=document.createElement('button');b.className='sk';
+    if(!sk){b.disabled=true;b.style.visibility='hidden';skEl.appendChild(b);continue}
+    b.dataset.i=i;b.setAttribute('aria-label',skName(i));
+    b.addEventListener('animationend',()=>b.classList.remove('ready'));
+    b.innerHTML='<img alt="" draggable="false"><i class="cdn"></i><small></small>';
+    b.querySelector('img').src=skIcon(i);b.querySelector('small').textContent=skName(i);
+    b.addEventListener('pointerdown',e=>{
+      if(e.pointerType==='mouse'&&e.button!==0)return;
+      e.preventDefault();if(r85HeldSkills.has(e.pointerId))return;
+      r85HeldSkills.set(e.pointerId,{i,button:b,last:tNow});
+      try{b.setPointerCapture(e.pointerId)}catch(err){}
+      r85FaceTarget();const result=useSkill(i);
+      if(result==='locked')say(PS.job<sk.job?skName(i)+' ปลดล็อกที่ Job '+sk.job:sk.name+' ต้องอัปสกิลก่อน (📜)');
+    });
+    for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,e=>{
+      const h=r85HeldSkills.get(e.pointerId);if(!h||h.button!==b)return;
+      r85HeldSkills.delete(e.pointerId);
+      try{if(b.hasPointerCapture(e.pointerId))b.releasePointerCapture(e.pointerId)}catch(err){}
+    });
+    skEl.appendChild(b);
+  }
+  hudT=0;
+}
 buildSkills();
 /* ปุ่ม AUTO (V2-R23) แทนปุ่มสลับชุด */
 $('ask').onclick=()=>openAutoCfg();queueMicrotask(()=>setAutoSk(AUTOSK.on));
@@ -1751,7 +1788,7 @@ let wtT=0;function update(dt){tNow+=dt;switchCd=Math.max(0,switchCd-dt);
     if(!netOn())for(const m of mons)gateBoss(m,WT)}
   for(const k in PS.cd)PS.cd[k]=Math.max(0,PS.cd[k]-dt);PS.hurt=Math.max(0,PS.hurt-dt);PS.buffT=Math.max(0,PS.buffT-dt);PS.guardT=Math.max(0,PS.guardT-dt);
   if(PS.dead){moving=false;PS.deadT-=dt;if(PS.deadT<=0&&!netOn())respawn()}
-  else{updCast(dt);autoSkill(dt);let[dx,dy]=PS.cast?[0,0]:inputDir(),au=false;
+  else{updCast(dt);r85HeldSkillTick();autoSkill(dt);let[dx,dy]=PS.cast?[0,0]:inputDir(),au=false;
     if((dx||dy)&&TAPNAV.dest)clearTapNav('manual');
     if(!dx&&!dy&&!PS.cast){
       const go=tapNavDirection(dt);
