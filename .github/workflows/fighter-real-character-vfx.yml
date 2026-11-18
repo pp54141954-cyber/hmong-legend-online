@@ -22,11 +22,15 @@ jobs:
           node --check game/skill-vfx-bridge.js
           node --check server/server.js
           node --check tools/fighter-real-character-integration-test.js
+          node --check tools/build-fighter-owner-review.js
+          node --check tools/fighter-owner-review-test.js
       - name: Install mobile browser runners
         run: |
           npm install --no-save --no-package-lock --prefix /tmp/hmong-real-fighter playwright@1.56.1
           node /tmp/hmong-real-fighter/node_modules/playwright/cli.js install --with-deps chromium webkit
           echo "NODE_PATH=/tmp/hmong-real-fighter/node_modules" >> "$GITHUB_ENV"
+      - name: Build offline approved-character 9-skill review HTML
+        run: node tools/build-fighter-owner-review.js
       - name: Android Pixel 7 real fighter class + all 9 skill releases
         env:
           VFX_BROWSER: chromium
@@ -36,6 +40,25 @@ jobs:
         env:
           VFX_BROWSER: webkit
         run: node tools/fighter-real-character-integration-test.js
+      - name: Pixel 7 owner review — 72 approved sprite and direction checks
+        if: ${{ always() }}
+        env:
+          REVIEW_BROWSER: chromium
+        run: node tools/fighter-owner-review-test.js
+      - name: iPhone 13 owner review — 72 approved sprite and direction checks
+        if: ${{ always() }}
+        env:
+          REVIEW_BROWSER: webkit
+        run: node tools/fighter-owner-review-test.js
+      - name: Upload owner-facing self-contained review HTML
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hmong-Fighter-9-Skills-Real-Character-Offline-Review
+          path: |
+            dist/Hmong_Legend_Fighter_9_Skills_Approved_Character_Review.html
+            tools/test-artifacts/owner-review-*.png
+          if-no-files-found: error
       - name: Upload actual game screenshots
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
