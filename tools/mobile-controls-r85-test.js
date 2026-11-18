@@ -126,6 +126,26 @@ const ios=process.env.MOBILE_BROWSER==='webkit';
     await page.mouse.up();
 
 
+    // Area 1: the complete left half of the screen must allow a floating joystick,
+    // including spots far from the old fixed circle. The joystick must track
+    // this finger alone and disappear on release.
+    const zoneBounds=await page.locator('#c').boundingBox();
+    assert(zoneBounds&&zoneBounds.width>100,'floating joystick canvas missing');
+    for(const [fx,fy] of [[.07,.25],[.48,.43],[.21,.66],[.35,.78]]){
+      const sx=zoneBounds.x+zoneBounds.width*fx,sy=zoneBounds.y+zoneBounds.height*fy;
+      await page.mouse.move(sx,sy);await page.mouse.down();
+      const own=await page.evaluate(()=>window.HL.joy?({
+        x:window.HL.joy.ox,y:window.HL.joy.oy,id:window.HL.joy.id
+      }):null);
+      assert(own,'left-area floating joystick did not capture pointer at '+fx+','+fy);
+      assert(Math.abs(own.x-zoneBounds.width*fx)<3,'joystick origin stuck at fixed x for '+fx);
+      assert(Math.abs(own.y-zoneBounds.height*fy)<3,'joystick origin stuck at fixed y for '+fy);
+      await page.mouse.move(sx+38,sy+10,{steps:4});
+      assert((await read()).dir[0]>.1,'floating joystick failed drag at '+fx+','+fy);
+      await page.mouse.up();
+      assert.equal((await read()).active,false,'floating joystick did not release at '+fx+','+fy);
+    }
+
     // R85 tap-to-move: use an actual valid path tile, not a fake unlocked map.
     await page.waitForFunction(()=>!window.HL.PS.cast,null,{timeout:10000});
     const chooseGoal=async()=>page.evaluate(()=>{
@@ -202,7 +222,7 @@ const ios=process.env.MOBILE_BROWSER==='webkit';
     assert.equal(await page.locator('#skills .sk').count(),6,'Dash or target altered skill slots');
 
     assert.deepEqual(errors,[],'browser JavaScript errors: '+errors.join('; '));
-    console.log('PASS R85 '+(ios?'iPhone WebKit':'Android Chromium')+': V3 Calm live HUD, skills, target, dash, bug log, pointer safety and navigation');
+    console.log('PASS R85 '+(ios?'iPhone WebKit':'Android Chromium')+': V3 Calm live HUD, full-left floating joystick, skills, target, dash, bug log and navigation');
   }catch(e){
     if(page)console.error('R85 diagnostics:',JSON.stringify({errors, state:await page.evaluate(()=>({auth:window.HLNET?.auth,joined:window.HLNET?.joined,joy:!!window.HL?.joy,net:document.getElementById('net')?.hidden})).catch(()=>null)}));
     throw e;
