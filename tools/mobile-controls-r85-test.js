@@ -171,8 +171,38 @@ const ios=process.env.MOBILE_BROWSER==='webkit';
     await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
     assert.equal(await page.evaluate(()=>window.HL.tapDestination),null,'blur did not cancel tap navigation');
 
+
+    // Approved V3 Calm controls must be hooked to game buttons, not offline placeholders.
+    const ui=await page.evaluate(()=>{
+      const ids=['r85brand','r85bugToggle','r85dash','r85target','r85bugPanel','skills','atk','pg'];
+      const elements=Object.fromEntries(ids.map(id=>[id,!!document.getElementById(id)]));
+      const loaded=[...document.styleSheets].some(sh=>(sh.href||'').includes('r85-calm-controls.css'));
+      const b=document.getElementById('pad')?.getBoundingClientRect();
+      return{elements,loaded,skills:document.querySelectorAll('#skills .sk').length,padWidth:b?.width||0,buttons:[...document.querySelectorAll('#skills .sk')].map(x=>({label:x.getAttribute('aria-label'),icon:!!x.querySelector('img')}))};
+    });
+    for(const [id,exists] of Object.entries(ui.elements))assert(exists,'R85 V3 UI missing element: '+id);
+    assert(ui.loaded,'V3 Calm CSS not loaded by real game server');
+    assert.equal(ui.skills,6,'V3 should display exactly six actual skill slots');
+    assert(ui.buttons.every(x=>x.label&&x.icon),'V3 skill slots lost real skill icons/labels');
+    assert(ui.padWidth>80,'V3 skill panel has no layout width');
+
+    // Bug panel is interactive and can record a note without contacting any service.
+    await page.locator('#r85bugToggle').click();
+    assert.equal(await page.locator('#r85bugPanel').isVisible(),true,'bug panel did not open');
+    await page.locator('#r85bugNote').fill('R85 regression check: touch/skill controls');
+    await page.locator('#r85bugAdd').click();
+    assert.equal(await page.locator('#r85bugCount').innerText(),'1','manual bug note not counted');
+    await page.locator('#r85bugClose').click();
+    assert.equal(await page.locator('#r85bugPanel').isVisible(),false,'bug panel did not close');
+
+    // Target and Dash buttons call the existing game handlers; there may be no
+    // nearby targets or unlocked movement skill in this test character.
+    await page.locator('#r85target').click();
+    await page.locator('#r85dash').click();
+    assert.equal(await page.locator('#skills .sk').count(),6,'Dash or target altered skill slots');
+
     assert.deepEqual(errors,[],'browser JavaScript errors: '+errors.join('; '));
-    console.log('PASS R85 '+(ios?'iPhone WebKit':'Android Chromium')+': multi-pointer ownership, tap path, manual override, blocked destinations, app hide and keyboard hold');
+    console.log('PASS R85 '+(ios?'iPhone WebKit':'Android Chromium')+': V3 Calm live HUD, skills, target, dash, bug log, pointer safety and navigation');
   }catch(e){
     if(page)console.error('R85 diagnostics:',JSON.stringify({errors, state:await page.evaluate(()=>({auth:window.HLNET?.auth,joined:window.HLNET?.joined,joy:!!window.HL?.joy,net:document.getElementById('net')?.hidden})).catch(()=>null)}));
     throw e;
