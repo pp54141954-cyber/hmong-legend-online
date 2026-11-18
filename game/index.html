@@ -1606,7 +1606,7 @@ function buildSkills(){
       if(e.pointerType==='mouse'&&e.button!==0)return;
       e.preventDefault();if(r85HeldSkills.has(e.pointerId))return;
       r85HeldSkills.set(e.pointerId,{i,button:b,last:tNow});
-      try{b.setPointerCapture(e.pointerId)}catch(err){}
+      try{b.setPointerCapture(e.pointerId)}catch(err){r85HeldSkills.delete(e.pointerId)}
       r85FaceTarget();const result=useSkill(i);
       if(result==='locked')say(PS.job<sk.job?skName(i)+' ปลดล็อกที่ Job '+sk.job:sk.name+' ต้องอัปสกิลก่อน (📜)');
     });
