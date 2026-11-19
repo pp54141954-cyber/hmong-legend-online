@@ -61,19 +61,32 @@ const check=(name,p)=>{assert.ok(p,name);console.log('PASS '+name)};
   check("game's original approved Fighter character is available",await page.evaluate(()=>{
     const H=window.HL;return H.classAtk('นักสู้',H.PS.look)?.img.naturalWidth>0;
   }));
-  const artDir=path.join(__dirname,'test-artifacts');fs.mkdirSync(artDir,{recursive:true});
+  await page.waitForFunction(()=>window.HLGrandStage?.fighterApprovedAtlasReady&&
+    window.HLGrandStage?.fighterDirectionalAtlasReady,null,{timeout:16000});
+  check('approved Fighter VFX atlas available for both horizontal and vertical skills',true);
+    const artDir=path.join(__dirname,'test-artifacts');fs.mkdirSync(artDir,{recursive:true});
   for(let slot=3;slot<=11;slot++){
     await page.waitForFunction(()=>!window.HL.PS.cast,null,{timeout:12000});
     const dir=['E','W','S','N'][(slot-3)%4];
     await page.evaluate(d=>{window.HL.player.dir=d},dir);
-    const before=await page.evaluate(()=>window.HLFighter19Cast.draws);
+    const before=await page.evaluate(()=>({
+      cast:window.HLFighter19Cast.draws,effect:window.HLGrandStage.fighterAtlasFrames
+    }));
     const result=await page.evaluate(n=>window.HL.useSkill(n),slot);
     check('actual useSkill('+slot+') accepted skill '+names[slot-1][2],result==='ok');
-    await page.waitForFunction(arg=>window.HLFighter19Cast.draws>arg.count&&
+    await page.waitForFunction(arg=>window.HLFighter19Cast.draws>arg.before.cast&&
       window.HLFighter19Cast.last?.slot===arg.slot,
-      {count:before,slot},{timeout:11000});
+      {before,slot},{timeout:11000});
+    await page.waitForFunction(arg=>{
+      const H=window.HLGrandStage;
+      return H?.fighterAtlasFrames>arg.before.effect&&H?.fighterLastFrame?.slot===arg.slot&&
+       H?.martialEvents?.some(e=>e.slot===arg.slot);
+    },{before,slot},{timeout:12000});
     const resultData=await page.evaluate(()=>({
       last:window.HLFighter19Cast.last,
+      lastVFX:window.HLGrandStage.fighterLastFrame,
+      vfxAtlasDraws:window.HLGrandStage.fighterAtlasFrames,
+      released:window.HLGrandStage.martialEvents.some(e=>e.slot===window.HLFighter19Cast.last?.slot),
       draws:window.HLFighter19Cast.draws,
       clientClass:window.HL.curCls(),
       fighterEffect:window.HLGrandStage?.realFighterEnabled
@@ -81,7 +94,11 @@ const check=(name,p)=>{assert.ok(p,name);console.log('PASS '+name)};
     check('real cast sprite hook drew skill '+slot+' from approved ordinal list',
       resultData.last?.slot===slot&&resultData.draws>before&&
       windowSafe(resultData.last.originalPoint)&&resultData.fighterEffect);
-    if([3,7,11].includes(slot)){
+    check('skill '+slot+' releases its approved Fighter VFX alongside Cast19',
+      resultData.lastVFX?.slot===slot&&resultData.vfxAtlasDraws>before.effect&&
+      resultData.released&&resultData.lastVFX?.dir===dir&&
+      resultData.lastVFX?.source===(dir==='E'||dir==='W'?'approved-side':'approved-updown'));
+        if([3,7,11].includes(slot)){
       await page.screenshot({path:path.join(artDir,'cast19-'+label+'-test-fixture-slot'+slot+'.png')});
     }
   }
