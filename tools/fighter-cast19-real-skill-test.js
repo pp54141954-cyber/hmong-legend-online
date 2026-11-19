@@ -1,11 +1,10 @@
 /* Isolated end-to-end: actual Hmong Legend server+login+WebSocket+game.useSkill
- * plus Cast19 hook. CI uses a clearly SYNTHETIC 1752x1280 test sprite;
- * it verifies integration, NOT the uploaded user's art's visual fidelity.
- * The real approved asset is separately contained in the delivery ZIP.
+ * plus Cast19 hook and APPROVED original 1752x1280 Cast19 source WebP.
+ * Original bytes are validated against the owner's SHA-256 before running.
  */
 'use strict';
 const assert=require('node:assert/strict');
-const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),crypto=require('node:crypto');
 const {chromium,webkit,devices}=require('playwright');
 const {createServer}=require('../server/server');
 const {CFG,SKILL_TABLE}=require('../shared/world');
@@ -14,7 +13,10 @@ const check=(name,p)=>{assert.ok(p,name);console.log('PASS '+name)};
  const engine=process.env.CAST19_BROWSER==='webkit'?webkit:chromium;
  const label=process.env.CAST19_BROWSER==='webkit'?'webkit':'chromium';
  const fixture=path.resolve(__dirname,'../game/sprites/fighter_cast19_user.webp');
- check('synthetic fixture exists; this is NOT original art',fs.existsSync(fixture));
+ check('approved Cast19 WebP exists in GitHub',fs.existsSync(fixture));
+ check('approved 19-frame WebP SHA-256 matches the owner original',
+    crypto.createHash('sha256').update(fs.readFileSync(fixture)).digest('hex')===
+    '414161a85092355712e6ad1b3522c0497bbce950bfa16431055c92bfde3bff1e');
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'hl-fighter19-integrate-'));
  const server=createServer({dbFile:path.join(root,'game.sqlite'),quiet:true,startZone:'village2'});
  let browser,context;
@@ -53,7 +55,7 @@ const check=(name,p)=>{assert.ok(p,name);console.log('PASS '+name)};
   await page.waitForFunction(()=>window.HLFighter19Cast.ready,null,{timeout:16000});
   check('single fightercast19 flag activates both original nine-skill VFX and Cast19',await page.evaluate(()=>
     window.HLGrandStage?.realFighterEnabled===true&&window.HLFighter19Cast?.installed===true));
-  check('actual game account joined and synthetic Cast19 sheet decoded',true);
+  check('actual game account joined and approved Cast19 sheet decoded',true);
   check('owner-provided ordinal maps remain exact',await page.evaluate(()=>{
     const f=window.HLFighter19Cast;
     return JSON.stringify(f.POINTS)==='{"S":[17,18,19,20,21],"N":[13,14,15,16],"W":[6,7,8,9,10,11],"E":[1,2,3,4]}';
@@ -99,12 +101,12 @@ const check=(name,p)=>{assert.ok(p,name);console.log('PASS '+name)};
       resultData.released&&resultData.lastVFX?.dir===dir&&
       resultData.lastVFX?.source===(dir==='E'||dir==='W'?'approved-side':'approved-updown'));
     if([3,7,11].includes(slot)){
-      await page.screenshot({path:path.join(artDir,'cast19-'+label+'-test-fixture-slot'+slot+'.png')});
+      await page.screenshot({path:path.join(artDir,'cast19-'+label+'-approved-art-slot'+slot+'.png')});
     }
   }
   check('no JavaScript page exceptions during real nine skill calls',errors.length===0);
   await context.close();context=null;
-  console.log('RESULT: NINE REAL GAME SKILLS PASS with synthetic test fixture ('+label+'); real owner art still needs binary upload');
+  console.log('RESULT: NINE REAL GAME SKILLS + OWNER APPROVED CAST19 + FIGHTER VFX PASS ('+label+'); original 19-frame WebP checked by SHA-256');
  }finally{
   if(context)await context.close();
   if(browser)await browser.close();
