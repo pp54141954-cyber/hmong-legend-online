@@ -1,0 +1,50 @@
+name: Fighter Cast19 + approved VFX (original art)
+on:
+  push:
+    branches: [test/fighter-cast19-nine-real-skills]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cast19-integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript and the owner's original 19-frame order
+        run: |
+          node --check game/fighter-cast19-game-hook.js
+          node --check server/server.js
+          node --check tools/fighter-cast19-hook-test.js
+          node --check tools/fighter-cast19-real-skill-test.js
+          node tools/fighter-cast19-hook-test.js
+      - name: Install backend dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Install mobile browser test runners
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/cast19-playwright playwright@1.56.1
+          node /tmp/cast19-playwright/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/cast19-playwright/node_modules" >> "$GITHUB_ENV"
+      - name: Confirm original owner-approved Cast19 WebP checksum
+        run: |
+          echo "414161a85092355712e6ad1b3522c0497bbce950bfa16431055c92bfde3bff1e  game/sprites/fighter_cast19_user.webp" | sha256sum --check
+          test "$(git status --porcelain -- game/sprites/fighter_cast19_user.webp)" = ""
+      - name: Real nine game skills with Chromium / Pixel 7 emulation
+        env:
+          CAST19_BROWSER: chromium
+        run: node tools/fighter-cast19-real-skill-test.js
+      - name: Real nine game skills with WebKit / iPhone 13 emulation
+        if: ${{ always() }}
+        env:
+          CAST19_BROWSER: webkit
+        run: node tools/fighter-cast19-real-skill-test.js
+      - name: Export approved Cast19 + real VFX screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fighter-cast19-real-art-nine-skill-VFX-evidence
+          path: tools/test-artifacts/cast19-*.png
+          if-no-files-found: ignore

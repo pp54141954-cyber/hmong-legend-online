@@ -1,0 +1,44 @@
+name: Cast19 + original Fighter VFX fast Chromium test
+on:
+  push:
+    branches: [test/fighter-cast19-nine-real-skills]
+    paths:
+      - .github/workflows/fighter-cast19-fast.yml
+      - tools/fighter-cast19-real-skill-test.js
+      - game/sprites/fighter_cast19_user.webp
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-chrome:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test JS without downloading browsers
+        run: |
+          npm ci --prefix server --no-audit --no-fund
+          npm install --no-save --no-package-lock --prefix /tmp/hl-cast19-native playwright@1.56.1
+          echo "NODE_PATH=/tmp/hl-cast19-native/node_modules" >> "$GITHUB_ENV"
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          if [ -z "$CHROME" ]; then echo "No system Chrome found"; exit 1; fi
+          echo "CAST19_EXECUTABLE=$CHROME" >> "$GITHUB_ENV"
+      - name: Confirm original owner-approved Cast19 WebP checksum
+        run: |
+          echo "414161a85092355712e6ad1b3522c0497bbce950bfa16431055c92bfde3bff1e  game/sprites/fighter_cast19_user.webp" | sha256sum --check
+      - name: Nine actual game skill calls - isolated WebSocket/Chromium
+        env:
+          CAST19_BROWSER: chromium
+        run: |
+          node --check tools/fighter-cast19-real-skill-test.js
+          node tools/fighter-cast19-real-skill-test.js
+      - name: Store approved-art VFX evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cast19-fast-approved-art-real-VFX
+          path: tools/test-artifacts/cast19-*.png
+          if-no-files-found: ignore
