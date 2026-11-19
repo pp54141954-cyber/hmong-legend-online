@@ -2,6 +2,8 @@ name: R85 on R82 - isolated mobile integration checks
 on:
   push:
     branches: [integration/r85-v3-on-live-r82-20261120]
+  pull_request:
+    branches: [claude/elephant-goldfish-setup-mvw06c]
   workflow_dispatch:
 permissions:
   contents: read
