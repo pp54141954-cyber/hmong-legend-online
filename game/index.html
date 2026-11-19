@@ -117,10 +117,28 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 #msg{background:rgba(18,22,18,.84);color:#f4efe2;bottom:calc(200px + env(safe-area-inset-bottom,0px))}
 #tgt{background:rgba(18,22,18,.74);color:#f4efe2}
 </style>
+<link rel="stylesheet" href="r85-calm-controls.css">
 </head>
 <body>
 <div id="app">
 <canvas id="c"></canvas>
+<div id="r85brand"><b>HMONG LEGEND <span>R85</span></b><small>UI V3 Calm · สกิลจริง</small></div>
+<button id="r85bugToggle" aria-label="หน้าต่างตรวจบั๊ก" aria-controls="r85bugPanel" aria-expanded="false">🐞 <span class="count" id="r85bugCount">0</span></button>
+<button id="r85dash" type="button" aria-label="Dash สกิลเคลื่อนที่">➜ Dash</button>
+<button id="r85target" type="button" aria-pressed="false" aria-label="ล็อกเป้าหมาย">🎯</button>
+<section id="r85bugPanel" role="dialog" aria-modal="false" aria-label="บันทึกบั๊ก R85" hidden>
+  <header><span>🐞 บันทึกบั๊ก R85</span><button id="r85bugClose" type="button">✕ ปิด</button></header>
+  <p class="note">ใช้ตรวจสถานะเกมในสาขาทดลอง ไม่มีการส่งข้อมูลอัตโนมัติ</p>
+  <p id="r85bugSummary">ไม่พบข้อผิดพลาด</p>
+  <label for="r85bugNote">อาการที่พบ</label>
+  <textarea id="r85bugNote" maxlength="1200" placeholder="ตัวอย่าง: กดสกิลพร้อมลากจอยแล้วค้าง"></textarea>
+  <div class="actions">
+    <button id="r85bugAdd" type="button">+ บันทึก</button>
+    <button id="r85bugSave" type="button">บันทึก .txt</button>
+    <button id="r85bugClear" type="button">ล้างรายการ</button>
+  </div>
+  <pre id="r85bugDetails">กำลังตรวจระบบ...</pre><pre id="r85bugEvents">ยังไม่มีรายการ</pre>
+</section>
 <div id="top"><div id="lvb"><small>Lv</small><span id="lvn">1</span></div>
 <div id="stats"><div id="hpb"><div id="hpf"></div><span id="hpt"></span></div><div id="xpb"><div id="xpf"></div></div><span id="st"></span></div>
 <button id="gear" aria-label="เครื่องมือทดสอบ" aria-expanded="false">⚙</button></div>
@@ -736,7 +754,7 @@ function spawnMons(){mons=[];(CFG.bosses[Z.id]||[]).forEach(b=>{const c=CFG.mons
   for(const m of mons)gateBoss(m,WT);
   (Z.D.spawns||[]).forEach(sp=>{const c=CFG.monsters[sp.type];for(let i=0;i<sp.count*(Z.D.painted?CFG.spawnMul:1);i++){const o=CFG.spawnOff(i),[hx,hy]=findFree(sp.tx+o[0],sp.ty+o[1]);
   mons.push({type:sp.type,c,x:hx,y:hy,hx,hy,hp:c.hp,state:'idle',t:Math.random()*2,atkT:0,dir:'S',wx:hx,wy:hy,respT:0,hurt:0})}})}
-function enterZone(id,x,y){if(Z&&Z.id!==id)sfx('warp');Z=getZone(id);preloadNear(id);for(const t of new Set([...(Z.D.spawns||[]).map(s=>s.type),...(CFG.bosses[id]||[]).map(b=>b.type)]))monSpr(t);player.x=x;player.y=y;if(netOn())mons=[];else spawnMons();fx.length=0;nums.length=0;shots.length=0;pending.length=0;PS.cast=null;switchCd=1;say('เข้าสู่ '+Z.D.name)}
+function enterZone(id,x,y){clearTapNav();navTap=null;r85SelectedTarget=null;if(Z&&Z.id!==id)sfx('warp');Z=getZone(id);preloadNear(id);for(const t of new Set([...(Z.D.spawns||[]).map(s=>s.type),...(CFG.bosses[id]||[]).map(b=>b.type)]))monSpr(t);player.x=x;player.y=y;if(netOn())mons=[];else spawnMons();fx.length=0;nums.length=0;shots.length=0;pending.length=0;PS.cast=null;switchCd=1;say('เข้าสู่ '+Z.D.name)}
 const monBlocked=(m,x,y)=>{const r=m.c.size*.6;return pBlocked(x-r,y-3)||pBlocked(x+r,y-3)||pBlocked(x-r,y+3)||pBlocked(x+r,y+3)};
 function monMove(m,tx,ty,sp,dt){const dx=tx-m.x,dy=ty-m.y,d=Math.hypot(dx,dy);if(d<2)return true;const s=Math.min(d,sp*dt),nx=m.x+dx/d*s,ny=m.y+dy/d*s;
   if(!monBlocked(m,nx,m.y))m.x=nx;if(!monBlocked(m,m.x,ny))m.y=ny;m.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'E':'W'):(dy>0?'S':'N');return false}
@@ -759,6 +777,33 @@ function gain(e,j){
   if(PS.job<CFG.player.maxJob){PS.jexp+=j;while(PS.job<CFG.player.maxJob&&PS.jexp>=CFG.jobCurve(PS.job)){PS.jexp-=CFG.jobCurve(PS.job);PS.job++;lvUp('job',PS.job)}}}
 function kill(m){sfx('die');m.state='dead';m.dieT0=tNow;m.respT=m.c.respawn;PS.kills++;const e=Math.round(m.c.exp*WT.exp);gain(e,Math.round(m.c.job*WT.exp));addNum(m.x,m.y-40,'+'+e+' EXP','#8fe38f');if(m.c.boss)say('ปราบบอส '+m.type+' สำเร็จ!')}
 let lastTarget=null;
+/* R85 V3: cycle a real visible monster target without altering combat damage. */
+let r85SelectedTarget=null;
+function r85LiveTarget(){
+  if(r85SelectedTarget&&mons.includes(r85SelectedTarget)&&r85SelectedTarget.state!=='dead'
+     &&Math.hypot(r85SelectedTarget.x-player.x,r85SelectedTarget.y-player.y)<440)return r85SelectedTarget;
+  r85SelectedTarget=null;
+  const b=document.getElementById('r85target');if(b)b.setAttribute('aria-pressed','false');
+  return null;
+}
+function r85FaceTarget(){
+  const m=r85LiveTarget();if(!m)return;
+  const dx=m.x-player.x,dy=m.y-m.c.size*.6-(player.y-14);
+  player.dir=Math.abs(dx)>=Math.abs(dy)?(dx>0?'E':'W'):(dy>0?'S':'N');
+  if(dx)player.lastH=dx>0?'E':'W';
+}
+function r85CycleTarget(){
+  const candidates=mons.filter(m=>m.state!=='dead'&&Math.hypot(m.x-player.x,m.y-player.y)<440)
+    .sort((a,b)=>Math.hypot(a.x-player.x,a.y-player.y)-Math.hypot(b.x-player.x,b.y-player.y));
+  const button=document.getElementById('r85target');
+  if(!candidates.length){r85SelectedTarget=null;button.setAttribute('aria-pressed','false');say('ไม่มีมอนสเตอร์ในระยะ');return}
+  const index=candidates.indexOf(r85SelectedTarget);
+  r85SelectedTarget=candidates[(index+1)%candidates.length];lastTarget=r85SelectedTarget;
+  button.setAttribute('aria-pressed','true');
+  button.setAttribute('aria-label','เป้าหมาย '+r85SelectedTarget.type+' · แตะเพื่อเปลี่ยน');
+  r85FaceTarget();say('🎯 '+r85SelectedTarget.type);
+}
+
 function damageMon(m,mult){lastTarget=m;if(netOn())return;mult*=(PS.buffT>0?1+PS.buffBonus:1)*((m.markT||0)>0?1+m.markBonus:1);const ty=m.y-m.c.size*.6,r=Combat.damage(PS.atk,mult,Math.random(),Math.random());m.hp-=r.dmg;m.hurt=.25;addNum(m.x,ty-18,r.dmg,r.crit?'#ffd34a':'#ffffff');sfx('hit',{crit:r.crit});
   if(m.state==='idle'||m.state==='return')m.state='chase';if(m.hp<=0)kill(m)}
 function doHit(sk,mult,ox,oy,dir){let hits=0;ox=ox??player.x;oy=oy??player.y-14;dir=dir||player.dir;
@@ -814,13 +859,103 @@ function updShots(dt){for(let i=shots.length-1;i>=0;i--){const s=shots[i],d=s.sk
 
 /* ---------- อินพุต ---------- */
 const keys={};
-const cv=document.getElementById('c'),ctx=cv.getContext('2d');let joy=null;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');let joy=null,navTap=null;
+cv.style.touchAction='none';
+const TAPNAV={dest:null,path:[],zone:null,stuck:0,px:0,py:0};
 /* จอย V2-R23: ฐานคงที่มุมซ้ายล่าง (แตะครึ่งซ้ายของจอที่ไหนก็ได้ จอยย้ายไปใต้นิ้ว), เดิน 8 ทิศแบบอนาล็อก */
-const JOY={r:52,dead:8};const joyHome=()=>({x:Math.max(86,cw*.17),y:ch-Math.max(130,ch*.16)});
-cv.addEventListener('pointerdown',e=>{if(joy)return;if(e.clientX>cw*.55)return;const h=joyHome(),near=Math.hypot(e.clientX-h.x,e.clientY-h.y)<JOY.r*1.6;
-  joy={ox:near?h.x:e.clientX,oy:near?h.y:e.clientY,x:e.clientX,y:e.clientY,id:e.pointerId};cv.setPointerCapture(e.pointerId)});
-cv.addEventListener('pointermove',e=>{if(joy&&e.pointerId===joy.id){joy.x=e.clientX;joy.y=e.clientY}});
-['pointerup','pointercancel'].forEach(n=>cv.addEventListener(n,e=>{if(joy&&e.pointerId===joy.id)joy=null}));cv.addEventListener('contextmenu',e=>e.preventDefault());
+/* R85: single-owner floating joystick, safe cancellation and resize-aware coordinates. */
+/* R85 owner area 1: entire left half is a floating-joystick activation zone. */
+const JOY={r:52,dead:8,zone:.50};
+const joyXY=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+
+/* R85 tap-to-walk: preserve game collision/mask, normal movement speed and server authority.
+   Floating joystick owns left-side drags; a short tap elsewhere marks a destination. */
+function clearTapNav(reason){
+  if(!TAPNAV.dest)return;
+  TAPNAV.dest=null;TAPNAV.path=[];TAPNAV.zone=null;TAPNAV.stuck=0;
+  if(reason==='manual')say('ยกเลิกการเดินตามจุด: ใช้จอยควบคุมเอง');
+}
+function mapPointerToWorld(pt){
+  const zoom=fitAll?Math.min(cw/W,ch/H):Math.max(.15,Math.min(4,Math.min(cw,ch)/520*zoomMul)),vw=cw/zoom,vh=ch/zoom;
+  const cx=W>vw?Math.min(W-vw,Math.max(0,player.x-vw/2)):(W-vw)/2,
+    pT=fitAll?0:56/zoom,pB=fitAll?0:150/zoom,
+    cy=H+pT+pB>vh?Math.min(H-vh+pB,Math.max(-pT,player.y-vh/2)):(H-vh)/2;
+  return{x:cx+pt.x/zoom,y:cy+pt.y/zoom};
+}
+function tapNavigate(x,y){
+  if(PS.dead||!Z)return false;
+  x=Math.max(8,Math.min(W-8,x));y=Math.max(8,Math.min(H-8,y));
+  const tx=Math.floor(x/T),ty=Math.floor(y/T);
+  if(tileBlocked(tx,ty)||Z.g[ty][tx]===EX||boxBlocked(x,y)){
+    clearTapNav();say('ตรงนี้เดินไม่ได้ · เลือกทางเดินที่ว่าง');return false;
+  }
+  const tiles=bfsPath(...autoStart(),tx,ty,2400);
+  if(!tiles){clearTapNav();say('ยังไม่มีทางเดินไปยังจุดที่มาร์ก');return false}
+  if(AUTO.on)setAuto(false);
+  TAPNAV.dest={x,y};TAPNAV.zone=Z.id;
+  TAPNAV.path=tiles.map(([cx,cy])=>({x:(cx+.5)*T,y:(cy+.5)*T}));
+  TAPNAV.path.push({x,y});
+  TAPNAV.stuck=0;TAPNAV.px=player.x;TAPNAV.py=player.y;
+  say('◉ กำลังเดินไปยังจุดวงกลม');return true;
+}
+function tapNavDirection(dt){
+  if(!TAPNAV.dest)return null;
+  if(TAPNAV.zone!==Z.id||PS.dead){clearTapNav();return null}
+  for(let i=0;i<5&&TAPNAV.path.length;i++){
+    const v=TAPNAV.path[0],dx=v.x-player.x,dy=v.y-player.y,d=Math.hypot(dx,dy);
+    if(d<=Math.max(6,CFG.player.speed*dt*.75)){TAPNAV.path.shift();continue}
+    return[dx/d,dy/d];
+  }
+  if(!TAPNAV.path.length){clearTapNav();say('◉ เดินถึงจุดวงกลมแล้ว');}
+  return null;
+}
+function releaseMapPointer(e,kind){
+  if(!navTap||navTap.id!==e.pointerId)return;
+  const item=navTap;navTap=null;
+  if(kind==='up'&&!item.moved&&performance.now()-item.started<650){
+    const w=mapPointerToWorld(item.start);tapNavigate(w.x,w.y);
+  }
+  try{if(cv.hasPointerCapture(e.pointerId))cv.releasePointerCapture(e.pointerId)}catch(err){}
+}
+function releaseJoy(id,kind='cancel'){
+  if(!joy||(id!==undefined&&joy.id!==id))return;
+  const item=joy,held=item.id;joy=null;
+  if(kind==='up'&&!item.moved&&!item.near&&performance.now()-item.started<650){
+    const w=mapPointerToWorld(item.start);tapNavigate(w.x,w.y);
+  }
+  try{if(cv.hasPointerCapture(held))cv.releasePointerCapture(held)}catch(err){}
+}
+cv.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  const p=joyXY(e);if(p.x<0||p.y<0||p.x>cw||p.y>ch)return;
+  if(p.x>cw*JOY.zone){
+    if(navTap)return;
+    navTap={id:e.pointerId,start:p,started:performance.now(),moved:false};
+    try{cv.setPointerCapture(e.pointerId)}catch(err){navTap=null;return}
+    e.preventDefault();return;
+  }
+  if(joy)return;
+  // Spawn at this touch, even on the old button location; no fixed-center lock.
+  joy={ox:p.x,oy:p.y,x:p.x,y:p.y,id:e.pointerId,start:p,started:performance.now(),near:false,moved:false};
+  try{cv.setPointerCapture(e.pointerId)}catch(err){releaseJoy(e.pointerId);return}
+  e.preventDefault();
+});
+cv.addEventListener('pointermove',e=>{
+  const p=joyXY(e);
+  if(navTap&&navTap.id===e.pointerId){if(Math.hypot(p.x-navTap.start.x,p.y-navTap.start.y)>12)navTap.moved=true;return}
+  if(!joy||joy.id!==e.pointerId)return;
+  joy.x=p.x;joy.y=p.y;
+  if(Math.hypot(p.x-joy.start.x,p.y-joy.start.y)>12){
+    joy.moved=true;if(TAPNAV.dest)clearTapNav('manual');
+  }
+});
+['pointerup','pointercancel','lostpointercapture'].forEach(n=>cv.addEventListener(n,e=>{
+  const kind=n==='pointerup'?'up':'cancel';
+  releaseMapPointer(e,kind);releaseJoy(e.pointerId,kind);
+}));
+addEventListener('blur',()=>{releaseJoy();navTap=null;clearTapNav();clearAttackInput();for(const k in keys)delete keys[k]});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseJoy();navTap=null;clearTapNav();clearAttackInput();for(const k in keys)delete keys[k]}});
+cv.addEventListener('contextmenu',e=>e.preventDefault());
 function inputDir(){let dx=(keys.arrowright||keys.d?1:0)-(keys.arrowleft||keys.a?1:0),dy=(keys.arrowdown||keys.s?1:0)-(keys.arrowup||keys.w?1:0);
   if(!dx&&!dy&&joy){const jx=joy.x-joy.ox,jy=joy.y-joy.oy,d=Math.hypot(jx,jy);if(d>JOY.dead){const m=Math.min(1,(d-JOY.dead)/(JOY.r-JOY.dead)*1.4);dx=jx/d*m;dy=jy/d*m}}
   const L=Math.hypot(dx,dy);if(L>1){dx/=L;dy/=L}return[dx,dy]}
@@ -830,13 +965,26 @@ $('free').onclick=()=>{freeMode=!freeMode;$('free').setAttribute('aria-pressed',
 $('zi').onclick=()=>{fitAll=false;bza.setAttribute('aria-pressed',false);zoomMul=Math.min(4,zoomMul*1.25)};
 $('zo').onclick=()=>{fitAll=false;bza.setAttribute('aria-pressed',false);zoomMul=Math.max(.2,zoomMul/1.25)};
 bza.onclick=()=>{fitAll=!fitAll;bza.setAttribute('aria-pressed',fitAll)};
-let atkHeld=false;
-$('atk').addEventListener('pointerdown',e=>{e.preventDefault();atkHeld=true;attack()});
-['pointerup','pointercancel','pointerleave'].forEach(n=>$('atk').addEventListener(n,()=>{atkHeld=false}));
+let atkHeld=false,atkPointer=null,atkKeyHeld=false;
+const atkButton=$('atk');
+function syncHeldAttack(){atkHeld=atkPointer!==null||atkKeyHeld}
+function releaseAttackPointer(id){
+  if(atkPointer===null||(id!==undefined&&id!==atkPointer))return;
+  const old=atkPointer;atkPointer=null;syncHeldAttack();
+  try{if(atkButton.hasPointerCapture(old))atkButton.releasePointerCapture(old)}catch(err){}
+}
+function clearAttackInput(){atkKeyHeld=false;releaseAttackPointer();syncHeldAttack()}
+atkButton.addEventListener('pointerdown',e=>{
+  if(atkPointer!==null||(e.pointerType==='mouse'&&e.button!==0))return;
+  e.preventDefault();atkPointer=e.pointerId;r85FaceTarget();syncHeldAttack();
+  try{atkButton.setPointerCapture(e.pointerId)}catch(err){releaseAttackPointer(e.pointerId);return}
+  attack();
+});
+['pointerup','pointercancel','pointerleave','lostpointercapture'].forEach(n=>atkButton.addEventListener(n,e=>releaseAttackPointer(e.pointerId)));
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();keys[k]=1;if(e.key.startsWith('Arrow'))e.preventDefault();
   if(e.key==='+'||e.key==='=')zoomMul=Math.min(4,zoomMul*1.25);if(e.key==='-')zoomMul=Math.max(.2,zoomMul/1.25);
-  if(e.key===' '||k==='j'){atkHeld=true;e.preventDefault()}const n=+e.key;if(n>=1&&n<=9){const r=useSkill(n);if(r==='locked')say(PS.job<CFG.skills[n-1].job?CFG.skills[n-1].name+' ปลดล็อกที่ Job '+CFG.skills[n-1].job:CFG.skills[n-1].name+' ต้องอัปสกิลก่อน (📜)')}});
-addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0;if(e.key===' '||e.key.toLowerCase()==='j')atkHeld=false});
+  if(e.key===' '||k==='j'){atkKeyHeld=true;syncHeldAttack();e.preventDefault()}const n=+e.key;if(n>=1&&n<=9){const r=useSkill(n);if(r==='locked')say(PS.job<CFG.skills[n-1].job?CFG.skills[n-1].name+' ปลดล็อกที่ Job '+CFG.skills[n-1].job:CFG.skills[n-1].name+' ต้องอัปสกิลก่อน (📜)')}});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0;if(e.key===' '||e.key.toLowerCase()==='j'){atkKeyHeld=false;syncHeldAttack()}});
 let dpr=1,cw=0,ch=0;function fit(){dpr=window.devicePixelRatio||1;cw=cv.clientWidth;ch=cv.clientHeight;cv.width=cw*dpr;cv.height=ch*dpr}addEventListener('resize',fit);fit();
 
 function step(dx,dy,dt,auto){const px0=player.x,py0=player.y,sp=CFG.player.speed*(netOn()?1+(HLNET.bon.spd||0):1)*dt;
@@ -1307,13 +1455,29 @@ function draw(){
   if(window.HLNET)for(const o of HLNET.others)list.push({b:o.y,o});for(const n of CFG.npcs)if(n.zone===Z.id)list.push({b:n.ty*T,n});list.sort((a,b)=>a.b-b.b);
   for(const it of list){if(it.p)drawPlayer();else if(it.m)drawMon(it.m);else if(it.o)drawOther(it.o);else if(it.n)drawNpc(it.n);else drawObj(it.ob,tNow)}
   drawFx();
+  /* R85 approved display: subtle small destination circle, no navigation guide line.
+     Actual movement still follows TAPNAV.path through the original collision/pathfinding. */
+  if(TAPNAV.dest&&TAPNAV.zone===Z.id){
+    ctx.save();
+    const p=TAPNAV.dest, bob=1.2*Math.sin(tNow*5);
+    const px=p.x,py=p.y+bob;
+    ctx.shadowColor='rgba(245,199,104,.18)';ctx.shadowBlur=3;
+    ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,225,140,.16)';ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.beginPath();ctx.arc(px,py,4.5,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,225,140,.82)';ctx.lineWidth=1.6;ctx.stroke();
+    ctx.beginPath();ctx.arc(px,py,1.6,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,225,140,.90)';ctx.fill();
+    ctx.restore();
+  }
   if(debug){for(let y=sy0;y<sy1;y++)for(let x=sx0;x<sx1;x++)if(tileBlocked(x,y)){ctx.fillStyle='rgba(255,40,40,.35)';ctx.fillRect(x*T,y*T,T,T)}
     ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=1;ctx.strokeRect(player.x-HW,player.y-HH,HW*2,HH*2)}
   ctx.setTransform(dpr,0,0,dpr,0,0);
   if(WT.night){ctx.fillStyle=WT.blood?'rgba(120,10,20,.30)':'rgba(10,20,70,.34)';ctx.fillRect(0,0,cw,ch)}
-  {const h=joy?{x:joy.ox,y:joy.oy}:joyHome(),R=JOY.r;let kx=0,ky=0;if(joy){const jx=joy.x-joy.ox,jy=joy.y-joy.oy,d=Math.hypot(jx,jy)||1,c=Math.min(d,R);kx=jx/d*c;ky=jy/d*c}
-    ctx.globalAlpha=joy?.9:.55;ctx.fillStyle='rgba(18,22,18,.45)';ctx.beginPath();ctx.arc(h.x,h.y,R,0,7);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=2.5;ctx.stroke();
-    ctx.fillStyle='rgba(255,207,138,.9)';ctx.beginPath();ctx.arc(h.x+kx,h.y+ky,22,0,7);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=2;ctx.stroke();ctx.globalAlpha=1}
+  if(joy){const h={x:joy.ox,y:joy.oy},R=JOY.r,jx=joy.x-joy.ox,jy=joy.y-joy.oy,d=Math.hypot(jx,jy)||1,c=Math.min(d,R),kx=jx/d*c,ky=jy/d*c;
+    ctx.save();ctx.globalAlpha=.9;ctx.fillStyle='rgba(18,22,18,.45)';ctx.beginPath();ctx.arc(h.x,h.y,R,0,7);ctx.fill();ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=2.5;ctx.stroke();
+    ctx.fillStyle='rgba(255,207,138,.9)';ctx.beginPath();ctx.arc(h.x+kx,h.y+ky,22,0,7);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=2;ctx.stroke();ctx.restore()}
 }
 /* ---------- HUD ---------- */
 let hudT=0;const skEl=$('skills');
@@ -1322,15 +1486,124 @@ let SLOTS=(()=>{try{const v=JSON.parse(localStorage.getItem('hl_slots'));if(Arra
 const saveSlots=()=>{try{localStorage.setItem('hl_slots',JSON.stringify(SLOTS))}catch(e){}};
 function setSlot(k,i){const j=SLOTS.indexOf(i);if(j>=0&&j!==k)SLOTS[j]=SLOTS[k];SLOTS[k]=i;saveSlots();buildSkills()}
 const skIcon=i=>'icons/sk_'+i+'.png';
-function buildSkills(){skEl.innerHTML='';for(let s=0;s<6;s++){const i=SLOTS[s],sk=CFG.skills[i-1],b=document.createElement('button');b.className='sk';
-  if(!sk){b.disabled=true;b.style.visibility='hidden';skEl.appendChild(b);continue}b.dataset.i=i;b.setAttribute('aria-label',skName(i));b.addEventListener('animationend',()=>b.classList.remove('ready'));b.innerHTML='<img alt="" draggable="false"><i class="cdn"></i><small></small>';b.querySelector('img').src=skIcon(i);b.querySelector('small').textContent=skName(i);
-  b.addEventListener('pointerdown',e=>{e.preventDefault();const r=useSkill(i);if(r==='locked')say(PS.job<sk.job?skName(i)+' ปลดล็อกที่ Job '+sk.job:sk.name+' ต้องอัปสกิลก่อน (📜)')});skEl.appendChild(b)}hudT=0}
+/* R85 V3: real class skills, six slots, independent pointer holds and cooldown reuse. */
+const r85HeldSkills=new Map();
+addEventListener('blur',()=>r85HeldSkills.clear());
+document.addEventListener('visibilitychange',()=>{if(document.hidden)r85HeldSkills.clear()});
+function r85HeldSkillTick(){
+  if(!r85HeldSkills.size||PS.dead)return;
+  for(const [id,h] of r85HeldSkills){
+    if(!h.button.isConnected){r85HeldSkills.delete(id);continue}
+    if(PS.cast||(PS.cd[h.i]||0)>0||tNow-h.last<.15)continue;
+    const sk=CFG.skillFor(curCls(),h.i);
+    if(!sk||PS.job<sk.job||(netOn()&&!(HLNET.sk[skName(h.i)]>0)))continue;
+    r85FaceTarget();h.last=tNow;useSkill(h.i);
+  }
+}
+function buildSkills(){
+  r85HeldSkills.clear();skEl.innerHTML='';
+  for(let s=0;s<6;s++){
+    const i=SLOTS[s],sk=CFG.skills[i-1],b=document.createElement('button');b.className='sk';
+    if(!sk){b.disabled=true;b.style.visibility='hidden';skEl.appendChild(b);continue}
+    b.dataset.i=i;b.setAttribute('aria-label',skName(i));
+    b.addEventListener('animationend',()=>b.classList.remove('ready'));
+    b.innerHTML='<img alt="" draggable="false"><i class="cdn"></i><small></small>';
+    b.querySelector('img').src=skIcon(i);b.querySelector('small').textContent=skName(i);
+    b.addEventListener('pointerdown',e=>{
+      if(e.pointerType==='mouse'&&e.button!==0)return;
+      e.preventDefault();if(r85HeldSkills.has(e.pointerId))return;
+      r85HeldSkills.set(e.pointerId,{i,button:b,last:tNow});
+      try{b.setPointerCapture(e.pointerId)}catch(err){r85HeldSkills.delete(e.pointerId)}
+      r85FaceTarget();const result=useSkill(i);
+      if(result==='locked')say(PS.job<sk.job?skName(i)+' ปลดล็อกที่ Job '+sk.job:sk.name+' ต้องอัปสกิลก่อน (📜)');
+    });
+    for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,e=>{
+      const h=r85HeldSkills.get(e.pointerId);if(!h||h.button!==b)return;
+      r85HeldSkills.delete(e.pointerId);
+      try{if(b.hasPointerCapture(e.pointerId))b.releasePointerCapture(e.pointerId)}catch(err){}
+    });
+    skEl.appendChild(b);
+  }
+  hudT=0;
+}
 buildSkills();
 /* ปุ่ม AUTO (V2-R23) แทนปุ่มสลับชุด */
 $('ask').onclick=()=>openAutoCfg();queueMicrotask(()=>setAutoSk(AUTOSK.on));
 $('pg').textContent='AUTO';$('pg').setAttribute('aria-label','ล่าอัตโนมัติ');$('pg').setAttribute('aria-pressed','false');
 function setAuto(on){AUTO.on=on;AUTO.tgt=null;AUTO.path=null;$('pg').setAttribute('aria-pressed',String(AUTO.on));say(AUTO.on?'ล่าอัตโนมัติ: เปิด (ลากจอยเพื่อควบคุมเองชั่วคราว)':'ล่าอัตโนมัติ: ปิด');const b=document.querySelector('#aop .go');if(b)b.textContent=on?'หยุด AUTO':'เริ่ม AUTO'}
 $('pg').onclick=()=>setAuto(!AUTO.on);
+
+/* R85 V3: UI buttons use real game systems, with a local-only bug notebook. */
+$('r85target').addEventListener('click',r85CycleTarget);
+$('r85dash').addEventListener('click',()=>{
+  if(PS.dead||PS.cast){say('Dash ยังไม่พร้อมใช้งาน');return}
+  let movementSkill=0,locked=false;
+  for(let i=1;i<=CFG.skills.length;i++){
+    const sk=CFG.skillFor(curCls(),i);
+    if(!sk||sk.shape!=='move')continue;
+    if(PS.job<sk.job||(netOn()&&!(HLNET.sk[skName(i)]>0))){locked=true;continue}
+    movementSkill=i;break;
+  }
+  if(!movementSkill){say(locked?'สกิลเคลื่อนที่ยังไม่ปลดล็อก':'อาชีพนี้ยังไม่มีสกิลเคลื่อนที่');return}
+  const result=useSkill(movementSkill);
+  if(result==='cooldown')say('Dash กำลังคูลดาวน์');
+  else if(result!=='ok')say('Dash ยังใช้ไม่ได้: '+result);
+});
+const r85BugRecords=[],r85BugPanel=$('r85bugPanel'),r85BugNotes=$('r85bugNote');
+let r85BugRenderAt=-1;
+function r85BugReport(){
+  const target=r85LiveTarget();
+  return [
+    'Hmong Legend R85 — V3 Calm control and bug report',
+    'เวลา: '+new Date().toISOString(),
+    'สถานะ: สาขาทดลอง ไม่รับรองเซิร์ฟเวอร์ออนไลน์',
+    'โซน: '+(Z?.id||'unknown'),
+    'อาชีพ: '+curCls()+' · Level '+PS.lv+' · Job '+PS.job,
+    'ตำแหน่ง: '+Math.round(player.x)+','+Math.round(player.y),
+    'จอย: '+(joy?'active pointer '+joy.id:'idle'),
+    'โจมตีกดค้าง: '+atkHeld+' · สกิลกดค้าง: '+r85HeldSkills.size,
+    'เป้าหมาย: '+(target?target.type:'ไม่มี'),
+    'เดินตามจุด: '+!!TAPNAV.dest+' · AUTO: '+AUTO.on,
+    'ออนไลน์: '+!!netOn(),
+    'บันทึกบั๊ก: '+r85BugRecords.length,
+    ...r85BugRecords.map(e=>e.at+' ['+e.type+'] '+e.info)
+  ].join('\n');
+}
+function r85BugRefresh(){
+  if(r85BugPanel.hidden)return;
+  $('r85bugSummary').textContent='รายการที่บันทึก '+r85BugRecords.length;
+  $('r85bugDetails').textContent=r85BugReport().split('บันทึกบั๊ก:')[0];
+  $('r85bugEvents').textContent=r85BugRecords.length?r85BugRecords.map(e=>'['+e.type+'] '+e.info).join('\n'):'ยังไม่มีบันทึกบั๊ก';
+}
+function r85BugRecord(type,message){
+  r85BugRecords.push({at:new Date().toISOString(),type,info:String(message).slice(0,1200)});
+  if(r85BugRecords.length>40)r85BugRecords.shift();
+  $('r85bugCount').textContent=String(r85BugRecords.length);
+  r85BugRefresh();
+}
+window.addEventListener('error',e=>r85BugRecord('JavaScript',e.message||'unknown error'));
+window.addEventListener('unhandledrejection',e=>r85BugRecord('Promise',String(e.reason||'unhandled rejection')));
+function r85SetBugOpen(open){
+  r85BugPanel.hidden=!open;
+  $('r85bugToggle').setAttribute('aria-expanded',String(open));
+  if(open)r85BugRefresh();
+}
+$('r85bugToggle').addEventListener('click',()=>r85SetBugOpen(r85BugPanel.hidden));
+$('r85bugClose').addEventListener('click',()=>r85SetBugOpen(false));
+$('r85bugAdd').addEventListener('click',()=>{
+  const text=r85BugNotes.value.trim();if(!text)return;
+  r85BugRecord('ผู้เล่น',text);r85BugNotes.value='';
+});
+$('r85bugClear').addEventListener('click',()=>{
+  r85BugRecords.length=0;$('r85bugCount').textContent='0';r85BugRefresh();
+});
+$('r85bugSave').addEventListener('click',()=>{
+  const blob=new Blob([r85BugReport()],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='hmong-legend-r85-bug-report.txt';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+});
+
 /* หน้าตั้งค่า AUTO (V2-R26 ตามภาพตัวอย่างของเจ้าของ) */
 const aop=document.createElement('div');aop.id='aop';aop.className='win';aop.hidden=true;aop.setAttribute('role','dialog');aop.setAttribute('aria-label','ตั้งค่า AUTO');document.getElementById('app').appendChild(aop);
 const swHtml=(id,on,label,sub)=>'<div class="swr"><span>'+label+(sub?'<small>'+sub+'</small>':'')+'</span><button class="sw" id="'+id+'" role="switch" aria-checked="'+on+'" aria-label="'+label+'"><i></i></button></div>';
@@ -1455,7 +1728,22 @@ let wtT=0;function update(dt){tNow+=dt;switchCd=Math.max(0,switchCd-dt);
     if(!netOn())for(const m of mons)gateBoss(m,WT)}
   for(const k in PS.cd)PS.cd[k]=Math.max(0,PS.cd[k]-dt);PS.hurt=Math.max(0,PS.hurt-dt);PS.buffT=Math.max(0,PS.buffT-dt);PS.guardT=Math.max(0,PS.guardT-dt);
   if(PS.dead){moving=false;PS.deadT-=dt;if(PS.deadT<=0&&!netOn())respawn()}
-  else{updCast(dt);autoSkill(dt);let[dx,dy]=PS.cast?[0,0]:inputDir(),au=false;if(!dx&&!dy&&!PS.cast){const a=autoStep(dt);if(a){dx=a[0];dy=a[1];au=true}}const mv=!!(dx||dy);if(mv!==moving)anim=0;moving=mv;if(mv)step(dx,dy,dt,au);if(atkHeld)attack();
+  else{updCast(dt);r85HeldSkillTick();autoSkill(dt);let[dx,dy]=PS.cast?[0,0]:inputDir(),au=false;
+    if((dx||dy)&&TAPNAV.dest)clearTapNav('manual');
+    if(!dx&&!dy&&!PS.cast){
+      const go=tapNavDirection(dt);
+      if(go){dx=go[0];dy=go[1];au=true}
+      else{const a=autoStep(dt);if(a){dx=a[0];dy=a[1];au=true}}
+    }
+    const mv=!!(dx||dy);if(mv!==moving)anim=0;moving=mv;
+    if(mv)step(dx,dy,dt,au);
+    if(TAPNAV.dest&&au){
+      const progressed=Math.hypot(player.x-TAPNAV.px,player.y-TAPNAV.py);
+      TAPNAV.stuck=progressed<.35?TAPNAV.stuck+dt:0;
+      TAPNAV.px=player.x;TAPNAV.py=player.y;
+      if(TAPNAV.stuck>1.4){clearTapNav();say('จุดนี้มีสิ่งกีดขวาง · หยุดเดิน')}
+    }
+    if(atkHeld){r85FaceTarget();attack()}
     if(!netOn()&&inSafe(player.x,player.y)&&PS.hp<PS.maxHp)PS.hp=Math.min(PS.maxHp,PS.hp+CFG.player.regenSafe*dt)}
   anim+=dt;
   for(let i=pending.length-1;i>=0;i--){pending[i].t-=dt;if(pending[i].t<=0){const p=pending[i];pending.splice(i,1);p.f()}}
@@ -1464,6 +1752,7 @@ let wtT=0;function update(dt){tNow+=dt;switchCd=Math.max(0,switchCd-dt);
   for(let i=parts.length-1;i>=0;i--){const q=parts[i];q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=140*dt;q.vx*=.98;q.t-=dt;if(q.t<=0)parts.splice(i,1)}shakeT=Math.max(0,shakeT-dt);
   for(let i=nums.length-1;i>=0;i--){nums[i].t-=dt;nums[i].y-=30*dt;if(nums[i].t<=0)nums.splice(i,1)}
   if(msgT>0){msgT-=dt;if(msgT<=0)msgEl.style.display='none'}
+  if(!r85BugPanel.hidden&&tNow-r85BugRenderAt>.4){r85BugRenderAt=tNow;r85BugRefresh()}
   hud(dt)}
 enterZone(CFG.player.home,ZONES[CFG.player.home].start[0],ZONES[CFG.player.home].start[1]);
 let last=performance.now();
@@ -1475,7 +1764,7 @@ try{atk4For(PS.look)}catch(e){}
 requestAnimationFrame(loop);
 window.HL={idleFrame,idleBob,sprUrl:f=>sprUrl(f),classAtk:(c,l)=>classAtk(c,l),atkMode:(a,b,c)=>atkMode(a,b,c),atk4For:l=>atk4For(l),drawAtk4:(...a)=>drawAtk4(...a),drawAtkPose:(...a)=>drawAtkPose(...a),skfxImg:c=>skfxImg(c),classBody:(c,l)=>classBody(c,l||PS.look),CLASS_BODY,SKILL_FXUD,skfxudReady:c=>!!skfxudImg(c),SKILL_FX4,skfx4Ready:c=>!!skfx4Img(c),DV,SKILL_FX,skfxReady:c=>!!skfxImg(c),get fxList(){return fx},CLASS_WEAPON,get castDraw(){return[drawClassCast.n||0,drawClassCast.w]},poseFor:(c,l)=>poseFor(c,l||PS.look),get CLASS_POSE(){return CLASS_POSE},skillFor:i=>CFG.skillFor(curCls(),i),basicNow:()=>CFG.basicFor(curCls()),get shotsN(){return shots.length},CHAR_CAT,lookSets,femReady,get femDraws(){return femHair.n||0},HAIRS,OUTFITS,cleanLook,setLook,sheetsFor,femHair,get SPRcur(){return SPR},preloadList(){const out=[],h=CFG.player.home;for(const z of[h,'field2'])if(MAP_ART[z])out.push({src:MAP_ART[z],label:'ภาพแผนที่ '+ZONES[z].name});
   for(let i=0;i<=11;i++)out.push({src:'icons/sk_'+i+'.png',label:'ไอคอนสกิล'});for(const c of Object.values(CLASS_BODY))for(const e of Object.values(c))if(!out.some(o=>o.src===sprUrl('pcl_'+e.id+'.webp')))out.push({src:sprUrl('pcl_'+e.id+'.webp'),label:'ตัวละครอาชีพ'});for(const n of Object.values(SKILL_FXUD.cls||{}))out.push({src:sprUrl('skfxud_'+n+'.webp'),label:'เอฟเฟกต์สกิล'});for(const n of Object.values(SKILL_FX4.cls||{}))out.push({src:sprUrl('skfx4_'+n+'.webp'),label:'เอฟเฟกต์สกิล'});for(const n of Object.values(SKILL_FX.cls||{}))out.push({src:sprUrl('skfx_'+n+'.webp'),label:'เอฟเฟกต์สกิล'});for(const g of['m','f']){const ls=lookSets({g,hs:0,of:0});if(ls)for(const f of['walk','idle','attack'])for(const[id,pt]of[[ls.h,'h'],[ls.b,'b']])out.push({src:sprUrl('pc_'+id+'_'+pt+'_'+f+'.webp'),label:'ภาพตัวละคร'})}out.push({src:'icons/sk_p.png',label:'ไอคอนสกิล'});
-  for(const t of new Set((ZONES.field2.spawns||[]).map(s=>s.type))){const d=MON_SPR[t];if(!d)continue;if(d.walk)out.push({src:d.walk,label:'ภาพ'+t});if(d.act)out.push({src:d.act,label:'ภาพ'+t})}return out},CLASSES,CLS_ACTIVE,CLS_PATHS,curCls,skName,setClassLocal(c){if(!CLS_ACTIVE[c])return'invalid';if(!inSafe(player.x,player.y))return'not-safe';PS.cls=c;buildSkills();hudT=0;return'ok'},get inSafeNow(){return inSafe(player.x,player.y)},buildSkills,adminLocal,clearWarpCd(){warpCd=0},monShown,warp,openWorld,openAutoCfg,statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
+  for(const t of new Set((ZONES.field2.spawns||[]).map(s=>s.type))){const d=MON_SPR[t];if(!d)continue;if(d.walk)out.push({src:d.walk,label:'ภาพ'+t});if(d.act)out.push({src:d.act,label:'ภาพ'+t})}return out},CLASSES,CLS_ACTIVE,CLS_PATHS,curCls,skName,setClassLocal(c){if(!CLS_ACTIVE[c])return'invalid';if(!inSafe(player.x,player.y))return'not-safe';PS.cls=c;buildSkills();hudT=0;return'ok'},get inSafeNow(){return inSafe(player.x,player.y)},buildSkills,adminLocal,clearWarpCd(){warpCd=0},monShown,warp,openWorld,openAutoCfg,statUpLocal,statResetLocal,AUTO,AUTOSK,setAutoSk,lvUp,lvEl,monLvCol,gain,get SLOTS(){return SLOTS},setSlot,bfsPath,get joy(){return joy},get heldSkillCount(){return r85HeldSkills.size},get attackPointerOwner(){return atkPointer},get tapDestination(){return TAPNAV.dest},tapNavigate,clearTapNav,get attackHeld(){return atkHeld},inputDir,MON_SCALE,get WT(){return WT},setClock(off){clockOff=off;wtT=0},mapImg,MAP_MASKS,monSpr,get tNow(){return tNow},monArt,SKILL_TABLE_REF:()=>SKILL_TABLE,say,recalc,addNum,setMons(a){mons=a},setTarget(m){lastTarget=m},get moving(){return moving},set freeMode(v){freeMode=v},parts,get shakeT(){return shakeT},get lastTarget(){return lastTarget},PORTRAIT,ATL,SKILL_TABLE,get Z(){return Z},get mons(){return mons},ZONES,getZone,enterZone,PS,CFG,Combat,update,attack,useSkill,player,step,tileBlocked,boxBlocked,inSafe,shots,T,COLS,ROWS,TYPES:{GR,PA,WA,BR,ST,CR,BD,CV,CF,EX}};
 })();
 
 </script>
