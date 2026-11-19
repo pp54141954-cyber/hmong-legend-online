@@ -82,6 +82,8 @@ const check=async(page)=>page.evaluate(()=>{
    const joystick={x:screen.x+screen.width*.208,y:screen.y+screen.height*.659};
    assert(joystick.x<screen.x+screen.width*.5,'joystick regression point not on left');
    const posAttack=point(attack);
+   await page.waitForFunction(names=>names.every(n=>window.HLNET?.sk?.[n]>0)&&window.HL?.PS?.job>=30,
+     active,{timeout:12000});
    const snapshot=await page.evaluate(()=>({className:window.HLNET?.cls,job:window.HL?.PS?.job,skills:window.HLNET?.sk}));
    assert(snapshot.job>=30,'fixture failed to set Job EXP level: '+JSON.stringify(snapshot));
    assert(slotIds.every(i=>active[i-1]&&snapshot.skills[active[i-1]]>0),
