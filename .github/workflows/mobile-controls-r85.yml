@@ -35,6 +35,14 @@ jobs:
         run: node tools/mobile-controls-r85-test.js
         env:
           MOBILE_BROWSER: webkit
+      - name: R85 multi-touch controls and two WebSocket sessions (Android Chromium)
+        run: node tools/r85-multitouch-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: R85 multi-touch controls and two WebSocket sessions (iPhone WebKit)
+        run: node tools/r85-multitouch-test.js
+        env:
+          MOBILE_BROWSER: webkit
       - name: R83 settings compatibility Android
         run: node tools/view-preferences-mobile-test.js
         env:
