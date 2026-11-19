@@ -80,7 +80,7 @@ function createServer(opts = {}) {
         // Never rewrite any movement, combat, inventory, map, or character source.
         if (url.searchParams.get('grandvfx') === '1' || url.searchParams.get('fightervfx') === '1' || url.searchParams.get('fightercast19') === '1') {
           const gameDir = path.dirname(conf.gameFile);
-          const fighterOn = url.searchParams.get('fightervfx') === '1';
+          const fighterOn = url.searchParams.get('fightervfx') === '1' || url.searchParams.get('fightercast19') === '1';
           const fighterCast19On = url.searchParams.get('fightercast19') === '1';
           const [html, grand, martial, bridge, fighterReal, fighterCast19] = await Promise.all([
             fs.promises.readFile(conf.gameFile, 'utf8'),
