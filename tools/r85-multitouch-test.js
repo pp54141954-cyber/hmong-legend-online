@@ -44,6 +44,18 @@ const check=async(page)=>page.evaluate(()=>{
    }
    const port=await server.listen(0);
    const url='http://127.0.0.1:'+port+'/?splash=0';
+   // Verify the same exact R85 build that a Render deployment should expose.
+   const origin='http://127.0.0.1:'+port;
+   const buildResponse=await fetch(origin+'/api/build-info');
+   assert.equal(buildResponse.status,200,'R85 build-info endpoint unavailable');
+   const build=await buildResponse.json();
+   assert.equal(build.build,'R85-V3-Calm','stale controls build');
+   assert(build.input?.floatingJoystick&&build.input?.sixRealSkillSlots&&build.input?.tapToMove,
+     'R85 controls missing from release fingerprint');
+   const stylesheet=await fetch(origin+'/r85-calm-controls.css');
+   assert.equal(stylesheet.status,200,'approved R85 style not served');
+   assert((stylesheet.headers.get('content-type')||'').includes('text/css'),'R85 stylesheet wrong mime type');
+
    browser=await browserType.launch();
    async function login(name){
      const ctx=await browser.newContext({...devices[device]});
