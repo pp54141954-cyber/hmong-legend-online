@@ -49,7 +49,7 @@ const check=(name,p)=>{assert.ok(p,name);console.log('PASS '+name)};
     const f=window.HLFighter19Cast;
     return JSON.stringify(f.POINTS)==='{"S":[17,18,19,20,21],"N":[13,14,15,16],"W":[6,7,8,9,10,11],"E":[1,2,3,4]}';
   }));
-  check('game's original approved Fighter character is available',await page.evaluate(()=>{
+  check("game's original approved Fighter character is available",await page.evaluate(()=>{
     const H=window.HL;return H.classAtk('นักสู้',H.PS.look)?.img.naturalWidth>0;
   }));
   const artDir=path.join(__dirname,'test-artifacts');fs.mkdirSync(artDir,{recursive:true});
