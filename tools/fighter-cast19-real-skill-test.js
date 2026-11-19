@@ -92,13 +92,13 @@ const check=(name,p)=>{assert.ok(p,name);console.log('PASS '+name)};
       fighterEffect:window.HLGrandStage?.realFighterEnabled
     }));
     check('real cast sprite hook drew skill '+slot+' from approved ordinal list',
-      resultData.last?.slot===slot&&resultData.draws>before&&
+      resultData.last?.slot===slot&&resultData.draws>before.cast&&
       windowSafe(resultData.last.originalPoint)&&resultData.fighterEffect);
     check('skill '+slot+' releases its approved Fighter VFX alongside Cast19',
       resultData.lastVFX?.slot===slot&&resultData.vfxAtlasDraws>before.effect&&
       resultData.released&&resultData.lastVFX?.dir===dir&&
       resultData.lastVFX?.source===(dir==='E'||dir==='W'?'approved-side':'approved-updown'));
-        if([3,7,11].includes(slot)){
+    if([3,7,11].includes(slot)){
       await page.screenshot({path:path.join(artDir,'cast19-'+label+'-test-fixture-slot'+slot+'.png')});
     }
   }
