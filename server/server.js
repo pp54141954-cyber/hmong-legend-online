@@ -78,18 +78,20 @@ function createServer(opts = {}) {
       if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
         // Opt-in visual-only grand skill effects. Default responses are byte-for-byte unchanged.
         // Never rewrite any movement, combat, inventory, map, or character source.
-        if (url.searchParams.get('grandvfx') === '1' || url.searchParams.get('fightervfx') === '1') {
+        if (url.searchParams.get('grandvfx') === '1' || url.searchParams.get('fightervfx') === '1' || url.searchParams.get('fightercast19') === '1') {
           const gameDir = path.dirname(conf.gameFile);
           const fighterOn = url.searchParams.get('fightervfx') === '1';
-          const [html, grand, martial, bridge, fighterReal] = await Promise.all([
+          const fighterCast19On = url.searchParams.get('fightercast19') === '1';
+          const [html, grand, martial, bridge, fighterReal, fighterCast19] = await Promise.all([
             fs.promises.readFile(conf.gameFile, 'utf8'),
             fs.promises.readFile(path.join(gameDir, 'skill-vfx-grand.js'), 'utf8'),
             fs.promises.readFile(path.join(gameDir, 'martial-vfx.js'), 'utf8'),
             fs.promises.readFile(path.join(gameDir, 'skill-vfx-bridge.js'), 'utf8'),
-            fighterOn ? fs.promises.readFile(path.join(gameDir, 'fighter-vfx-real.js'), 'utf8') : Promise.resolve('')
+            fighterOn ? fs.promises.readFile(path.join(gameDir, 'fighter-vfx-real.js'), 'utf8') : Promise.resolve(''),
+            fighterCast19On ? fs.promises.readFile(path.join(gameDir, 'fighter-cast19-game-hook.js'), 'utf8') : Promise.resolve('')
           ]);
           if (!html.includes('</body>')) return json(res, 500, { error: 'grand-vfx body marker unavailable' });
-          const script = '<script>' + grand + '</script><script>' + martial + '</script>' + (fighterOn ? '<script>' + fighterReal + '</script>' : '') + '<script>' + bridge + '</script>';
+          const script = '<script>' + grand + '</script><script>' + martial + '</script>' + (fighterOn ? '<script>' + fighterReal + '</script>' : '') + '<script>' + bridge + '</script>' + (fighterCast19On ? '<script>' + fighterCast19 + '</script>' : '');
           res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
           return res.end(html.replace('</body>', script + '</body>'));
         }
