@@ -1,0 +1,55 @@
+name: Cast19 fast real-game Chromium smoke test
+on:
+  push:
+    branches: [test/fighter-cast19-nine-real-skills]
+    paths:
+      - .github/workflows/fighter-cast19-fast.yml
+      - tools/fighter-cast19-real-skill-test.js
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-chrome:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test JS without downloading browsers
+        run: |
+          npm ci --prefix server --no-audit --no-fund
+          npm install --no-save --no-package-lock --prefix /tmp/hl-cast19-native playwright@1.56.1
+          echo "NODE_PATH=/tmp/hl-cast19-native/node_modules" >> "$GITHUB_ENV"
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          if [ -z "$CHROME" ]; then echo "No system Chrome found"; exit 1; fi
+          echo "CAST19_EXECUTABLE=$CHROME" >> "$GITHUB_ENV"
+      - name: Create synthetic skill sprite fixture — staging only
+        run: |
+          python3 -m pip install --break-system-packages --user pillow
+          python3 - <<'PY'
+          from PIL import Image
+          im=Image.open('game/sprites/pca_fighter_m.webp').convert('RGBA')
+          out=Image.new('RGBA',(1752,1280),(0,0,0,0))
+          for row in range(4):
+              for col in range(6):
+                  cell=im.crop((min(col,4)*240,row*124,(min(col,4)+1)*240,(row+1)*124))
+                  cell.thumbnail((245,210))
+                  out.alpha_composite(cell,(col*292+24,row*320+50))
+          out.save('game/sprites/fighter_cast19_user.webp','WEBP',lossless=True)
+          print('ONLY A SYNTHETIC FIXTURE — NOT APPROVED 19-FRAME ART')
+          PY
+      - name: Nine actual game skill calls - isolated WebSocket/Chromium
+        env:
+          CAST19_BROWSER: chromium
+        run: |
+          node --check tools/fighter-cast19-real-skill-test.js
+          node tools/fighter-cast19-real-skill-test.js
+      - name: Store synthetic-test evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cast19-fast-native-chrome-synthetic-fixture
+          path: tools/test-artifacts/cast19-*.png
+          if-no-files-found: ignore
