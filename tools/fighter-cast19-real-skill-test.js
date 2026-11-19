@@ -19,7 +19,7 @@ const check=(name,p)=>{assert.ok(p,name);console.log('PASS '+name)};
  const server=createServer({dbFile:path.join(root,'game.sqlite'),quiet:true,startZone:'village2'});
  let browser,context;
  try{
-  const user='Fighter19SkillTester';
+  const user='Fighter19Pilot';
   const home=CFG.player.home==='village2'?'village2':'village2';
   const start=server.sim.zones[home].G.D.start;
   const reg=server.db.register(user,'testpass123',{zone:home,x:start[0],y:start[1]});
@@ -42,7 +42,14 @@ const check=(name,p)=>{assert.ok(p,name);console.log('PASS '+name)};
   await page.waitForSelector('#net:not([hidden])',{timeout:25000});
   await page.fill('#netn',user);await page.fill('#netp','testpass123');await page.click('#netlogin');
   await page.waitForFunction(()=>window.HLNET?.joined&&window.HL.curCls()==='นักสู้',
-    null,{timeout:18000});
+    null,{timeout:18000}).catch(async e=>{
+      console.error('LOGIN_DIAGNOSTICS',JSON.stringify(await page.evaluate(()=>({
+        netVisible:!document.querySelector('#net')?.hidden,
+        joined:window.HLNET?.joined,netState:window.HLNET?.state,
+        cls:window.HL?.curCls?.(),bodyText:document.body.innerText.slice(-700)
+      }))));
+      throw e;
+    });
   await page.waitForFunction(()=>window.HLFighter19Cast.ready,null,{timeout:16000});
   check('actual game account joined and synthetic Cast19 sheet decoded',true);
   check('owner-provided ordinal maps remain exact',await page.evaluate(()=>{
