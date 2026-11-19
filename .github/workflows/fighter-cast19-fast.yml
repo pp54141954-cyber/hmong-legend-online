@@ -1,10 +1,11 @@
-name: Cast19 fast real-game Chromium smoke test
+name: Cast19 + original Fighter VFX fast Chromium test
 on:
   push:
     branches: [test/fighter-cast19-nine-real-skills]
     paths:
       - .github/workflows/fighter-cast19-fast.yml
       - tools/fighter-cast19-real-skill-test.js
+      - game/sprites/fighter_cast19_user.webp
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,31 +26,19 @@ jobs:
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
           if [ -z "$CHROME" ]; then echo "No system Chrome found"; exit 1; fi
           echo "CAST19_EXECUTABLE=$CHROME" >> "$GITHUB_ENV"
-      - name: Create synthetic skill sprite fixture — staging only
+      - name: Confirm original owner-approved Cast19 WebP checksum
         run: |
-          python3 -m pip install --break-system-packages --user pillow
-          python3 - <<'PY'
-          from PIL import Image
-          im=Image.open('game/sprites/pca_fighter_m.webp').convert('RGBA')
-          out=Image.new('RGBA',(1752,1280),(0,0,0,0))
-          for row in range(4):
-              for col in range(6):
-                  cell=im.crop((min(col,4)*240,row*124,(min(col,4)+1)*240,(row+1)*124))
-                  cell.thumbnail((245,210))
-                  out.alpha_composite(cell,(col*292+24,row*320+50))
-          out.save('game/sprites/fighter_cast19_user.webp','WEBP',lossless=True)
-          print('ONLY A SYNTHETIC FIXTURE — NOT APPROVED 19-FRAME ART')
-          PY
+          echo "414161a85092355712e6ad1b3522c0497bbce950bfa16431055c92bfde3bff1e  game/sprites/fighter_cast19_user.webp" | sha256sum --check
       - name: Nine actual game skill calls - isolated WebSocket/Chromium
         env:
           CAST19_BROWSER: chromium
         run: |
           node --check tools/fighter-cast19-real-skill-test.js
           node tools/fighter-cast19-real-skill-test.js
-      - name: Store synthetic-test evidence
+      - name: Store approved-art VFX evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: cast19-fast-native-chrome-synthetic-fixture
+          name: cast19-fast-approved-art-real-VFX
           path: tools/test-artifacts/cast19-*.png
           if-no-files-found: ignore
