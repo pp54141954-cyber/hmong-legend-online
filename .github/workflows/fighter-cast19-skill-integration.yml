@@ -1,4 +1,4 @@
-name: Fighter Cast19 real skill integration (staging fixture)
+name: Fighter Cast19 + approved VFX (original art)
 on:
   push:
     branches: [test/fighter-cast19-nine-real-skills]
@@ -28,26 +28,10 @@ jobs:
           npm install --no-save --no-package-lock --prefix /tmp/cast19-playwright playwright@1.56.1
           node /tmp/cast19-playwright/node_modules/playwright/cli.js install --with-deps chromium webkit
           echo "NODE_PATH=/tmp/cast19-playwright/node_modules" >> "$GITHUB_ENV"
-      - name: Create temporary synthetic 1752x1280 WebP fixture for CI only
+      - name: Confirm original owner-approved Cast19 WebP checksum
         run: |
-          python3 -m pip install --user pillow
-          python3 - <<'PY'
-          from PIL import Image,ImageDraw
-          from pathlib import Path
-          src=Image.open('game/sprites/pca_fighter_m.webp').convert('RGBA')
-          dest=Image.new('RGBA',(1752,1280),(0,0,0,0))
-          # DO NOT ship this placeholder! It only exercises the canvas/asset
-          # loading paths and is not the 19-frame owner-approved animation.
-          for r in range(4):
-              for c in range(6):
-                  cell=src.crop((min(c,4)*240,r*124,min(c,4)*240+240,r*124+124))
-                  cell.thumbnail((245,210))
-                  dest.alpha_composite(cell,(c*292+24,r*320+50))
-          dest.save('game/sprites/fighter_cast19_user.webp',format='WEBP',lossless=True)
-          print('SYNTHETIC_TEST_FIXTURE_ONLY',dest.size)
-          PY
-          test -f game/sprites/fighter_cast19_user.webp
-          git status --short | grep -F 'game/sprites/fighter_cast19_user.webp' || true
+          echo "414161a85092355712e6ad1b3522c0497bbce950bfa16431055c92bfde3bff1e  game/sprites/fighter_cast19_user.webp" | sha256sum --check
+          test "$(git status --porcelain -- game/sprites/fighter_cast19_user.webp)" = ""
       - name: Real nine game skills with Chromium / Pixel 7 emulation
         env:
           CAST19_BROWSER: chromium
@@ -57,10 +41,10 @@ jobs:
         env:
           CAST19_BROWSER: webkit
         run: node tools/fighter-cast19-real-skill-test.js
-      - name: Export CI evidence - synthetic fixture screenshots only
+      - name: Export approved Cast19 + real VFX screenshots
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: fighter-cast19-nine-skill-synthetic-evidence
+          name: fighter-cast19-real-art-nine-skill-VFX-evidence
           path: tools/test-artifacts/cast19-*.png
           if-no-files-found: ignore
