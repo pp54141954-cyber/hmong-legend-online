@@ -74,10 +74,27 @@ function createServer(opts = {}) {
     const url = new URL(req.url, 'http://x');
     for (const [k, v] of Object.entries(SEC_HEADERS)) res.setHeader(k, v);
     try {
+      // R85 release fingerprint: read-only and safe to check without login or touching saved characters.
+      if (req.method === 'GET' && url.pathname === '/api/build-info') {
+        res.setHeader('cache-control', 'no-store');
+        return json(res, 200, {
+          game: 'Hmong Legend MMORPG V2.0',
+          build: 'R85-V3-Calm',
+          input: { floatingJoystick: true, sixRealSkillSlots: true, multiTouch: true, tapToMove: true, destinationRingOnly: true },
+          revision: process.env.RENDER_GIT_COMMIT || null
+        });
+      }
       if (req.method === 'GET' && url.pathname === '/healthz') return json(res, 200, { ok: true, ver: 'V2-R80', online: online.size, uptime: Math.round(process.uptime()), admins: conf.admins.length }); // admins = จำนวนชื่อใน ADMIN_USERS (ไม่เปิดเผยชื่อ) ใช้ตรวจว่าตั้งค่าบน Render แล้ว
       if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
         return fs.createReadStream(conf.gameFile).pipe(res);
+      }
+      // R85: serve only the approved Calm control stylesheet; no arbitrary static paths.
+      if (req.method === 'GET' && url.pathname === '/r85-calm-controls.css') {
+        const sheet = path.join(path.dirname(conf.gameFile), 'r85-calm-controls.css');
+        if (!fs.existsSync(sheet)) return json(res, 404, { error: 'not found' });
+        res.writeHead(200, { 'content-type': 'text/css; charset=utf-8', 'cache-control': 'no-cache' });
+        return fs.createReadStream(sheet).pipe(res);
       }
       // ภาพแผนที่แยกไฟล์ (V2-R14): /maps/<ชื่อ>.webp เท่านั้น
       const mm = /^\/(maps|sprites)\/([a-z0-9_]+)\.(webp)$/.exec(url.pathname) || /^\/(icons)\/([a-z0-9_]+)\.(png)$/.exec(url.pathname); // ภาพแผนที่/มอนสเตอร์/ไอคอนสกิล (รับเฉพาะชื่อ a-z0-9_)

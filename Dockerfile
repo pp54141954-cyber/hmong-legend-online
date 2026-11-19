@@ -9,6 +9,7 @@ RUN --mount=type=secret,id=ca,required=false cd server && if [ -f /run/secrets/c
 COPY server/*.js server/
 COPY shared/ shared/
 COPY game/index.html game/
+COPY game/r85-calm-controls.css game/
 COPY game/maps/ game/maps/
 COPY game/sprites/ game/sprites/
 COPY game/icons/ game/icons/
