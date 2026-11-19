@@ -35,7 +35,7 @@ const check=(name,p)=>{assert.ok(p,name);console.log('PASS '+name)};
   context=await browser.newContext({...devices[label==='webkit'?'iPhone 13':'Pixel 7']});
   const page=await context.newPage();const errors=[];
   page.on('pageerror',e=>{errors.push(e.message);console.log('PAGE_ERROR',e.message)});
-  const url='http://127.0.0.1:'+port+'/?splash=0&fightervfx=1&fightercast19=1';
+  const url='http://127.0.0.1:'+port+'/?splash=0&fightercast19=1';
   await page.goto(url,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>window.HLFighter19Cast?.installed&&window.HL?.useSkill,
     null,{timeout:25000});
@@ -51,6 +51,8 @@ const check=(name,p)=>{assert.ok(p,name);console.log('PASS '+name)};
       throw e;
     });
   await page.waitForFunction(()=>window.HLFighter19Cast.ready,null,{timeout:16000});
+  check('single fightercast19 flag activates both original nine-skill VFX and Cast19',await page.evaluate(()=>
+    window.HLGrandStage?.realFighterEnabled===true&&window.HLFighter19Cast?.installed===true));
   check('actual game account joined and synthetic Cast19 sheet decoded',true);
   check('owner-provided ordinal maps remain exact',await page.evaluate(()=>{
     const f=window.HLFighter19Cast;
