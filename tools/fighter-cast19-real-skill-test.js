@@ -31,7 +31,7 @@ const check=(name,p)=>{assert.ok(p,name);console.log('PASS '+name)};
   ch.eq={weapon:'fists_iron',offhand:null,armor:'coat_cloth',acc:null};
   server.db.save(ch);
   const port=await server.listen(0);
-  browser=await engine.launch();
+  browser=await engine.launch(process.env.CAST19_EXECUTABLE?{executablePath:process.env.CAST19_EXECUTABLE}:{});
   context=await browser.newContext({...devices[label==='webkit'?'iPhone 13':'Pixel 7']});
   const page=await context.newPage();const errors=[];
   page.on('pageerror',e=>{errors.push(e.message);console.log('PAGE_ERROR',e.message)});
