@@ -94,6 +94,20 @@ const check=async(page)=>page.evaluate(()=>{
    const joystick={x:screen.x+screen.width*.208,y:screen.y+screen.height*.659};
    assert(joystick.x<screen.x+screen.width*.5,'joystick regression point not on left');
    const posAttack=point(attack);
+   // Diagnostic logging only; capture-phase listeners don't modify input state.
+   await page.evaluate(()=>{
+     window.__r85PointerTrace=[];
+     for(const type of ['pointerdown','pointerup','pointercancel','lostpointercapture']){
+       document.addEventListener(type,e=>{
+         const h=window.HL,t=e.target;
+         window.__r85PointerTrace.push({
+           type,id:e.pointerId,target:t?.id||t?.closest?.('.sk')?.dataset?.i||t?.tagName,
+           held:h?.heldSkillCount,joy:!!h?.joy,attack:h?.attackHeld
+         });
+         if(window.__r85PointerTrace.length>250)window.__r85PointerTrace.shift();
+       },true);
+     }
+   });
    await page.waitForFunction(names=>names.every(n=>window.HLNET?.sk?.[n]>0)&&window.HL?.PS?.job>=30,
      active,{timeout:12000});
    const snapshot=await page.evaluate(()=>({className:window.HLNET?.cls,job:window.HL?.PS?.job,skills:window.HLNET?.sk}));
@@ -251,7 +265,21 @@ const check=async(page)=>page.evaluate(()=>{
      ': isolated WebSocket 2 sessions, 6 actual skill cooldowns, joystick and attack pointer independence'+
      (ios?' (mouse + touchscreen overlap)':' (native triple touch + held repeat)'));
  }catch(err){
-   if(control?.page)console.error('R85 multi-touch state:',await check(control.page).catch(()=>null),errors);
+   if(control?.page){
+     console.error('R85 multi-touch state:',await check(control.page).catch(()=>null),errors);
+     const diagnostics=await control.page.evaluate(()=>{
+       const c=[...document.querySelectorAll('#skills .sk')];
+       return {
+         slots:c.map(b=>{const r=b.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2;
+           const top=document.elementFromPoint(x,y);
+           return {id:b.dataset.i,center:{x,y},top:{tag:top?.tagName,id:top?.id,
+             slot:top?.closest?.('.sk')?.dataset.i},visible:!!b.getClientRects().length};
+         }),
+         trace:window.__r85PointerTrace?.slice(-65)||[],viewport:{w:innerWidth,h:innerHeight}
+       };
+     }).catch(e=>({diagnosticError:String(e)}));
+     console.error('R85 multi-touch diagnostics:',JSON.stringify(diagnostics));
+   }
    throw err;
  }finally{
    if(control)await control.ctx.close().catch(()=>{});
