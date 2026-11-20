@@ -29,7 +29,21 @@ const ios=process.env.MOBILE_BROWSER==='webkit';
     await page.waitForSelector('#splgo:not([hidden])',{timeout:35000});
     assert.equal(await page.locator('#net').isVisible(),false,'login visible behind active splash');
     assert(await page.evaluate(()=>window.SND?.splash?.done===true),'splash did not complete asset loading');
-    await page.locator('#splgo').click();
+    // The animated entry button must keep its actual hitbox stationary: otherwise
+    // Playwright's tap/click waits forever and players can miss the moving target.
+    const hitbox=await page.evaluate(async()=>{
+      const button=document.getElementById('splgo');
+      const rect=()=>{const r=button.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height}};
+      const before=rect();
+      await new Promise(resolve=>setTimeout(resolve,360));
+      const after=rect();
+      return {before,after};
+    });
+    for(const k of ['x','y','width','height']){
+      assert(Math.abs(hitbox.before[k]-hitbox.after[k])<.5,
+        'splash entry button hitbox moved while animating: '+JSON.stringify(hitbox));
+    }
+    await page.locator('#splgo').click({timeout:10000});
     await page.waitForSelector('#net:not([hidden])',{timeout:15000});
     assert.deepEqual(errors,[],'splash startup errors: '+errors.join(' | '));
     await page.locator('#netn').fill(name);
