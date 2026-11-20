@@ -7,7 +7,7 @@
 
 Use an **isolated, access-controlled staging URL** that runs the exact PR-head commit, with a **new disposable database**. Do not point the staging server at `/data/hmong.db` or copy player credentials into it. If no isolated staging URL exists, these tests are **BLOCKED**, not PASS. Do not interpret emulator CI as real-device coverage.
 
-Before opening the URL on phones, run the read-only `node tools/r85-release-check.js https://YOUR-STAGING-HOST` and record the response from `/api/build-info`, including `revision` when available. Confirm the commit matches the PR head. Never use the production URL for this verification.
+Before opening the URL on phones, run the read-only `node tools/r85-release-check.js https://YOUR-STAGING-HOST EXPECTED_PR_HEAD_SHA` and record the response from `/api/build-info`, including `revision` when available. Confirm the commit matches the PR head. Never use the production URL for this verification.
 
 ## Test on physical Android and iPhone
 
