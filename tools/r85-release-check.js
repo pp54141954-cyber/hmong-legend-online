@@ -1,8 +1,10 @@
 'use strict';
 // Read-only release verifier. No login, no database writes, no deployment.
-// Usage: node tools/r85-release-check.js https://your-staging-host.example
+// Usage: node tools/r85-release-check.js https://your-staging-host.example [expected-git-sha]
 const assert=require('node:assert/strict');
 const origin=process.argv[2]||'http://127.0.0.1:8080';
+const expectedCommit=process.argv[3]||'';
+if(expectedCommit&&!/^[0-9a-f]{7,40}$/i.test(expectedCommit))throw Error('Expected commit must be a 7–40 character hex SHA');
 async function get(rel){
   const url=new URL(rel,origin);
   const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(15000)});
@@ -16,6 +18,14 @@ async function get(rel){
   assert.equal(fingerprint.response.status,200,'Missing R85 build fingerprint at '+fingerprint.url);
   const info=JSON.parse(fingerprint.text);
   assert.equal(info.build,'R85-V3-Calm','Different game version is deployed');
+  if(expectedCommit){
+    const actual=info.revision;
+    assert(typeof actual==='string'&&actual.length>=expectedCommit.length,
+      'Cannot confirm R85 staging commit; build-info revision is missing');
+    assert(actual.toLowerCase().startsWith(expectedCommit.toLowerCase()),
+      'Staging commit '+actual+' does not match expected '+expectedCommit);
+    console.log('PASS R85 expected commit: '+actual);
+  }
   const inputs=info.input||{};
   for(const key of ['floatingJoystick','sixRealSkillSlots','multiTouch','tapToMove','destinationRingOnly']){
     assert.equal(inputs[key],true,'Missing approved R85 feature '+key);
