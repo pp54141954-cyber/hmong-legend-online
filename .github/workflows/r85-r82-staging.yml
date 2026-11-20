@@ -30,7 +30,7 @@ jobs:
           const html=fs.readFileSync('game/index.html','utf8');
           const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(Boolean);
           for(const js of scripts)new vm.Script(js);
-          for(const file of ['server/server.js','tools/mobile-controls-r85-test.js','tools/r85-multitouch-test.js','tools/r85-release-check.js'])new vm.Script(fs.readFileSync(file,'utf8'));
+          for(const file of ['server/server.js','tools/mobile-controls-r85-test.js','tools/r85-multitouch-test.js','tools/r85-splash-login-test.js','tools/r85-release-check.js'])new vm.Script(fs.readFileSync(file,'utf8'));
           if(!html.includes('r85-calm-controls.css'))throw Error('Missing V3 CSS link');
           if(!fs.readFileSync('Dockerfile','utf8').includes('COPY game/r85-calm-controls.css game/'))throw Error('Docker missing V3 CSS');
           console.log('PASS: '+scripts.length+' inline scripts and all server/test scripts parsed; CSS packaged');
@@ -43,6 +43,14 @@ jobs:
           MOBILE_BROWSER: chromium
       - name: iPhone WebKit mobile controls and tap navigation
         run: node tools/mobile-controls-r85-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Android real splash-to-login and websocket join
+        run: node tools/r85-splash-login-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: iPhone real splash-to-login and websocket join
+        run: node tools/r85-splash-login-test.js
         env:
           MOBILE_BROWSER: webkit
       - name: Android multi-touch and two isolated websocket sessions
