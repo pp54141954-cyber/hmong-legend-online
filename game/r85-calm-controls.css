@@ -48,7 +48,7 @@
 #r85bugPanel textarea{width:100%;min-height:70px;resize:vertical;box-sizing:border-box;background:#142d32;color:#f0f4ed;border:1px solid rgba(225,234,215,.23);border-radius:9px;font:inherit;padding:9px;touch-action:pan-y;user-select:text;-webkit-user-select:text}
 #r85bugPanel pre{max-height:170px;overflow:auto;white-space:pre-wrap;word-break:break-word;background:#102329;color:#c9d8d0;padding:10px;border-radius:9px;user-select:text;-webkit-user-select:text}
 #r85bugPanel .note{font-size:10px;opacity:.8;line-height:1.5}
-#msg{z-index:14;bottom:calc(245px + env(safe-area-inset-bottom,0px));border:1px solid rgba(233,215,171,.25);background:rgba(19,43,43,.92);color:#f0edda;border-radius:12px}
+#msg{z-index:14;pointer-events:none;bottom:calc(245px + env(safe-area-inset-bottom,0px));border:1px solid rgba(233,215,171,.25);background:rgba(19,43,43,.92);color:#f0edda;border-radius:12px}
 #tgt{pointer-events:none}
 @media(max-width:470px){
  #top{min-height:71px}
