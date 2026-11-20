@@ -2289,7 +2289,7 @@ hello().then(ok=>{if(!ok)return;NET.state='ready';token=store.get();if(token){co
 #splash .ld{display:flex;justify-content:space-between;width:100%;margin-top:6px;font-size:12px;opacity:.85}
 #splash .tip{min-height:34px;margin-top:10px;font-size:12px;line-height:1.4;text-align:center;color:#d8dcf5;opacity:.9}
 #splash .go{margin-top:12px;padding:14px 34px;font-size:18px;font-weight:900;letter-spacing:1px;color:#3a1a08;background:linear-gradient(#ffe08a,#f2a93b);border:0;border-radius:16px;box-shadow:0 4px 0 #8e4a10,0 0 24px #f2c14e88;animation:sppulse 1.4s ease-in-out infinite}
-#splash .go[hidden]{display:none}@keyframes sppulse{50%{transform:scale(1.05)}}
+#splash .go[hidden]{display:none}@keyframes sppulse{50%{filter:brightness(1.15)}}
 #splash .snd{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));left:14px;z-index:2;padding:6px 12px;font-size:13px;color:#f4efe2;background:#0006;border:1px solid #ffffff44;border-radius:12px}
 #splash .ver{margin-top:10px;font-size:10px;opacity:.5}
 #sndb{position:absolute;right:8px;top:calc(var(--toph,120px) + 30px);z-index:4;width:40px;height:34px;padding:0;font-size:17px;color:#fff;background:rgba(18,22,18,.74);border:1px solid #ffffff33;border-radius:12px}
