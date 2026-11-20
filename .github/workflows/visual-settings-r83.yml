@@ -1,0 +1,62 @@
+name: R83 mobile on-off settings
+on:
+  push:
+    branches: [feature/visual-settings-r83-20261116]
+  workflow_dispatch:
+jobs:
+  client-preferences:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Install emulated mobile browsers
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-view-browser playwright@1.56.1
+          node /tmp/hl-view-browser/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-view-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Check game inline JavaScript syntax
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),vm=require('vm');
+          const html=fs.readFileSync('game/index.html','utf8');
+          const blocks=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(s=>s.trim());
+          if(!blocks.length)throw Error('No inline game scripts');
+          for(const js of blocks)new vm.Script(js);
+          console.log('PASS '+blocks.length+' inline game JS blocks parse');
+          NODE
+      - name: Shared-world reproducibility
+        run: |
+          node tools/extract-shared.js
+          git diff --exit-code -- shared/world.js
+      - name: Android Chromium settings and persistence
+        run: node tools/view-preferences-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: iPhone WebKit settings and persistence
+        run: node tools/view-preferences-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: R82 mobile bag compatibility Android
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: R82 mobile bag compatibility iPhone
+        run: node tools/equipment-mobile-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Inventory persistence compatibility
+        run: node tools/bag-integrity-test.js
+      - name: Two-session equipment compatibility
+        run: node tools/equipment-gameplay-test.js
+      - name: Mobile screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: r83-on-off-ui
+          path: tools/test-artifacts/*.png
+          if-no-files-found: ignore
