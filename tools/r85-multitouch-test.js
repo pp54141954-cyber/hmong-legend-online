@@ -104,33 +104,45 @@ const check=async(page)=>page.evaluate(()=>{
    if(!ios){
      // Native Android Chromium contacts. A: joystick, B: skill, C: attack.
      const cdp=await page.context().newCDPSession(page);
-     const touch=async(type,points)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:points.map(p=>({
-       x:p.x,y:p.y,id:p.id,radiusX:7,radiusY:7,force:.7
-     }))});
+     // CDP sends only the contacts changed by each event (Puppeteer-style).
+     // Supplying "remaining" contacts to touchEnd would release the WRONG fingers.
+     // Track all live contacts so cleanup also sends explicit release events.
+     const liveContacts=new Map();
+     const touch=async(type,points)=>{
+       await cdp.send('Input.dispatchTouchEvent',{type,touchPoints:points.map(p=>({
+         x:p.x,y:p.y,id:p.id,radiusX:7,radiusY:7,force:.7
+       }))});
+       for(const p of points){
+         if(type==='touchStart'||type==='touchMove')liveContacts.set(p.id,p);
+         if(type==='touchEnd'||type==='touchCancel')liveContacts.delete(p.id);
+       }
+     };
      const A={...joystick,id:101};
      const AM={x:joystick.x+44,y:joystick.y,id:101};
      const B={...centers[0],id:102},C={...posAttack,id:103};
-     const noContacts=async()=>touch('touchEnd',[]);
+     const noContacts=async()=>{
+       for(const p of [...liveContacts.values()].reverse())await touch('touchEnd',[p]);
+     };
      try{
        await touch('touchStart',[A]);
        await touch('touchMove',[AM]);
        let state=await check(page);
        assert(state.joy&&state.dir[0]>.15,'joystick did not engage on first native finger: '+JSON.stringify(state));
-       await touch('touchStart',[AM,B]);
+       await touch('touchStart',[B]);
        state=await check(page);
        assert(state.joy&&state.skillHolds===1&&state.dir[0]>.15,
          'skill finger stole joystick: '+JSON.stringify(state));
        assert(state.cooldowns[slotIds[0]]>0,
          'native skill touch did not trigger actual cooldown: '+JSON.stringify(state));
-       await touch('touchStart',[AM,B,C]);
+       await touch('touchStart',[C]);
        state=await check(page);
        assert(state.joy&&state.skillHolds===1&&state.attack,
          'three-finger attack/skill/joystick input conflict: '+JSON.stringify(state));
-       await touch('touchEnd',[AM,C]);
+       await touch('touchEnd',[B]);
        state=await check(page);
        assert(state.joy&&state.skillHolds===0&&state.attack,
          'releasing skill cancelled the unrelated attack or joystick: '+JSON.stringify(state));
-       await touch('touchEnd',[AM]);
+       await touch('touchEnd',[C]);
        state=await check(page);
        assert(state.joy&&!state.attack&&state.dir[0]>.15,
          'releasing attack cancelled the joystick: '+JSON.stringify(state));
@@ -147,13 +159,13 @@ const check=async(page)=>page.evaluate(()=>{
        await page.waitForFunction(()=>!window.HL?.PS?.cast,null,{timeout:10000});
        try{
          await touch('touchStart',[A]);await touch('touchMove',[AM]);
-         await touch('touchStart',[AM,B2]);
+         await touch('touchStart',[B2]);
          const during=await check(page);
          assert(during.joy&&during.skillHolds===1&&during.dir[0]>.15,
            'skill slot '+(i+1)+' interrupted joystick: '+JSON.stringify(during));
          assert(during.cooldowns[slotIds[i]]>0,
            'skill '+(i+1)+' did not use real skill cooldown: '+JSON.stringify(during));
-         await touch('touchEnd',[AM]);
+         await touch('touchEnd',[B2]);
          const after=await check(page);
          assert(after.joy&&after.skillHolds===0,'slot '+(i+1)+' released joystick incorrectly');
        }finally{await noContacts().catch(()=>{})}
