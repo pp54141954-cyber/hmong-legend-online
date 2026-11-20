@@ -91,6 +91,20 @@ const check=async(page)=>page.evaluate(()=>{
      slotIds.push(Number(await el.getAttribute('data-i')));
    }
    assert(slotIds.every(n=>Number.isInteger(n)&&n>0),'skill slot ids invalid');
+   // Feedback text overlays can appear mid-combat. They must never steal skill input.
+   const toastHitTest=await page.evaluate(()=>{
+     const msg=document.getElementById('msg'),oldDisplay=msg.style.display;
+     msg.style.display='block';
+     const pe=getComputedStyle(msg).pointerEvents;
+     const blocked=[...document.querySelectorAll('#skills .sk')].flatMap(b=>{
+       const r=b.getBoundingClientRect(),top=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
+       return top?.closest?.('.sk')===b?[]:[{skill:b.dataset.i,top:top?.id||top?.tagName}];
+     });
+     msg.style.display=oldDisplay;
+     return {pointerEvents:pe,blocked};
+   });
+   assert.equal(toastHitTest.pointerEvents,'none','R85 feedback toast intercepts multi-touch inputs');
+   assert.deepEqual(toastHitTest.blocked,[],'R85 HUD hit target obstructed: '+JSON.stringify(toastHitTest));
    const joystick={x:screen.x+screen.width*.208,y:screen.y+screen.height*.659};
    assert(joystick.x<screen.x+screen.width*.5,'joystick regression point not on left');
    const posAttack=point(attack);
