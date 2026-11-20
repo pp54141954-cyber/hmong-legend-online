@@ -1,0 +1,63 @@
+name: R85 on R82 - isolated mobile integration checks
+on:
+  push:
+    branches: [integration/r85-v3-on-live-r82-20261120]
+  pull_request:
+    branches: [claude/elephant-goldfish-setup-mvw06c]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  staging-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install server dependencies (isolated DB fixtures only)
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Install Chromium and WebKit mobile emulators
+        run: |
+          npm install --no-save --no-package-lock --prefix /tmp/hl-r85-browser playwright@1.56.1
+          node /tmp/hl-r85-browser/node_modules/playwright/cli.js install --with-deps chromium webkit
+          echo "NODE_PATH=/tmp/hl-r85-browser/node_modules" >> "$GITHUB_ENV"
+      - name: Parse the live-R82-based game, server and regression scripts
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),vm=require('vm');
+          const html=fs.readFileSync('game/index.html','utf8');
+          const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(Boolean);
+          for(const js of scripts)new vm.Script(js);
+          for(const file of ['server/server.js','tools/mobile-controls-r85-test.js','tools/r85-multitouch-test.js','tools/r85-splash-login-test.js','tools/r85-release-check.js'])new vm.Script(fs.readFileSync(file,'utf8'));
+          if(!html.includes('r85-calm-controls.css'))throw Error('Missing V3 CSS link');
+          if(!fs.readFileSync('Dockerfile','utf8').includes('COPY game/r85-calm-controls.css game/'))throw Error('Docker missing V3 CSS');
+          console.log('PASS: '+scripts.length+' inline scripts and all server/test scripts parsed; CSS packaged');
+          NODE
+      - name: Baseline R82 attack timing compatibility
+        run: node tools/attack-timing-test.js
+      - name: Android Chromium mobile controls and tap navigation
+        run: node tools/mobile-controls-r85-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: iPhone WebKit mobile controls and tap navigation
+        run: node tools/mobile-controls-r85-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Android real splash-to-login and websocket join
+        run: node tools/r85-splash-login-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: iPhone real splash-to-login and websocket join
+        run: node tools/r85-splash-login-test.js
+        env:
+          MOBILE_BROWSER: webkit
+      - name: Android multi-touch and two isolated websocket sessions
+        run: node tools/r85-multitouch-test.js
+        env:
+          MOBILE_BROWSER: chromium
+      - name: iPhone WebKit overlapping controls and two isolated websocket sessions
+        run: node tools/r85-multitouch-test.js
+        env:
+          MOBILE_BROWSER: webkit
